@@ -1,5 +1,6 @@
 import os
 import argparse
+from shutil import copytree
 import subprocess
 from typing import List
 import mkd_config as cfg
@@ -12,6 +13,14 @@ _DESC = \
     ' from user-defined config files. ' \
     f' Note: User configs are in {user_config_dir(_NAME)}'
 
+# For first run
+if not os.path.isdir(user_config_dir(_NAME)):
+    script = os.path.realpath(__file__)
+    this_dir = os.path.dirname(script)
+    def_cfg = os.path.join(this_dir, 'config')
+
+    copytree(def_cfg, user_config_dir(_NAME))
+
 
 def parse_args(cfgs: 'List[dict]') -> Namespace:
     langs = [cf['lang'] for cf in cfgs]
@@ -19,7 +28,7 @@ def parse_args(cfgs: 'List[dict]') -> Namespace:
     PARSER = argparse.ArgumentParser(prog=_NAME,
                                      description=_DESC)
 
-    SUBPS = PARSER.add_subparsers(title='Project', dest='lang')
+    SUBPS = PARSER.add_subparsers(title='Project', dest='lang', required=True)
 
     S_PARSERS = {}
     for lang in langs:
@@ -61,7 +70,7 @@ def main() -> None:
     configurations: 'List[dict]' = cfg.importLangs(config_path)
     args = parse_args(configurations)
 
-    # Filter the correct language dat from the list of data
+    # Filter the correct language data from the list of data
     lang_data = next(filter(lambda cfg: cfg['lang'] == args.lang,
                             configurations))
 
