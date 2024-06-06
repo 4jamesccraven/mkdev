@@ -1,0 +1,10 @@
+lang: "py"
+ext: ".py"
+templates:
+  default: "[r]default.py"
+  init: "__init__.py"
+build:
+  default:
+    - "tmp default"
+  module:
+    - "tmp init"

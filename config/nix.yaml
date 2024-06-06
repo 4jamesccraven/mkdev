@@ -1,0 +1,13 @@
+lang: "nix"
+ext: ".nix"
+templates:
+  default: "[r]def.nix"
+  shell: "shell.nix"
+  hm: "[r]home-manager.nix"
+build:
+  default:
+    - "tmp default"
+  shell:
+    - "tmp shell"
+  hm:
+    - "tmp hm"

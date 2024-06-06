@@ -1,0 +1,11 @@
+lang: "java"
+ext: ".java"
+templates:
+  default: "[r]Main.java"
+  makefile: "Makefile"
+build:
+  default:
+    - "tmp default"
+  with-make:
+    - "tmp default"
+    - "tmp makefile"

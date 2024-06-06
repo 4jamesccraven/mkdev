@@ -1,0 +1,15 @@
+lang: "c++"
+ext: ".cpp"
+templates:
+  default: "[r]main.cpp"
+  makefile: "Makefile"
+build:
+  default:
+    - "dir src"
+    - "dir obj"
+    - "dir inc"
+    - "dir bin"
+    - "tmp src|default"
+    - "tmp makefile"
+  one-file:
+    - "tmp default"

@@ -1,0 +1,10 @@
+lang: "tex"
+ext: ".tex"
+templates:
+  default: "[r]default.tex"
+  beamer: "[r]beamer.tex"
+build:
+  default:
+    - "tmp default"
+  beamer:
+    - "tmp beamer"
