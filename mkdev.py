@@ -1,34 +1,43 @@
 import os
-import argparse
-from shutil import copytree
 import subprocess
-from typing import List
-import mkd_config as cfg
-from argparse import Namespace
+from shutil import copytree
+import config_parsing as cfg
+from typing import List, Tuple
+from help import config_help, version
 from platformdirs import user_config_dir
+from argparse import Namespace, ArgumentParser
 
 _NAME = 'mkdev'
+_VERS = '1.2'
+_CONFIG = user_config_dir(_NAME)
 _DESC = \
     'A command-line program that creates a develelopment environment' \
     ' from user-defined config files. ' \
-    f' Note: User configs are in {user_config_dir(_NAME)}'
+    f' Note: User configs are in {_CONFIG}'
 
-# For first run
-if not os.path.isdir(user_config_dir(_NAME)):
+# For first run, copy default configs if a directory doesn't exist
+# or if it is empty
+if not os.path.isdir(_CONFIG) or len(os.listdir(_CONFIG)) == 0:
     script = os.path.realpath(__file__)
     this_dir = os.path.dirname(script)
     def_cfg = os.path.join(this_dir, 'config')
 
-    copytree(def_cfg, user_config_dir(_NAME))
+    copytree(def_cfg, _CONFIG)
 
 
-def parse_args(cfgs: 'List[dict]') -> Namespace:
+def parse_args(cfgs: 'List[dict]') -> Tuple[Namespace, ArgumentParser]:
     langs = [cf['lang'] for cf in cfgs]
 
-    PARSER = argparse.ArgumentParser(prog=_NAME,
-                                     description=_DESC)
+    PARSER = ArgumentParser(prog=_NAME,
+                            description=_DESC)
+    PARSER.add_argument('--config-help',
+                        help='Displays information on configuring mkdev.',
+                        action='store_true')
+    PARSER.add_argument('--version',
+                        help='See version info.',
+                        action='store_true')
 
-    SUBPS = PARSER.add_subparsers(title='Project', dest='lang', required=True)
+    SUBPS = PARSER.add_subparsers(title='Project', dest='lang')
 
     S_PARSERS = {}
     for lang in langs:
@@ -59,16 +68,25 @@ def parse_args(cfgs: 'List[dict]') -> Namespace:
                                      help='Prints debug info.',
                                      action='store_true')
 
-    return PARSER.parse_args()
+    return PARSER.parse_args(), PARSER
 
 
 def main() -> None:
-    # Get config directory
-    config_path = user_config_dir(_NAME)
-
     # Parse the arguments using that path info
-    configurations: 'List[dict]' = cfg.importLangs(config_path)
-    args = parse_args(configurations)
+    configurations: 'List[dict]' = cfg.importLangs(_CONFIG)
+
+    args, PARSER = parse_args(configurations)
+
+    if args.config_help:
+        config_help(_CONFIG)
+        return
+    if args.version:
+        version(_NAME, _VERS)
+        return
+    elif not args.lang:
+        PARSER.print_usage()
+        print('mkdev: error: the following arguments are required: lang')
+        return
 
     # Filter the correct language data from the list of data
     lang_data = next(filter(lambda cfg: cfg['lang'] == args.lang,
@@ -94,7 +112,7 @@ def main() -> None:
         print()
         print(recipe)
 
-    exit = cfg.build_recipe(recipe, config_path)
+    cfg.build_recipe(recipe, _CONFIG)
 
     if exit:
         return

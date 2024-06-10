@@ -33,8 +33,8 @@ def importLangs(confg_dir: str) -> 'List[dict]':
 
             cfgs.append(data)
 
-    # ugly way of making sure that user configs are
-    # mostly right...
+    # Ensures that configs follow the general structure of a config,
+    # stricter checking in parsing etc
     r_val = []
     for cf in cfgs:
         match cf:
@@ -60,8 +60,8 @@ def parse_step(step: str) -> Tuple[str, str | List[str], bool]:
     command, argument = step.split(' ')
 
     if command not in ['dir', 'tmp', 'ph']:
-        raise ValueError('Error: Steps should contain a valid command'
-                         f' and a single argument. Got \'{step}\'')
+        raise ValueError(f'{command} is not a valid command. '
+                         ' Command must be one of dir, tmp, or ph.')
 
     multi = '|' in argument
     if multi:
@@ -83,7 +83,7 @@ def import_template(recipe: Recipe,
     return template, rename
 
 
-def build_recipe(recipe: Recipe, abs_cfg: str) -> bool:
+def build_recipe(recipe: Recipe, abs_cfg: str) -> None:
     '''
     Builds directory of project from a recipe
     '''
@@ -111,7 +111,6 @@ def build_recipe(recipe: Recipe, abs_cfg: str) -> bool:
                 except FileExistsError:
                     print('One or more of the directories in path'
                           f' {dir_path} exist(s) already.')
-                    return True
 
             case ('ph', arg, False):
                 ph_path = os.path.join(recipe.build_dir, arg)
@@ -134,20 +133,24 @@ def build_recipe(recipe: Recipe, abs_cfg: str) -> bool:
             case ('tmp', arg, False):
                 tmp, rename = import_template(recipe, template_dir, arg)
                 filename = recipe.build_file + recipe.data['ext'] \
-                    if rename else arg
+                    if rename else recipe.data['templates'][arg]
 
-                write_path = os.path.join(recipe.build_dir, filename)
-                with open(write_path, 'w') as f:
-                    f.writelines(tmp)
+                tmp_path = os.path.join(recipe.build_dir, filename)
+                try:
+                    with open(tmp_path, 'x') as f:
+                        f.writelines(tmp)
+                except FileExistsError:
+                    print(f'{tmp_path} already exists.')
 
             case ('tmp', args, True):
                 tmp, rename = import_template(recipe, template_dir, args[-1])
                 filename = recipe.build_file + recipe.data['ext'] \
-                    if rename else args[-1]
+                    if rename else recipe.data['templates'][args[-1]]
 
-                write_path = \
+                tmp_path = \
                     os.path.join(recipe.build_dir, *args[:-1], filename)
-                with open(write_path, 'w') as f:
-                    f.writelines(tmp)
-
-    return False
+                try:
+                    with open(tmp_path, 'x') as f:
+                        f.writelines(tmp)
+                except FileExistsError:
+                    print(f'{tmp_path} already exists.')
