@@ -22,7 +22,12 @@ if not os.path.isdir(_CONFIG) or len(os.listdir(_CONFIG)) == 0:
     this_dir = os.path.dirname(script)
     def_cfg = os.path.join(this_dir, 'config')
 
-    copytree(def_cfg, _CONFIG)
+    try:
+        copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
+    except Exception as e:
+        print(f'Warning: error writing default configurations '
+              f'please ensure that {_CONFIG} does not already exist. '
+              f'Further info:\n{e}')
 
 
 def parse_args(cfgs: 'List[dict]') -> Tuple[Namespace, ArgumentParser]:
