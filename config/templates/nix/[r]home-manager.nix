@@ -1,7 +1,7 @@
 { pkgs, config, lib, ...}:
 
 {
-    home-manager.users.USERNAME = {
+  home-manager.users.USERNAME = {
 
-    };
+  };
 }
