@@ -1,7 +1,7 @@
 import os
 import yaml
-from typing import List, Tuple
 from dataclasses import dataclass
+from typing import List, Tuple, Literal
 
 
 @dataclass
@@ -83,6 +83,28 @@ def import_template(recipe: Recipe,
     return template, rename
 
 
+def write_file(path: str,
+               type: Literal['file', 'directory'],
+               contents: 'List[str]' = None) -> None:
+    try:
+        if type == 'directory':
+            os.makedirs(path)
+
+        else:
+            with open(path, 'x') as f:
+                if contents is not None:
+                    f.writelines(contents)
+
+    except FileExistsError:
+        print(f'{path} already exists.')
+    except PermissionError:
+        print(f'Error accessing {path}: access denied.')
+    except Exception as e:
+        print(f'Received unexpected error:\n {e}')
+
+    return None
+
+
 def build_recipe(recipe: Recipe, abs_cfg: str) -> None:
     '''
     Builds directory of project from a recipe
@@ -99,36 +121,23 @@ def build_recipe(recipe: Recipe, abs_cfg: str) -> None:
         match step:
             case ('dir', arg, False):
                 dir_path = os.path.join(recipe.build_dir, arg)
-                try:
-                    os.mkdir(dir_path)
-                except FileExistsError:
-                    print(f'{dir_path} already exists.')
+
+                write_file(dir_path, 'directory')
 
             case ('dir', args, True):
                 dir_path = os.path.join(recipe.build_dir, *args)
-                try:
-                    os.makedirs(recipe.build_dir, *arg)
-                except FileExistsError:
-                    print('One or more of the directories in path'
-                          f' {dir_path} exist(s) already.')
+
+                write_file(dir_path, 'directory')
 
             case ('ph', arg, False):
                 ph_path = os.path.join(recipe.build_dir, arg)
-                try:
-                    with open(ph_path, 'x'):
-                        ...
-                except FileExistsError:
-                    print(f'{ph_path} already exists.')
+
+                write_file(ph_path, 'file')
 
             case ('ph', args, True):
                 ph_path = os.path.join(recipe.build_dir, *args)
-                try:
-                    with open(ph_path, 'x'):
-                        ...
-                except FileExistsError:
-                    print(f'{ph_path} already exists.')
-                except FileNotFoundError as e:
-                    print(f'{ph_path} not found:\n{e}')
+
+                write_file(ph_path, 'file')
 
             case ('tmp', arg, False):
                 tmp, rename = import_template(recipe, template_dir, arg)
@@ -136,11 +145,8 @@ def build_recipe(recipe: Recipe, abs_cfg: str) -> None:
                     if rename else recipe.data['templates'][arg]
 
                 tmp_path = os.path.join(recipe.build_dir, filename)
-                try:
-                    with open(tmp_path, 'x') as f:
-                        f.writelines(tmp)
-                except FileExistsError:
-                    print(f'{tmp_path} already exists.')
+
+                write_file(tmp_path, 'file', contents=tmp)
 
             case ('tmp', args, True):
                 tmp, rename = import_template(recipe, template_dir, args[-1])
@@ -149,8 +155,5 @@ def build_recipe(recipe: Recipe, abs_cfg: str) -> None:
 
                 tmp_path = \
                     os.path.join(recipe.build_dir, *args[:-1], filename)
-                try:
-                    with open(tmp_path, 'x') as f:
-                        f.writelines(tmp)
-                except FileExistsError:
-                    print(f'{tmp_path} already exists.')
+
+                write_file(tmp_path, 'file', contents=tmp)

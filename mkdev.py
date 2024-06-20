@@ -62,7 +62,8 @@ def parse_args(cfgs: 'List[dict]') -> Tuple[Namespace, ArgumentParser]:
                                      nargs='?',
                                      default='main')
         S_PARSERS[lang].add_argument('-c', '--code',
-                                     help='Opens VSCode on exit.',
+                                     help='Opens Visula Studio '
+                                     'Code on exit.',
                                      action='store_true')
         S_PARSERS[lang].add_argument('-r', '--recipe',
                                      help='Build recipe to use '
@@ -109,25 +110,17 @@ def main() -> None:
         build_file=args.file,
     )
 
-    verbose = args.verbose
-    code = args.code
-
-    if verbose:
-        print(args)
-        print()
-        print(recipe)
+    if args.verbose:
+        ...
 
     cfg.build_recipe(recipe, _CONFIG)
 
-    if exit:
-        return
-
-    if code:
+    if args.code:
         try:
-            subprocess.run(['code', args.directory])
-        except Exception as e:
-            print(f'Unable to launch code:\n{e}')
-            print('Try launching manually')
+            completed_process = subprocess.Popen(['code', args.directory])
+            completed_process.wait()
+        except subprocess.CalledProcessError as e:
+            print(f'Error launching VSCode\n{e.output}')
 
 
 if __name__ == '__main__':
