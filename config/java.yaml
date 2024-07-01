@@ -1,11 +1,19 @@
-lang: "java"
-ext: ".java"
+language: java
+extension: .java
 templates:
-  default: "[r]Main.java"
-  makefile: "Makefile"
-build:
   default:
-    - "tmp default"
+    filename: Main.java
+    rename: true
+    data: "public class Main {\n    public static void main(String args[]) {\n\n \
+      \   }\n}\n"
+  makefile:
+    filename: Makefile
+    rename: false
+    data: "# Compilation order\nCO := \n\n.PHONY: all\nall: $(CO)\n\n%.class: %.java\n\
+      \tjavac $<\n\n.PHONY: clean\nclean:\n\tdel *.class"
+recipes:
+  default:
+  - tmp default
   with-make:
-    - "tmp default"
-    - "tmp makefile"
+  - tmp default
+  - tmp makefile

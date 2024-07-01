@@ -1,15 +1,30 @@
-lang: "c++"
-ext: ".cpp"
+language: c++
+extension: .cpp
 templates:
-  default: "[r]main.cpp"
-  makefile: "Makefile"
-build:
   default:
-    - "dir src"
-    - "dir obj"
-    - "dir inc"
-    - "dir bin"
-    - "tmp src|default"
-    - "tmp makefile"
+    filename: main.cpp
+    rename: true
+    data: "#include<iostream>\n\nint main(int argc, char* argv[]) {\n\n    return\
+      \ 0;\n}\n"
+  makefile:
+    filename: Makefile
+    rename: false
+    data: "exe = \n\n###---Environment---###\nCXX = g++\nCXXFlags = -std=c++17 -I$(INCDIR)\
+      \ -Wall -pedantic\n\nBINDIR = ./bin\nINCDIR = ./inc\nSRCDIR = ./src\nOBJDIR\
+      \ = ./obj\n\nSRC = $(wildcard $(SRCDIR)/*.cpp)\nINC = $(wildcard $(INCDIR)/*.h)\n\
+      OBJ = $(SRC:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)\n\n###---Build---###\n.PHONY: all\n\
+      all: $(BINDIR)/$(exe)\n\n$(BINDIR)/$(exe): $(OBJ)\n\t$(CXX) $(CXXFlags) -o $@\
+      \ $(OBJ)\n\n$(OBJDIR)/%.o: $(SRCDIR)/%.cpp\n\t$(CXX) $(CXXFlags) -o $@ -c $<\n\
+      \n###---Utilities---###\n.PHONY: clean, cleanwin\nclean:\n\trm -f $(BINDIR)/*.exe\
+      \ $(OBJDIR)/*.o\n\ncleanwin:\n\tpowershell -command \"Remove-Item $(BINDIR)/*.exe;\
+      \ Remove-Item $(OBJDIR)/*.o\"\n"
+recipes:
+  default:
+  - dir src
+  - dir obj
+  - dir inc
+  - dir bin
+  - tmp src|default
+  - tmp makefile
   one-file:
-    - "tmp default"
+  - tmp default

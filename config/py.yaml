@@ -1,10 +1,22 @@
-lang: "py"
-ext: ".py"
+language: py
+extension: .py
 templates:
-  default: "[r]default.py"
-  init: "__init__.py"
-build:
   default:
-    - "tmp default"
+    filename: default.py
+    rename: true
+    data: "# IMPORTS\n\ndef main() -> None:\n    ...\n\n\nif __name__ == '__main__':\n\
+      \    main()\n"
+  init:
+    filename: __init__.py
+    rename: false
+    data: '# IMPORTS
+
+
+      __all__ = []
+
+      '
+recipes:
+  default:
+  - tmp default
   module:
-    - "tmp init"
+  - tmp init

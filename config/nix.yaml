@@ -1,13 +1,24 @@
-lang: "nix"
-ext: ".nix"
+language: nix
+extension: .nix
 templates:
-  default: "[r]def.nix"
-  shell: "shell.nix"
-  hm: "[r]home-manager.nix"
-build:
   default:
-    - "tmp default"
+    filename: def.nix
+    rename: true
+    data: "{ pkgs, lib, config, ...}:\n\n{\n  \n}"
   shell:
-    - "tmp shell"
+    filename: shell.nix
+    rename: false
+    data: "with import <nixpkgs> { };\n\nmkShell {\n\n  nativeBuildInputs = [\n  \
+      \  \n  ];\n  \n  shellHook = ''\n  '';\n}"
   hm:
-    - "tmp hm"
+    filename: home-manager.nix
+    rename: true
+    data: "{ pkgs, config, lib, ...}:\n\n{\n  home-manager.users.USERNAME = {\n\n\
+      \  };\n}"
+recipes:
+  default:
+  - tmp default
+  shell:
+  - tmp shell
+  hm:
+  - tmp hm
