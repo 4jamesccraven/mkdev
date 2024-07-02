@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import List, Tuple, Literal, Dict
 
 
-type Template = Dict[str, str | bool]
-type Recipe = List[str]
+Template = Dict[str, str | bool]
+Recipe = List[str]
 
 
 @dataclass

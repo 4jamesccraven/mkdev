@@ -23,8 +23,12 @@ Label {
     max-width: 50%;
     height: auto;
     dock: left;
-    overflow: hidden;
+    overflow: auto;
     content-align: center middle;
+}
+
+#language {
+    margin-top: 2;
 }
 
 #right-div {
@@ -32,20 +36,27 @@ Label {
     dock: right;
 }
 
-Log {
-    width: auto;
-    height: auto;
-    align: center middle;
-    height: auto;
-    overflow: hidden;
-    margin-top: 10;
-    margin-left: 10;
+#output {
+    height: 70vh;
+    margin-top: 2;
+    margin-left: 2;
+    overflow: auto;
+    border: solid black;
+}
+
+#success {
+    height: 20vh;
+    margin-left: 2;
+    overflow: auto;
+    border: solid black;
+    content-align-vertical: middle;
+    text-align: center;
 }
 
 .failed {
-    background: red;
+    hatch: cross red 20%;
 }
 
 .succeeded {
-    background: green;
+    hatch: cross green 20%;
 }
