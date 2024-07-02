@@ -126,8 +126,7 @@ def importLangs(confg_dir: str) -> 'List[Config]':
     * confg_dir: the absolute path to the directory that stores configs
     '''
     files = os.listdir(confg_dir)
-    files = [os.path.join(confg_dir, file) for file in files
-             if file != 'templates']
+    files = [os.path.join(confg_dir, file) for file in files]
 
     configs = []
     for file in files:

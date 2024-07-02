@@ -1,0 +1,51 @@
+Screen {
+    overflow: scroll;
+}
+
+Footer {
+    align-horizontal: center;
+}
+
+#main-div {
+    align-vertical: middle;
+    dock: right;
+    max-width: 50%;
+    padding: 1;
+    height: 90vh;
+}
+
+Label {
+    margin: 1 0 0 0;
+}
+
+#left-div {
+    width: auto;
+    max-width: 50%;
+    height: auto;
+    dock: left;
+    overflow: hidden;
+    content-align: center middle;
+}
+
+#right-div {
+    width: 50%;
+    dock: right;
+}
+
+Log {
+    width: auto;
+    height: auto;
+    align: center middle;
+    height: auto;
+    overflow: hidden;
+    margin-top: 10;
+    margin-left: 10;
+}
+
+.failed {
+    background: red;
+}
+
+.succeeded {
+    background: green;
+}

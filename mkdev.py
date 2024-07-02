@@ -1,10 +1,11 @@
 import os
 import subprocess
 from shutil import copytree
-from config_parsing import Config, importLangs
 from typing import List, Tuple
 from help import config_help, version
+from config_builder import ConfigBuilder
 from platformdirs import user_config_dir
+from config_parsing import Config, importLangs
 from argparse import Namespace, ArgumentParser
 
 _NAME = 'mkdev'
@@ -40,6 +41,10 @@ def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
                         action='store_true')
     PARSER.add_argument('--version',
                         help='See version info.',
+                        action='store_true')
+    PARSER.add_argument('--edit-config',
+                        help='Opens a graphical interface '
+                        'write configs.',
                         action='store_true')
 
     SUBPS = PARSER.add_subparsers(title='Language', dest='lang')
@@ -87,6 +92,10 @@ def main() -> None:
         return
     if args.version:
         version(_NAME, _VERS)
+        return
+    if args.edit_config:
+        cfg_editor = ConfigBuilder()
+        cfg_editor.run()
         return
     elif not args.lang:
         PARSER.print_usage()
