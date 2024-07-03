@@ -3,34 +3,42 @@ import subprocess
 from shutil import copytree
 from typing import List, Tuple
 from help import config_help, version
-from config_builder.cli import ConfigBuilder
+from config_builder.cli_config_builder import ConfigBuilder
 from platformdirs import user_config_dir
 from config_parsing import Config, importLangs
 from argparse import Namespace, ArgumentParser
 
 _NAME = 'mkdev'
-_VERS = 'UNSTABLE'
+_VERS = '2.0'
 _CONFIG = user_config_dir(_NAME)
 _DESC = \
     'A command-line program that creates a development environment' \
-    ' from user-defined configuration files. ' \
-    f' Note: User configs are stored at {_CONFIG}'
+    ' from user-defined configuration files.' \
+    f'\nNote: User configs are stored at {_CONFIG}'
 
 
 # For first run, copy default configs if a directory doesn't exist
 # or if it is empty
-def init_config() -> None:
-    if not os.path.isdir(_CONFIG) or len(os.listdir(_CONFIG)) == 0:
+def init_config(force: bool) -> None:
+    files_in_dir = [os.path.join(_CONFIG, file)
+                    for file in os.listdir(_CONFIG)]
+    conditions = [
+        not os.path.isdir(_CONFIG),
+        len(files_in_dir) == 0,
+        force,
+    ]
+
+    if any(conditions):
+        if force:
+            for file in files_in_dir:
+                os.remove(file)
+            os.rmdir(_CONFIG)
+
         script = os.path.realpath(__file__)
         this_dir = os.path.dirname(script)
         def_cfg = os.path.join(this_dir, 'config')
 
-        try:
-            copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
-        except Exception as e:
-            print(f'Warning: error writing default configurations '
-                  f'please ensure that {_CONFIG} does not already exist. '
-                  f'Further info:\n{e}')
+        copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
 
 
 def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
@@ -52,12 +60,14 @@ def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
 
     SUBPS = PARSER.add_subparsers(title='Language/Action', dest='action')
 
-    editor = SUBPS.add_parser('edit')
-    editor.add_argument('type',
-                        help='Editor type to use.',
-                        nargs='?',
-                        choices=('cli', 'full_gui'),
-                        default='full_gui')
+    SUBPS.add_parser('edit',
+                     help='Edit configurations in GUI.')
+    SUBPS.add_parser('init',
+                     help='Sets up configuration files for use.') \
+        .add_argument('--force',
+                      help=f'Forces {_NAME} to re-'
+                      'write configs.',
+                      action='store_true')
 
     S_PARSERS = {}
     for lang in langs:
@@ -103,18 +113,12 @@ def main() -> None:
     if args.version:
         version(_NAME, _VERS)
         return
-    if args.init:
-        init_config()
+    if args.action == 'init':
+        init_config(args.force)
         return
     if args.action == 'edit':
-        match args.type:
-            case 'cli':
-                editor = ConfigBuilder()
-                editor.run()
-            case 'full_gui':
-                raise NotImplementedError('Only CLI is currently '
-                                          'supported, use mkdev edit '
-                                          'cmd.')
+        editor = ConfigBuilder()
+        editor.run()
         return
     elif not args.action:
         PARSER.print_usage()

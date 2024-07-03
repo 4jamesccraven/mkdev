@@ -94,8 +94,6 @@ class Config:
         except Exception as e:
             print(f'Received unexpected error:\n {e}')
 
-        return None
-
     @staticmethod
     def _parse_step(step: str) -> Tuple[str, str | List[str], bool]:
         if len(step.split(' ')) != 2:
@@ -136,6 +134,6 @@ def importLangs(confg_dir: str) -> 'List[Config]':
             try:
                 configs.append(Config(**data))
             except Exception as e:
-                print(f'Failed to read config from {file}:\n{e}')
+                print(f'WARNING!:\nFailed to read config from {file}:\n{e}\n')
 
     return configs

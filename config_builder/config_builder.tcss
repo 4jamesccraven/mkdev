@@ -2,6 +2,27 @@ Screen {
     overflow: scroll;
 }
 
+Button {
+    min-width: 1;
+    border: none;
+    margin-left: 1;
+    margin-bottom: 1;
+}
+
+EditDialogue {
+    background: black 0%;
+    height: 100vh;
+    align: center middle;
+}
+
+EditDialogue DirectoryTree {
+    width: auto;
+    height: auto;
+    border: solid black;
+    background: $boost;
+    padding: 1 10;
+}
+
 Footer {
     align-horizontal: center;
 }
