@@ -43,6 +43,12 @@ def init_config(force: bool) -> None:
 
         copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
 
+        os.chmod(_CONFIG, 0o755)
+        for file in os.listdir(_CONFIG):
+            path = os.path.join(_CONFIG, file)
+
+            os.chmod(path, 0o764)
+
 
 def parse_args(cfgs: 'List[Config | None]'
                ) -> Tuple[Namespace, ArgumentParser]:

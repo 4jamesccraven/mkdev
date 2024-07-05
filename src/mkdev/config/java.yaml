@@ -1,19 +1,11 @@
-language: java
 extension: .java
-templates:
-  default:
-    filename: Main.java
-    rename: true
-    data: "public class Main {\n    public static void main(String args[]) {\n\n \
-      \   }\n}\n"
-  makefile:
-    filename: Makefile
-    rename: false
-    data: "# Compilation order\nCO := \n\n.PHONY: all\nall: $(CO)\n\n%.class: %.java\n\
-      \tjavac $<\n\n.PHONY: clean\nclean:\n\tdel *.class"
+language: java
 recipes:
   default:
   - tmp default
-  with-make:
-  - tmp default
-  - tmp makefile
+templates:
+  default:
+    data: "public class Main {\n    public static void main(String args[]) {\n\n \
+      \   }\n}\n"
+    filename: Main.java
+    rename: true

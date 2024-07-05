@@ -72,7 +72,6 @@ class ConfigBuilder(App):
         templates = self.query('TemplateForm')
         if templates:
             templates.last().remove()
-        self.collect_data()
 
     def action_add_recipe(self) -> 'RecipeForm':
         new_recipe = RecipeForm()
@@ -85,7 +84,6 @@ class ConfigBuilder(App):
         recipes = self.query('RecipeForm')
         if recipes:
             recipes.last().remove()
-        self.collect_data()
 
     def action_write_to_file(self) -> None:
         self.write_to_file()
@@ -108,6 +106,12 @@ class ConfigBuilder(App):
 
     def on_checkbox_changed(self) -> None:
         self.collect_data()
+
+    def on_template_form_removed(self) -> None:
+        self.set_timer(0.01, self.collect_data)
+
+    def on_recipe_form_removed(self) -> None:
+        self.set_timer(0.01, self.collect_data)
 
     def on_mount(self) -> None:
         self.query_one(Footer).ctrl_to_caret = False
@@ -171,7 +175,7 @@ class ConfigBuilder(App):
             with open(path, mode, encoding='utf_8') as f:
                 f.write(yaml.safe_dump(self._current_working_config))
 
-                self.console_log(f'{filename} saved successfully!',
+                self.console_log(f'{filename} saved successfully.',
                                  status='ok')
 
         except Exception as e:

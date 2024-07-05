@@ -1,22 +1,11 @@
-language: py
 extension: .py
-templates:
-  default:
-    filename: default.py
-    rename: true
-    data: "# IMPORTS\n\ndef main() -> None:\n    ...\n\n\nif __name__ == '__main__':\n\
-      \    main()\n"
-  init:
-    filename: __init__.py
-    rename: false
-    data: '# IMPORTS
-
-
-      __all__ = []
-
-      '
+language: py
 recipes:
   default:
   - tmp default
-  module:
-  - tmp init
+templates:
+  default:
+    data: "# IMPORTS\n\ndef main() -> None:\n    ...\n\n\nif __name__ == '__main__':\n\
+      \    main()\n"
+    filename: default.py
+    rename: true
