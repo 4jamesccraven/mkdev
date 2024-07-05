@@ -29,6 +29,7 @@ class Config:
 
         for step in steps:
             match step:
+                # Make directories
                 case ('dir', arg, False):
                     dir_path = os.path.join(directory, arg)
 
@@ -39,6 +40,7 @@ class Config:
 
                     self._write_file(dir_path, 'directory')
 
+                # Make empty (i.e., placeholder) files
                 case ('ph', arg, False):
                     ph_path = os.path.join(directory, arg)
 
@@ -49,6 +51,7 @@ class Config:
 
                     self._write_file(ph_path, 'file')
 
+                # Copy templates
                 case ('tmp', arg, False):
                     template: Template = self.templates[arg]
 

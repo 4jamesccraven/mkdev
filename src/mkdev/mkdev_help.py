@@ -1,13 +1,14 @@
+import os
+
+
 def config_help(config_directory: str):
-    help = 'Mkdev creates directory structures based off of yaml \n' \
-           f'configuration files found in {config_directory}. you \n' \
-           'can write these manually, or more simply generate them \n' \
-           'using `mkdev edit`. \n' \
-           '\n' \
-           'The general structure of a configuration file is a language \n' \
-           'name, an extension for the file type, template files that \n' \
-           'will be written to files, and a list of instructions to \n' \
-           'build a directory structure.'
+    script = os.path.realpath(__file__)
+    this_dir = os.path.dirname(script)
+    def_help = os.path.join(this_dir, 'help.txt')
+
+    with open(def_help, 'r', encoding='utf_8') as f:
+        for line in f:
+            print(line.strip().replace('${CONFIG}', config_directory))
     print(help)
 
 

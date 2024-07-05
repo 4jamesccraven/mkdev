@@ -1,0 +1,30 @@
+Mkdev creates directory structures based off of yaml
+configuration files found in ${CONFIG}. you
+can write these manually, or more simply generate them
+using `mkdev edit`.
+
+The general structure of a configuration file is a language
+name, an extension for the file type, template files that
+will be written to files, and a list of instructions to
+build a directory structure.
+
+The instructions should be one of three commands dir, ph, or
+tmp and an argument that is a path separated by pipes ('|')
+for different directories. The three commands correspond to
+making a directory, an empty (placeholder) file, and a
+template respectively.
+
+For instance, the following makes a directory foo, and adds an
+empty file to it called bar, and copies a template called bat.py
+to the root directory of the project, giving the recipe the name
+baz:
+
+baz:
+- dir foo
+- ph foo|bar
+- tmp bat
+
+note that the argument to tmp is *not* the file name, but instead
+whatever the template is named--in this case bat. That means one can
+have multiple files called some name (Makefile, for instance) and
+different template names associated to it (e.g., makefile1, makefile2)

@@ -17,11 +17,18 @@ _DESC = \
     f'\nNote: User configs are stored at {_CONFIG}'
 
 
-# For first run, copy default configs if a directory doesn't exist
-# or if it is empty
 def init_config(force: bool) -> None:
+    '''
+    Initialises mkdev for use by copying the default configurations
+    for the application to the configuration directory. Overwrites
+    existing configs if force is true
+
+    Example: mkdev init --force
+    '''
+    # Checks to see if the directory exists
     config_exists = os.path.isdir(_CONFIG)
 
+    # If it does, get a list of the files
     if config_exists:
         files_in_dir = [os.path.join(_CONFIG, file)
                         for file in os.listdir(_CONFIG)]
@@ -43,6 +50,9 @@ def init_config(force: bool) -> None:
 
         copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
 
+        # Changes default permissions, mainly added
+        # because in nix these files are read only
+        # when copied
         os.chmod(_CONFIG, 0o755)
         for file in os.listdir(_CONFIG):
             path = os.path.join(_CONFIG, file)
@@ -52,6 +62,9 @@ def init_config(force: bool) -> None:
 
 def parse_args(cfgs: 'List[Config | None]'
                ) -> Tuple[Namespace, ArgumentParser]:
+    '''
+    Parses the command line arguments.
+    '''
     langs = [cf.language for cf in cfgs]
 
     PARSER = ArgumentParser(prog=_NAME,
@@ -62,9 +75,6 @@ def parse_args(cfgs: 'List[Config | None]'
     PARSER.add_argument('--version',
                         help='See version info.',
                         action='store_true')
-    PARSER.add_argument('--debug',
-                        action='store_true',
-                        help='Prints Development Info')
 
     SUBPS = PARSER.add_subparsers(title='Language/Action', dest='action')
 
@@ -118,14 +128,12 @@ def main() -> None:
 
     args, PARSER = parse_args(configurations)
 
+    # Handle non-language options, i.e., auxillary functions
     if args.config_help:
         config_help(_CONFIG)
         return
     if args.version:
         version(_NAME, _VERS)
-        return
-    if args.debug:
-        print(__file__)
         return
     if args.action == 'init':
         init_config(args.force)

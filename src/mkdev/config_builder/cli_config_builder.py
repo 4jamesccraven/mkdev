@@ -16,6 +16,7 @@ from config_builder.edit_dialogue import EditDialogue
 
 
 class ConfigBuilder(App):
+    # Key bindings and the functions they call
     BINDINGS = [
         ('q', 'quit', 'Quit'),
         ('t', 'add_template', 'Add template'),
@@ -23,15 +24,22 @@ class ConfigBuilder(App):
         ('ctrl+s', 'write_to_file', 'Save'),
         ('ctrl+o', 'open_file', 'Open existing')
     ]
+
+    # Style
     CSS_PATH = 'config_builder.tcss'
     dark = True
+
+    # Internal config data
     _current_working_config: Dict = {
         'language': '',
         'extension': '',
         'templates': {},
         'recipes': {},
     }
+    # whether in the file dialogue or not
     dialogue = False
+
+    # Whether editing, and what file is being edited
     editing = False
     file_being_edited = ''
 
@@ -56,6 +64,8 @@ class ConfigBuilder(App):
     # Action definitions
     def action_add_template(self) -> 'TemplateForm':
         new_template = TemplateForm()
+        # Try to mount before the first recipe if there
+        # is one, otherwise mount 'wherever'
         try:
             first_recipe = self.query_one('#right-div') \
                                .query(RecipeForm) \
@@ -68,22 +78,12 @@ class ConfigBuilder(App):
         new_template.scroll_visible()
         return new_template
 
-    def action_remove_template(self) -> None:
-        templates = self.query('TemplateForm')
-        if templates:
-            templates.last().remove()
-
     def action_add_recipe(self) -> 'RecipeForm':
         new_recipe = RecipeForm()
         self.query_one('#right-div') \
             .mount(new_recipe)
         new_recipe.scroll_visible()
         return new_recipe
-
-    def action_remove_recipe(self) -> None:
-        recipes = self.query('RecipeForm')
-        if recipes:
-            recipes.last().remove()
 
     def action_write_to_file(self) -> None:
         self.write_to_file()
@@ -123,6 +123,10 @@ class ConfigBuilder(App):
 
     # Main application logic
     def collect_data(self) -> None:
+        '''
+        Collects data from all user fields and renders it
+        to preview before storing the data internally
+        '''
         data = {
             'language': '',
             'extension': '',
@@ -170,8 +174,11 @@ class ConfigBuilder(App):
             if filename == '':
                 raise ValueError('Filename cannot be empty.')
 
+            # Only allowed to write over existing file if it was opened
+            # via the open dialogue
             can_overwrite = self.editing and filename == self.file_being_edited
             mode = 'w' if can_overwrite else 'x'
+
             with open(path, mode, encoding='utf_8') as f:
                 f.write(yaml.safe_dump(self._current_working_config))
 
@@ -191,6 +198,7 @@ class ConfigBuilder(App):
         with open(filename, 'r', encoding='utf_8') as f:
             file_data = yaml.safe_load(f)
 
+        # Ensure that data is properly formatted before proceeding
         valid_file = False
         match file_data:
             case {'language': str(_),
@@ -204,16 +212,20 @@ class ConfigBuilder(App):
                              status='bad')
             return
 
+        # Change language and extension, remove all templates and recipes
         self.query_one('#language').value = file_data['language']
         self.query_one('#extension').value = file_data['extension']
         self.query('TemplateForm').remove()
         self.query('RecipeForm').remove()
 
+        # Add a new template and recipe for each in the read-in data
         for _ in file_data['templates']:
             self.query_one('#right-div').mount(TemplateForm())
         for _ in file_data['recipes']:
             self.query_one('#right-div').mount(RecipeForm())
 
+        # fill each template, and below each recipe, with the data
+        # from the fine IN ORDER
         for form, template in zip(self.query(TemplateForm),
                                   file_data['templates']):
             form.name = template
@@ -228,6 +240,9 @@ class ConfigBuilder(App):
 
     def console_log(self, text: str,
                     status: Literal['ok', 'bad', 'info']) -> None:
+        '''
+        Like console.log, but not that 👍
+        '''
         valid_statuses = ['ok', 'bad', 'info']
 
         if status not in valid_statuses:
@@ -243,6 +258,7 @@ class ConfigBuilder(App):
             case 'info':
                 hatch_style = ('>', Color(252, 148, 0, 0.2))
             case _:
+                # Redundant, but added just in case
                 hatch_style = ('>', Color(252, 148, 0, 0.2))
 
         self.query_one('#success') \
