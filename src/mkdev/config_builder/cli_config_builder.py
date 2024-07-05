@@ -110,6 +110,7 @@ class ConfigBuilder(App):
         self.collect_data()
 
     def on_mount(self) -> None:
+        self.query_one(Footer).ctrl_to_caret = False
         self.query_one('#output').clear().write(
             Syntax(yaml.safe_dump(self._current_working_config,
                                   sort_keys=False),
@@ -154,7 +155,7 @@ class ConfigBuilder(App):
             Syntax(yaml.safe_dump(self._current_working_config,
                                   sort_keys=False),
                    "yaml")
-        ).refresh()
+        )
 
     def write_to_file(self) -> None:
         filename = self._current_working_config['language']

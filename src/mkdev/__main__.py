@@ -2,9 +2,9 @@ import os
 import subprocess
 from shutil import copytree
 from typing import List, Tuple
-from help import config_help, version
-from config_builder.cli_config_builder import ConfigBuilder
 from platformdirs import user_config_dir
+from mkdev_help import config_help, version
+from config_builder.cli_config_builder import ConfigBuilder
 from config_parsing import Config, importLangs
 from argparse import Namespace, ArgumentParser
 
@@ -20,16 +20,19 @@ _DESC = \
 # For first run, copy default configs if a directory doesn't exist
 # or if it is empty
 def init_config(force: bool) -> None:
-    files_in_dir = [os.path.join(_CONFIG, file)
-                    for file in os.listdir(_CONFIG)]
+    config_exists = os.path.isdir(_CONFIG)
+
+    if config_exists:
+        files_in_dir = [os.path.join(_CONFIG, file)
+                        for file in os.listdir(_CONFIG)]
     conditions = [
-        not os.path.isdir(_CONFIG),
-        len(files_in_dir) == 0,
+        not config_exists,
+        len(files_in_dir) == 0 if config_exists else False,
         force,
     ]
 
     if any(conditions):
-        if force:
+        if force and config_exists:
             for file in files_in_dir:
                 os.remove(file)
             os.rmdir(_CONFIG)
@@ -41,7 +44,8 @@ def init_config(force: bool) -> None:
         copytree(def_cfg, _CONFIG, dirs_exist_ok=True)
 
 
-def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
+def parse_args(cfgs: 'List[Config | None]'
+               ) -> Tuple[Namespace, ArgumentParser]:
     langs = [cf.language for cf in cfgs]
 
     PARSER = ArgumentParser(prog=_NAME,
@@ -52,11 +56,9 @@ def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
     PARSER.add_argument('--version',
                         help='See version info.',
                         action='store_true')
-    PARSER.add_argument('--init',
-                        help='Initialises mkdev by copying '
-                        'default configurations (if there aren\'t'
-                        ' any already).',
-                        action='store_true')
+    PARSER.add_argument('--debug',
+                        action='store_true',
+                        help='Prints Development Info')
 
     SUBPS = PARSER.add_subparsers(title='Language/Action', dest='action')
 
@@ -103,7 +105,10 @@ def parse_args(cfgs: 'List[Config]') -> Tuple[Namespace, ArgumentParser]:
 
 def main() -> None:
     # Parse the arguments using that path info
-    configurations: 'List[Config]' = importLangs(_CONFIG)
+    try:
+        configurations: 'List[Config | None]' = importLangs(_CONFIG)
+    except FileNotFoundError:
+        configurations = []
 
     args, PARSER = parse_args(configurations)
 
@@ -112,6 +117,9 @@ def main() -> None:
         return
     if args.version:
         version(_NAME, _VERS)
+        return
+    if args.debug:
+        print(__file__)
         return
     if args.action == 'init':
         init_config(args.force)
