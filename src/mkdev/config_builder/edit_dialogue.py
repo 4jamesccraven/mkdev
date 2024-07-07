@@ -11,4 +11,8 @@ class EditDialogue(Screen):
 
     def on_tree_node_highlighted(self,
                                  event: DirectoryTree.NodeHighlighted) -> None:
+        '''
+        Dismisses the screen and returns the selected file as a
+        string which is passed to the callback function
+        '''
         self.dismiss(str(event.node.data.path))

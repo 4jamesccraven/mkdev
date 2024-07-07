@@ -67,21 +67,36 @@ class ConfigBuilder(App):
         # Try to mount before the first recipe if there
         # is one, otherwise mount 'wherever'
         try:
-            first_recipe = self.query_one('#right-div') \
-                               .query(RecipeForm) \
-                               .first()
-            self.query_one('#right-div') \
+            first_recipe = (
+                self
+                .query_one('#right-div')
+                .query(RecipeForm)
+                .first()
+            )
+            (
+                self
+                .query_one('#right-div')
                 .mount(new_template, before=first_recipe)
+            )
         except NoMatches:
-            self.query_one('#right-div') \
+            (
+                self
+                .query_one('#right-div')
                 .mount(new_template)
+            )
+
         new_template.scroll_visible()
         return new_template
 
     def action_add_recipe(self) -> 'RecipeForm':
         new_recipe = RecipeForm()
-        self.query_one('#right-div') \
+
+        (
+            self
+            .query_one('#right-div')
             .mount(new_recipe)
+        )
+
         new_recipe.scroll_visible()
         return new_recipe
 
@@ -115,10 +130,16 @@ class ConfigBuilder(App):
 
     def on_mount(self) -> None:
         self.query_one(Footer).ctrl_to_caret = False
-        self.query_one('#output').clear().write(
-            Syntax(yaml.safe_dump(self._current_working_config,
-                                  sort_keys=False),
-                   "yaml")
+
+        curr_data = self._current_working_config
+        curr_data = yaml.safe_dump(curr_data, sort_keys=False)
+        curr_data = Syntax(curr_data, 'yaml')
+
+        (
+            self
+            .query_one('#output')
+            .clear()
+            .write(curr_data)
         )
 
     # Main application logic
@@ -159,15 +180,22 @@ class ConfigBuilder(App):
 
         self._current_working_config = data
 
-        self.query_one('#output').clear().write(
-            Syntax(yaml.safe_dump(self._current_working_config,
-                                  sort_keys=False),
-                   "yaml")
+        curr_data = self._current_working_config
+        curr_data = yaml.safe_dump(curr_data, sort_keys=False)
+        curr_data = Syntax(curr_data, 'yaml')
+
+        (
+            self
+            .query_one('#output')
+            .clear()
+            .write(curr_data)
         )
 
     def write_to_file(self) -> None:
         filename = self._current_working_config['language']
-        filename = filename + '.yaml' if filename != '' else filename
+        filename = filename + '.yaml' if filename != '' \
+            else filename
+
         path = os.path.join(_CONFIG, filename)
 
         try:
@@ -258,7 +286,7 @@ class ConfigBuilder(App):
             case 'info':
                 hatch_style = ('>', Color(252, 148, 0, 0.2))
             case _:
-                # Redundant, but added just in case
+                # Redundant, but 'added just in case'
                 hatch_style = ('>', Color(252, 148, 0, 0.2))
 
         self.query_one('#success') \
