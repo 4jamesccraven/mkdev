@@ -1,2 +1,5 @@
 __pycache__
 shell.nix
+venv
+mkdev.egg*
+dist

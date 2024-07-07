@@ -1,0 +1,2 @@
+include src/mkdev/help.txt
+recursive-include src/mkdev/config/*

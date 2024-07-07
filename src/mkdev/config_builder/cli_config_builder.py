@@ -9,10 +9,10 @@ from textual.widgets import Footer, Input, RichLog
 
 from rich.syntax import Syntax
 
-from config_builder import _CONFIG
-from config_builder.template_form import TemplateForm
-from config_builder.recipe_form import RecipeForm
-from config_builder.edit_dialogue import EditDialogue
+from . import _CONFIG
+from .template_form import TemplateForm
+from .recipe_form import RecipeForm
+from .edit_dialogue import EditDialogue
 
 
 class ConfigBuilder(App):

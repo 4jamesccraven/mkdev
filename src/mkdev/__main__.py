@@ -3,9 +3,9 @@ import subprocess
 from shutil import copytree
 from typing import List, Tuple
 from platformdirs import user_config_dir
-from mkdev_help import config_help, version
-from config_builder.cli_config_builder import ConfigBuilder
-from config_parsing import Config, importLangs
+from .mkdev_help import config_help, version
+from .config_builder.cli_config_builder import ConfigBuilder
+from .config_parsing import Config, importLangs
 from argparse import Namespace, ArgumentParser
 
 _NAME = 'mkdev'

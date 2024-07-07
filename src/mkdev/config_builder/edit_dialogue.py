@@ -1,4 +1,4 @@
-from config_builder import _CONFIG
+from . import _CONFIG
 from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.widgets import DirectoryTree, Label
