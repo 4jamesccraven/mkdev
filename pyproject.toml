@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mkdev"
-version = "2.0"
+version = "2.0.1"
 authors = [
     {name="James Craven", email="4jamesccraven@gmail.com"},
 ]
@@ -30,4 +30,4 @@ Homepage = "https://github.com/4jamesccraven/mkdev"
 mkdev = "mkdev.__main__:main"
 
 [tool.setuptools.package-data]
-mkdev = ["help.txt", "config/*"]
+mkdev = ["help.txt", "config/*", "config_builder/config_builder.tcss"]
