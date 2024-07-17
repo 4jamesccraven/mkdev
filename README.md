@@ -18,10 +18,10 @@ A simple command line tool to setup a development directory from command line.
 Features:
 ---------
 - Portable configuration files that define an entire directory structure, deployable with one command.
-- Built in config editor to simplify creation and
+- Built in config editor to simplify creation and editing of configs
 - Fully terminal-based
 
-![edit demo](edit-demo.gif)
+![edit demo](edit-demo.gif) <br/>
 (RIP the quality...)
 
 Usage & Installation:
@@ -40,13 +40,13 @@ mkdev --config-help
 ```
 Motivation & Limitations:
 -------------------------
-When learning makefile in my CS classes, I really liked the auxillary functionality that I saw some
-build in to them to set up a directory and clean up binaries and object files. I wanted that functionality
+When learning Make in my computer science classes, I really liked the utilities that I saw some people
+build into them (like making directories, removing binaries to clean, etc.). I wanted that functionality
 for other languages (not to imply this isn't the case with make), and I wanted it to be cross-platform
 (no more `make cleanwin`!). This project started as a glorified shell script written in python, but grew
-into something more as my friends wanted me to distribute the code to them. It's not really meant to be
-software for the general public, and it is also not intended to fill any such needs. This is mostly
-something that I wrote for fun.
+into something more as some of my friends became interested in using the software. It's not really meant
+to be software for the general public, though it is open for said use. This is mostly something that I
+wrote for fun.
 
 Acknowledgements:
 -----------------
