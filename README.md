@@ -8,7 +8,7 @@
     \|__|     \|__|\|__| \|__|\|_______|\|_______|\|__|/                    \|_______\|__|\|_______|
 </pre>
 
-![image](https://img.shields.io/badge/release-2.0-purple)
+![image](https://img.shields.io/badge/release-2.0.2-purple)
 ![image](https://img.shields.io/badge/license-MIT_License-purple)
 
 Project Description
