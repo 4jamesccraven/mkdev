@@ -15,6 +15,8 @@ Project Description
 -------------------
 A simple command line tool to setup a development directory from command line.
 
+**NOTE: This project is no longer maintained in the slightest.**
+
 Features:
 ---------
 - Portable configuration files that define an entire directory structure, deployable with one command.
