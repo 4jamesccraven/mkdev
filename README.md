@@ -30,7 +30,7 @@ Usage & Installation:
 ---------------------
 To install run:
 ```
-pip install mkdev-jcc
+pip install mkdev
 ```
 then, run:
 ```
