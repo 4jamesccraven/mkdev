@@ -20,5 +20,13 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    Imprint
+    Imprint {
+        recipe: String,
+
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+    Delete {
+        recipe: String,
+    }
 }
