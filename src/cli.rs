@@ -4,22 +4,27 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
-    version = "alpha 3.0.0",
+    version = "3.0.0",
     author = "James Craven <4jamesccraven@gmail.com>",
-    about = "A command-line program that creates a development environment from user-defined config files.",
+    about = "Save directories to paste them later.",
     subcommand_negates_reqs(true),
 )]
 pub struct Cli {
     /// The recipe to construct
     #[arg(required = true)]
-    pub recipe: Option<String>,
+    pub recipes: Option<Vec<String>>,
 
     /// Target directory for recipe
+    #[arg(last = true)]
     pub dir_name: Option<String>,
 
     /// Alias for target-less `mk list`
-    #[arg(long, short)]
+    #[arg(short, long)]
     pub list: bool,
+
+    /// Prints the name of each file on creation
+    #[arg(short, long)]
+    pub verbose: bool,
 
     #[command(subcommand)]
     pub command: Option<Commands>,

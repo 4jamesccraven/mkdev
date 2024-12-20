@@ -22,11 +22,20 @@ pub trait Displayable {
     fn display(&self, prefix: &str, last: bool);
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum Content {
     File(File),
     Directory(Directory),
+}
+
+impl Content {
+    pub fn get_name(&self) -> String {
+        match self {
+            Content::File(file) => file.name.clone(),
+            Content::Directory(dir) => dir.name.clone(),
+        }
+    }
 }
 
 impl Displayable for Content {
@@ -38,7 +47,7 @@ impl Displayable for Content {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub name: String,
     pub content: String,
@@ -59,11 +68,20 @@ impl File {
 impl Displayable for File {
     fn display(&self, prefix: &str, last: bool) {
         let line = if last { "└── " } else { "├── " };
-        println!("{}{}{}", prefix, line, self.name);
+
+        let text = if let Some(pos) = self.name.rfind('/') {
+            let (dirs, file) = self.name.split_at(pos + 1);
+            format!("\x1b[34m{}\x1b[0m{}", dirs, file)
+        }
+        else {
+            format!("{}", self.name)
+        };
+
+        println!("\x1b[30m{}{}\x1b[0m{}", prefix, line, text);
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Directory {
     pub name: String,
     pub files: Vec<Content>,
@@ -103,12 +121,32 @@ impl Directory {
             files,
         })
     }
+
+    pub fn sort(&mut self) {
+        self.files.sort_by(|a, b| {
+            match (a, b) {
+                (Content::Directory(dir_a), Content::Directory(dir_b)) => dir_a.name.cmp(&dir_b.name),
+                (Content::Directory(_), Content::File(_)) => std::cmp::Ordering::Less,
+                (Content::File(_), Content::Directory(_)) => std::cmp::Ordering::Greater,
+                (Content::File(file_a), Content::File(file_b)) => file_a.name.cmp(&file_b.name),
+            }
+        });
+
+        for content in self.files.iter_mut() {
+            if let Content::Directory(dir) = content {
+                dir.sort()
+            }
+        }
+    }
 }
 
 impl Displayable for Directory {
     fn display(&self, prefix: &str, last: bool) {
         let line = if last { "└── " } else { "├── " };
-        println!("{}{}{}", prefix, line, self.name);
+
+        let text = format!("\x1b[34m{}\x1b[0m", self.name);
+
+        println!("\x1b[30m{}{}\x1b[0m{}", prefix, line, text);
 
         let new_prefix = if last { "    " } else { "│   " };
         let new_prefix = format!("{prefix}{new_prefix}");

@@ -6,6 +6,7 @@ use cli::{Cli, Commands::*};
 use recipe::Recipe;
 
 use std::fmt::{Display, Debug};
+use std::collections::HashMap;
 
 use clap::Parser;
 
@@ -24,7 +25,12 @@ fn main() {
     let args = Cli::parse();
 
     let recipes = Recipe::gather();
-    let recipes = error_handler(recipes);
+    let recipes: HashMap<String, Recipe> = error_handler(recipes)
+        .iter()
+        .map(|r| {
+            (r.name.clone(), r.to_owned())
+        })
+        .collect();
 
     if let Some(command) = args.command {
         match command {
@@ -34,11 +40,7 @@ fn main() {
                 let _ = error_handler(new.save());
             },
             Delete { recipe } => {
-                let to_delete = recipes
-                    .iter()
-                    .find(|r| {
-                        r.name == recipe
-                    });
+                let to_delete = recipes.get(recipe.as_str());
 
                 match to_delete {
                     Some(recipe) => error_handler(recipe.delete()),
@@ -47,11 +49,7 @@ fn main() {
             }
             List { recipe } => {
                 if let Some(recipe) = recipe {
-                    let to_show = recipes
-                        .iter()
-                        .find(|r| {
-                            r.name == recipe
-                        });
+                    let to_show = recipes.get(recipe.as_str());
 
                     match to_show {
                         Some(recipe) => recipe.list(true),
@@ -59,12 +57,31 @@ fn main() {
                     }
                 }
                 else {
-                    for recipe in recipes {
+                    for recipe in recipes.values() {
                         recipe.list(false);
                         println!()
                     }
                 }
             }
+        }
+    }
+    else {
+        for recipe in args.recipes.unwrap() {
+            if !recipes.contains_key(&recipe) {
+                eprintln!("No such recipe \"{recipe}\".");
+                continue;
+            }
+
+            let recipe = recipes.get(&recipe).unwrap();
+
+            let dir = if let Some(dir) = &args.dir_name {
+                std::path::PathBuf::from(dir)
+            }
+            else {
+                error_handler(std::env::current_dir())
+            };
+
+            error_handler(Recipe::build(&dir, &recipe.contents, args.verbose));
         }
     }
 }

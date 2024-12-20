@@ -5,8 +5,9 @@ use std::path::PathBuf;
 
 use crate::content::{Content, Directory, Displayable};
 
-use serde::{Serialize, Deserialize};
 use dirs::data_dir;
+use hyperpolyglot::{Language, get_language_breakdown};
+use serde::{Serialize, Deserialize};
 use toml;
 
 pub fn get_data_dir() -> io::Result<PathBuf> {
@@ -21,7 +22,7 @@ pub fn get_data_dir() -> io::Result<PathBuf> {
     Ok(data_dir)
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Recipe {
     pub name: String,
     pub description: String,
@@ -38,15 +39,45 @@ impl Recipe {
                 io::Error::new(io::ErrorKind::Other, "Error reading file")
             );
         }
-        let curr_dir = Directory::new(curr_dir.to_str().unwrap())?;
+        let mut dir_obj = Directory::new(curr_dir.to_str().unwrap())?;
+        dir_obj.sort();
 
-        let contents = curr_dir.files;
+        let contents = dir_obj.files;
         let description = description.unwrap_or("".into());
+
+        let mut breakdown: Vec<_> = get_language_breakdown(curr_dir)
+            .iter()
+            .map(|(lang, det)| {
+                (*lang, det.len())
+            })
+            .collect();
+
+        breakdown.sort_by(|a, b| {
+            b.1.cmp(&a.1)
+        });
+
+        let languages: Vec<_> = breakdown
+            .iter()
+            .filter_map(|(lang, _)| Language::try_from(*lang).ok())
+            .map(|lang| {
+               if let Some(hex) = lang.color {
+                   let hex = &hex[1..].to_string();
+
+                   let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
+                   let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(255);
+                   let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
+
+                   format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, lang.name)
+               } else {
+                   format!("\x1b[37m{}\x1b[0m", lang.name)
+               }
+            })
+            .collect();
 
         Ok(Self{
             name,
             contents,
-            languages: Vec::new(),
+            languages,
             description,
         })
     }
@@ -81,7 +112,7 @@ impl Recipe {
 
         fs::write(&data_dir, toml::to_string(&self).unwrap())?;
 
-        println!("Recipe saved successfully {}.", &data_dir.display());
+        println!("Recipe saved successfully to {}.", &data_dir.display());
 
         Ok(())
     }
@@ -98,21 +129,43 @@ impl Recipe {
         Ok(())
     }
 
-    pub fn list(&self, verbose: bool) {
-        if verbose {
-            println!("{}", self.name);
+    pub fn list(&self, tree: bool) {
+        println!("\x1b[1m{}\x1b[0m", self.name);
+        if tree {
             let mut iter = self.contents.iter().peekable();
 
             while let Some(obj) = iter.next() {
                 obj.display("".into(), iter.peek().is_none());
             }
         } else {
-            println!("{}", self.name);
-            print!("    ");
+            print!("  ");
             for language in &self.languages {
-                println!("{} ", language);
+                print!("{} ", language);
             }
             println!()
         }
+    }
+
+    pub fn build(dir: &PathBuf, contents: &Vec<Content>, verbose: bool) -> io::Result<()> {
+        for content in contents {
+            let mut path = dir.clone();
+            path.push(&content.get_name());
+
+            if verbose {
+                println!("{}", path.display());
+            }
+
+            match content {
+                Content::File(file) => {
+                    fs::write(&path, &file.content)?;
+                },
+                Content::Directory(directory) => {
+                    fs::create_dir_all(&path)?;
+                    Recipe::build(&dir, &directory.files, verbose)?;
+                },
+            }
+        }
+
+        Ok(())
     }
 }
