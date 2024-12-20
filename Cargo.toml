@@ -1,7 +1,11 @@
 [package]
-name = "mdev"
-version = "0.1.0"
+name = "mkdev"
+version = "3.0.0"
 edition = "2021"
+
+[[bin]]
+name = "mk"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }

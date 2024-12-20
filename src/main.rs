@@ -1,8 +1,9 @@
 mod cli;
-mod config;
+mod recipe;
+mod content;
 
 use cli::{Cli, Commands::*};
-use config::Recipe;
+use recipe::Recipe;
 
 use std::fmt::{Display, Debug};
 
@@ -28,7 +29,6 @@ fn main() {
     if let Some(command) = args.command {
         match command {
             Imprint { recipe, description } => {
-                eprintln!("{recipe}, {description:?}");
                 let new = Recipe::imprint(recipe, description);
                 let new = error_handler(new);
                 let _ = error_handler(new.save());
@@ -43,6 +43,26 @@ fn main() {
                 match to_delete {
                     Some(recipe) => error_handler(recipe.delete()),
                     None => eprintln!("No such recipe \"{recipe}\"."),
+                }
+            }
+            List { recipe } => {
+                if let Some(recipe) = recipe {
+                    let to_show = recipes
+                        .iter()
+                        .find(|r| {
+                            r.name == recipe
+                        });
+
+                    match to_show {
+                        Some(recipe) => recipe.list(true),
+                        None => eprintln!("No such recipe \"{recipe}\"."),
+                    }
+                }
+                else {
+                    for recipe in recipes {
+                        recipe.list(false);
+                        println!()
+                    }
                 }
             }
         }

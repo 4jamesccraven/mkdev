@@ -3,6 +3,8 @@ use std::env;
 use std::io;
 use std::path::PathBuf;
 
+use crate::content::{Content, Directory, Displayable};
+
 use serde::{Serialize, Deserialize};
 use dirs::data_dir;
 use toml;
@@ -95,71 +97,22 @@ impl Recipe {
 
         Ok(())
     }
-}
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-pub enum Content {
-    File(File),
-    Directory(Directory),
-}
+    pub fn list(&self, verbose: bool) {
+        if verbose {
+            println!("{}", self.name);
+            let mut iter = self.contents.iter().peekable();
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct File {
-    pub name: String,
-    pub content: String,
-}
-
-impl File {
-    pub fn new(name: &str) -> Option<Self> {
-        let content = fs::read_to_string(&name).ok()?;
-        let name = name.to_string();
-
-        Some(Self{
-            name,
-            content
-        })
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Directory {
-    pub name: String,
-    pub files: Vec<Content>,
-}
-
-impl Directory {
-    pub fn new(name: &str) -> io::Result<Self> {
-        let file_iter = fs::read_dir(&name)?;
-
-        let mut files = Vec::new();
-
-        for file in file_iter {
-            let path = file?.path();
-
-            if let None = path.to_str() {
-                continue;
+            while let Some(obj) = iter.next() {
+                obj.display("".into(), iter.peek().is_none());
             }
-            let path_str = path.to_str().unwrap();
-
-            if path.is_file() {
-                if let Some(file) = File::new(path_str) {
-                    files.push(Content::File(file));
-                }
+        } else {
+            println!("{}", self.name);
+            print!("    ");
+            for language in &self.languages {
+                println!("{} ", language);
             }
-            else if path.is_dir() {
-                if let Ok(dir) = Directory::new(path.to_str().unwrap()) {
-                    files.push(Content::Directory(dir));
-                }
-            }
+            println!()
         }
-
-        let name = name.to_string();
-
-        Ok(Self{
-            name,
-            files,
-        })
     }
 }
-
