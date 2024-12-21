@@ -1,9 +1,9 @@
-use std::fs;
 use std::env;
+use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub fn make_relative(path: PathBuf) -> PathBuf {
     // Safe becuase appropriate checks will
@@ -12,8 +12,7 @@ pub fn make_relative(path: PathBuf) -> PathBuf {
 
     if path.starts_with(&cwd) {
         path.strip_prefix(cwd).unwrap_or(&path).to_path_buf()
-    }
-    else {
+    } else {
         path
     }
 }
@@ -58,10 +57,7 @@ impl File {
         let content = fs::read_to_string(&name).ok()?;
         let name = name.to_string();
 
-        Some(Self{
-            name,
-            content
-        })
+        Some(Self { name, content })
     }
 }
 
@@ -72,8 +68,7 @@ impl Displayable for File {
         let text = if let Some(pos) = self.name.rfind('/') {
             let (_, file) = self.name.split_at(pos + 1);
             format!("{}", file)
-        }
-        else {
+        } else {
             format!("{}", self.name)
         };
 
@@ -106,8 +101,7 @@ impl Directory {
                 if let Some(file) = File::new(path_str) {
                     files.push(Content::File(file));
                 }
-            }
-            else if path.is_dir() {
+            } else if path.is_dir() {
                 if let Ok(dir) = Directory::new(path.to_str().unwrap()) {
                     files.push(Content::Directory(dir));
                 }
@@ -116,20 +110,15 @@ impl Directory {
 
         let name = name.to_string();
 
-        Ok(Self{
-            name,
-            files,
-        })
+        Ok(Self { name, files })
     }
 
     pub fn sort(&mut self) {
-        self.files.sort_by(|a, b| {
-            match (a, b) {
-                (Content::Directory(dir_a), Content::Directory(dir_b)) => dir_a.name.cmp(&dir_b.name),
-                (Content::Directory(_), Content::File(_)) => std::cmp::Ordering::Less,
-                (Content::File(_), Content::Directory(_)) => std::cmp::Ordering::Greater,
-                (Content::File(file_a), Content::File(file_b)) => file_a.name.cmp(&file_b.name),
-            }
+        self.files.sort_by(|a, b| match (a, b) {
+            (Content::Directory(dir_a), Content::Directory(dir_b)) => dir_a.name.cmp(&dir_b.name),
+            (Content::Directory(_), Content::File(_)) => std::cmp::Ordering::Less,
+            (Content::File(_), Content::Directory(_)) => std::cmp::Ordering::Greater,
+            (Content::File(file_a), Content::File(file_b)) => file_a.name.cmp(&file_b.name),
         });
 
         for content in self.files.iter_mut() {
@@ -158,4 +147,3 @@ impl Displayable for Directory {
         }
     }
 }
-

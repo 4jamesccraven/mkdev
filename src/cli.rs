@@ -1,13 +1,12 @@
 use clap::{Parser, Subcommand};
 
-
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
     version = "3.0.0",
     author = "James Craven <4jamesccraven@gmail.com>",
     about = "Save directories to paste them later.",
-    subcommand_negates_reqs(true),
+    subcommand_negates_reqs(true)
 )]
 pub struct Cli {
     /// The recipe to construct
@@ -25,7 +24,6 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
 }
-
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
@@ -46,7 +44,5 @@ pub enum Commands {
         recipe: String,
     },
     /// List recipes, or the contents of a specific one
-    List {
-        recipe: Option<String>
-    }
+    List { recipe: Option<String> },
 }

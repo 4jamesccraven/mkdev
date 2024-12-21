@@ -1,14 +1,14 @@
 mod cli;
-mod recipe;
 mod content;
+mod recipe;
 mod subs;
 
 use cli::{Cli, Commands::*};
 use recipe::Recipe;
 use subs::Replacer;
 
-use std::fmt::{Display, Debug};
 use std::collections::HashMap;
+use std::fmt::{Debug, Display};
 
 use clap::Parser;
 
@@ -29,18 +29,19 @@ fn main() {
     let recipes = Recipe::gather();
     let recipes: HashMap<String, Recipe> = error_handler(recipes)
         .iter()
-        .map(|r| {
-            (r.name.clone(), r.to_owned())
-        })
+        .map(|r| (r.name.clone(), r.to_owned()))
         .collect();
 
     if let Some(command) = args.command {
         match command {
-            Imprint { recipe, description } => {
+            Imprint {
+                recipe,
+                description,
+            } => {
                 let new = Recipe::imprint(recipe, description);
                 let new = error_handler(new);
                 let _ = error_handler(new.save());
-            },
+            }
             Delete { recipe } => {
                 let to_delete = recipes.get(recipe.as_str());
 
@@ -57,8 +58,7 @@ fn main() {
                         Some(recipe) => recipe.list(true),
                         None => eprintln!("No such recipe \"{recipe}\"."),
                     }
-                }
-                else {
+                } else {
                     for recipe in recipes.values() {
                         recipe.list(false);
                         println!()
@@ -66,8 +66,7 @@ fn main() {
                 }
             }
         }
-    }
-    else {
+    } else {
         let rec_args = args.recipes.unwrap();
 
         let mut can_proceed = true;
@@ -87,8 +86,7 @@ fn main() {
 
             let dir = if let Some(dir) = &args.dir_name {
                 std::path::PathBuf::from(dir)
-            }
-            else {
+            } else {
                 error_handler(std::env::current_dir())
             };
 

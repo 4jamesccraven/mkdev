@@ -1,5 +1,5 @@
-use std::fs;
 use std::env;
+use std::fs;
 use std::io;
 use std::path::PathBuf;
 
@@ -7,8 +7,8 @@ use crate::content::{Content, Directory, Displayable};
 use crate::subs::Replacer;
 
 use dirs::data_dir;
-use hyperpolyglot::{Language, get_language_breakdown};
-use serde::{Serialize, Deserialize};
+use hyperpolyglot::{get_language_breakdown, Language};
+use serde::{Deserialize, Serialize};
 use toml;
 
 pub fn get_data_dir() -> io::Result<PathBuf> {
@@ -36,9 +36,7 @@ impl Recipe {
         let curr_dir = env::current_dir()?;
 
         if let None = curr_dir.to_str() {
-            return Err(
-                io::Error::new(io::ErrorKind::Other, "Error reading file")
-            );
+            return Err(io::Error::new(io::ErrorKind::Other, "Error reading file"));
         }
         let mut dir_obj = Directory::new(curr_dir.to_str().unwrap())?;
         dir_obj.sort();
@@ -48,34 +46,30 @@ impl Recipe {
 
         let mut breakdown: Vec<_> = get_language_breakdown(curr_dir)
             .iter()
-            .map(|(lang, det)| {
-                (*lang, det.len())
-            })
+            .map(|(lang, det)| (*lang, det.len()))
             .collect();
 
-        breakdown.sort_by(|a, b| {
-            b.1.cmp(&a.1)
-        });
+        breakdown.sort_by(|a, b| b.1.cmp(&a.1));
 
         let languages: Vec<_> = breakdown
             .iter()
             .filter_map(|(lang, _)| Language::try_from(*lang).ok())
             .map(|lang| {
-               if let Some(hex) = lang.color {
-                   let hex = &hex[1..].to_string();
+                if let Some(hex) = lang.color {
+                    let hex = &hex[1..].to_string();
 
-                   let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
-                   let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(255);
-                   let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
+                    let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
+                    let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(255);
+                    let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
 
-                   format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, lang.name)
-               } else {
-                   format!("\x1b[37m{}\x1b[0m", lang.name)
-               }
+                    format!("\x1b[38;2;{};{};{}m{}\x1b[0m", r, g, b, lang.name)
+                } else {
+                    format!("\x1b[37m{}\x1b[0m", lang.name)
+                }
             })
             .collect();
 
-        Ok(Self{
+        Ok(Self {
             name,
             contents,
             languages,
@@ -170,11 +164,11 @@ impl Recipe {
                 Content::File(file) => {
                     let content = re.sub(&file.content, dir);
                     fs::write(&path, content)?;
-                },
+                }
                 Content::Directory(directory) => {
                     fs::create_dir_all(&path)?;
                     Recipe::build(&dir, &directory.files, verbose, re)?;
-                },
+                }
             }
         }
 
