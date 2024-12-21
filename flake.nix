@@ -14,6 +14,8 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
+        packages.mkdev = pkgs.callPackage ./package.nix { };
+
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             cargo

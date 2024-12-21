@@ -70,14 +70,14 @@ impl Displayable for File {
         let line = if last { "└── " } else { "├── " };
 
         let text = if let Some(pos) = self.name.rfind('/') {
-            let (dirs, file) = self.name.split_at(pos + 1);
-            format!("\x1b[34m{}\x1b[0m{}", dirs, file)
+            let (_, file) = self.name.split_at(pos + 1);
+            format!("{}", file)
         }
         else {
             format!("{}", self.name)
         };
 
-        println!("\x1b[30m{}{}\x1b[0m{}", prefix, line, text);
+        println!("\x1b[38;5;8m{}{}\x1b[0m{}", prefix, line, text);
     }
 }
 
@@ -146,7 +146,7 @@ impl Displayable for Directory {
 
         let text = format!("\x1b[34m{}\x1b[0m", self.name);
 
-        println!("\x1b[30m{}{}\x1b[0m{}", prefix, line, text);
+        println!("\x1b[38;5;8m{}{}\x1b[0m{}", prefix, line, text);
 
         let new_prefix = if last { "    " } else { "│   " };
         let new_prefix = format!("{prefix}{new_prefix}");
