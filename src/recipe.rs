@@ -4,6 +4,7 @@ use std::io;
 use std::path::PathBuf;
 
 use crate::content::{Content, Directory, Displayable};
+use crate::subs::Replacer;
 
 use dirs::data_dir;
 use hyperpolyglot::{Language, get_language_breakdown};
@@ -146,10 +147,20 @@ impl Recipe {
         }
     }
 
-    pub fn build(dir: &PathBuf, contents: &Vec<Content>, verbose: bool) -> io::Result<()> {
+    pub fn build(
+        dir: &PathBuf,
+        contents: &Vec<Content>,
+        verbose: bool,
+        re: &Replacer,
+    ) -> io::Result<()> {
+        if !dir.is_dir() {
+            fs::create_dir_all(&dir)?;
+        }
+
         for content in contents {
             let mut path = dir.clone();
-            path.push(&content.get_name());
+            let name = re.sub(&content.get_name(), dir);
+            path.push(name);
 
             if verbose {
                 println!("{}", path.display());
@@ -157,11 +168,12 @@ impl Recipe {
 
             match content {
                 Content::File(file) => {
-                    fs::write(&path, &file.content)?;
+                    let content = re.sub(&file.content, dir);
+                    fs::write(&path, content)?;
                 },
                 Content::Directory(directory) => {
                     fs::create_dir_all(&path)?;
-                    Recipe::build(&dir, &directory.files, verbose)?;
+                    Recipe::build(&dir, &directory.files, verbose, re)?;
                 },
             }
         }

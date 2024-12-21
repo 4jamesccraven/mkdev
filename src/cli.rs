@@ -18,10 +18,6 @@ pub struct Cli {
     #[arg(last = true)]
     pub dir_name: Option<String>,
 
-    /// Alias for target-less `mk list`
-    #[arg(short, long)]
-    pub list: bool,
-
     /// Prints the name of each file on creation
     #[arg(short, long)]
     pub verbose: bool,

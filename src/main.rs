@@ -1,9 +1,11 @@
 mod cli;
 mod recipe;
 mod content;
+mod subs;
 
 use cli::{Cli, Commands::*};
 use recipe::Recipe;
+use subs::Replacer;
 
 use std::fmt::{Display, Debug};
 use std::collections::HashMap;
@@ -66,12 +68,21 @@ fn main() {
         }
     }
     else {
-        for recipe in args.recipes.unwrap() {
+        let rec_args = args.recipes.unwrap();
+
+        let mut can_proceed = true;
+        for recipe in rec_args.clone() {
             if !recipes.contains_key(&recipe) {
                 eprintln!("No such recipe \"{recipe}\".");
-                continue;
+                can_proceed = false;
             }
+        }
 
+        if !can_proceed {
+            std::process::exit(1);
+        }
+
+        for recipe in rec_args.clone() {
             let recipe = recipes.get(&recipe).unwrap();
 
             let dir = if let Some(dir) = &args.dir_name {
@@ -81,7 +92,9 @@ fn main() {
                 error_handler(std::env::current_dir())
             };
 
-            error_handler(Recipe::build(&dir, &recipe.contents, args.verbose));
+            let re = Replacer::new();
+
+            error_handler(Recipe::build(&dir, &recipe.contents, args.verbose, &re));
         }
     }
 }
