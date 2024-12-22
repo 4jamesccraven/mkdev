@@ -38,7 +38,7 @@ necessitating a custom, buggy built-in tui text editor... very cool, but
 definitely not ideal.
 
 So the motivation of this re-write was two-fold: improve the ergononmics of the
-program and user a language better suited and **faster**. (Also because [Steven](https://github.com/Steven-S1020)
+program and to use a better-suited and **faster** language. (Also because [Steven](https://github.com/Steven-S1020)
 kept bugging me about it /j)
 
 - [mkdev 1.2](https://github.com/4jamesccraven/mkdev/tree/4d4ac6dd5fe044b7ba3d71d610716b5f3b9685d7)
@@ -116,7 +116,7 @@ Then from the root of the directory we can copy it like so:
 $ mk imprint test
 Recipe saved successfully to /home/USER/.local/share/mkdev/test.toml.
 ```
-Now the directory is saved and can be deployed anywhere! by running `mk test`
+Now the directory is saved and can be deployed anywhere by running `mk test`
 (because we saved it as test). 
 Additionally, if we want to specify where it goes, this can be indicated with a `--`,
 like so:
