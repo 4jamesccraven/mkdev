@@ -12,7 +12,7 @@
 A CLI Tool for Tinkerers
 ------------------------
 mkdev is a tool for easily generating boilerplate in programs,
-scripts, and projects.
+scripts, and other projects.
 
 Features
 --------
@@ -23,28 +23,6 @@ Features
   - Date Info (day, month, year, weekday)
   - Automatic Github-style language detection for recipes
   - Tools to visualise recipe contents
-
-History
-------
-Mkdev 3.0 is a spiritual successor to 2.0, which was written in python
-and functioned far differently. I originally wrote mkdev because I wanted
-something for simple scripting like Makefile without writing a new file for
-every project. The script was hardcoded, which wasn't ideal for extensibility.
-1.2 improved on the idea by making it so users could write configs that would
-define the recipes, but it was clunky, requiring nested directories and poorly
-conceived config structure. 2.0 improved on the structure of the config by
-flattening the structure, but this made it difficult for a human to read,
-necessitating a custom, buggy built-in tui text editor... very cool, but
-definitely not ideal.
-
-So the motivation of this re-write was two-fold: improve the ergononmics of the
-program and to use a better-suited and **faster** language. (Also because [Steven](https://github.com/Steven-S1020)
-kept bugging me about it /j)
-
-- [mkdev 1.2](https://github.com/4jamesccraven/mkdev/tree/4d4ac6dd5fe044b7ba3d71d610716b5f3b9685d7)
-- [mkdev 2.0](https://github.com/4jamesccraven/mkdev/tree/v2)
-- *[what is that /j thing?](https://toneindicators.carrd.co/#introduction)*
-
 
 Installation
 ------------
@@ -105,7 +83,7 @@ Usage
 To get started, set up a directory as you normally would.
 We'll use a simple python project as an example:
 ```
-📂 mdev
+📂 example
 ├── 📄 flake.lock
 ├── 📄 flake.nix
 ├── 📄 main.py
@@ -149,9 +127,29 @@ if __name__ == '__main__':
     main()
 ```
 
+History
+------
+Mkdev 3.0 is a spiritual successor to 2.0, which was written in python
+and functioned far differently. I originally wrote mkdev because I wanted
+something for simple scripting like Makefile without writing a new file for
+every project. The script was hardcoded, which wasn't ideal for extensibility.
+1.2 improved on the idea by making it so users could write configs that would
+define the recipes, but it was clunky, requiring nested directories and poorly
+conceived config structure. 2.0 improved on the structure of the config by
+flattening the structure, but this made it difficult for a human to read,
+necessitating a custom, buggy built-in tui text editor... very cool, but
+definitely not ideal.
+
+So the motivation of this re-write was two-fold: improve the ergononmics of the
+program and to use a better-suited and **faster** language.
+
+- [mkdev 1.2](https://github.com/4jamesccraven/mkdev/tree/4d4ac6dd5fe044b7ba3d71d610716b5f3b9685d7)
+- [mkdev 2.0](https://github.com/4jamesccraven/mkdev/tree/v2)
+
+
 Contributing
 ------------
 While I doubt anyone ever will, pull requests are more than welcome.
 This project has a special place in my heart as it is the longest
 running project I have, and I will probably continue to update it as long as it
-interests me and/or Steven.
+interests me.
