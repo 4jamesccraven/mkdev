@@ -6,7 +6,7 @@
  |  |  | |    \_ |_____/ |______   \/     .___/ /\ |_/ /
                                           \____(_)\___/ 
 ```
-![image](https://img.shields.io/badge/release-3.0.0-orange)
+![image](https://img.shields.io/badge/release-3.0.1-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
 
 A CLI Tool for Tinkerers
