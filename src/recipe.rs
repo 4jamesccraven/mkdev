@@ -131,19 +131,23 @@ impl Recipe {
     }
 
     pub fn list(&self, tree: bool) {
-        println!("\x1b[1m{}\x1b[0m", self.name);
         if tree {
+            println!("\x1b[1m{}\x1b[0m", self.name);
             let mut iter = self.contents.iter().peekable();
 
             while let Some(obj) = iter.next() {
                 obj.display("".into(), iter.peek().is_none());
             }
         } else {
-            print!("  ");
+            print!("\x1b[1m{}\x1b[0m ( ", self.name);
             for language in &self.languages {
                 print!("{} ", language);
             }
-            println!()
+            println!(")");
+
+            if !&self.description.is_empty() {
+                println!("  {}", &self.description);
+            }
         }
     }
 
