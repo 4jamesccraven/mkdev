@@ -8,26 +8,16 @@ use recipe::Recipe;
 use subs::Replacer;
 
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
 
 use clap::Parser;
-
-fn error_handler<T, E>(res: Result<T, E>) -> T
-where
-    E: Display + Debug,
-{
-    if let Err(e) = res {
-        eprintln!("{e}");
-        std::process::exit(1);
-    }
-    res.unwrap()
-}
 
 fn main() {
     let args = Cli::parse();
 
-    let recipes = Recipe::gather();
-    let recipes: HashMap<String, Recipe> = error_handler(recipes)
+    let recipes = Recipe::gather().unwrap_or_else(|error| {
+        panic!("Error gathering stored recipes: {error:?}");
+    });
+    let recipes: HashMap<String, Recipe> = recipes
         .iter()
         .map(|r| (r.name.clone(), r.to_owned()))
         .collect();
@@ -38,15 +28,20 @@ fn main() {
                 recipe,
                 description,
             } => {
-                let new = Recipe::imprint(recipe, description);
-                let new = error_handler(new);
-                let _ = error_handler(new.save());
+                let new = Recipe::imprint(recipe, description).unwrap_or_else(|error| {
+                    panic!("Unable to read current_working directory for the recipe: {error:?}");
+                });
+                new.save().unwrap_or_else(|error| {
+                    panic!("Unable to save instantiated recipe: {error:?}");
+                });
             }
             Delete { recipe } => {
                 let to_delete = recipes.get(recipe.as_str());
 
                 match to_delete {
-                    Some(recipe) => error_handler(recipe.delete()),
+                    Some(recipe) => recipe.delete().unwrap_or_else(|error| {
+                        panic!("Unable to delete `{}`: {error:?}", recipe.name);
+                    }),
                     None => eprintln!("No such recipe \"{recipe}\"."),
                 }
             }
@@ -87,12 +82,16 @@ fn main() {
             let dir = if let Some(dir) = &args.dir_name {
                 std::path::PathBuf::from(dir)
             } else {
-                error_handler(std::env::current_dir())
+                std::env::current_dir().unwrap_or_else(|error| {
+                    panic!("Unable to get cwd: {error:?}");
+                })
             };
 
             let re = Replacer::new();
 
-            error_handler(Recipe::build(&dir, &recipe.contents, args.verbose, &re));
+            Recipe::build(&dir, &recipe.contents, args.verbose, &re).unwrap_or_else(|error| {
+                panic!("Unable to write `{}` to {}: {error:?}", recipe.name, dir.display());
+            });
         }
     }
 }

@@ -17,7 +17,7 @@ pub fn make_relative(path: PathBuf) -> PathBuf {
     }
 }
 
-pub trait Displayable {
+pub trait TreeDisplayItem {
     fn display(&self, prefix: &str, last: bool);
 }
 
@@ -37,7 +37,7 @@ impl Content {
     }
 }
 
-impl Displayable for Content {
+impl TreeDisplayItem for Content {
     fn display(&self, prefix: &str, last: bool) {
         match self {
             Self::File(f) => f.display(prefix, last),
@@ -53,23 +53,23 @@ pub struct File {
 }
 
 impl File {
-    pub fn new(name: &str) -> Option<Self> {
-        let content = fs::read_to_string(&name).ok()?;
+    pub fn new(name: &str) -> io::Result<Self> {
+        let content = fs::read_to_string(&name)?;
         let name = name.to_string();
 
-        Some(Self { name, content })
+        Ok(Self { name, content })
     }
 }
 
-impl Displayable for File {
+impl TreeDisplayItem for File {
     fn display(&self, prefix: &str, last: bool) {
         let line = if last { "└── " } else { "├── " };
 
         let text = if let Some(pos) = self.name.rfind('/') {
             let (_, file) = self.name.split_at(pos + 1);
-            format!("{}", file)
+            file.to_string()
         } else {
-            format!("{}", self.name)
+            self.name.clone()
         };
 
         println!("\x1b[38;5;8m{}{}\x1b[0m{}", prefix, line, text);
@@ -84,27 +84,28 @@ pub struct Directory {
 
 impl Directory {
     pub fn new(name: &str) -> io::Result<Self> {
-        let file_iter = fs::read_dir(&name)?;
+        let file_iter = fs::read_dir(name)?;
 
         let mut files = Vec::new();
 
-        for file in file_iter {
-            let path = file?.path();
+        for entry in file_iter {
+            let path = entry?.path();
             let path = make_relative(path);
 
-            if let None = path.to_str() {
-                continue;
-            }
-            let path_str = path.to_str().unwrap();
+            let path_str = path
+                .to_str()
+                .map_or_else(
+                    // If path is not valid UTF-8, try a lossy conversion
+                    || path.to_string_lossy().into_owned(),
+                    String::from
+                );
 
             if path.is_file() {
-                if let Some(file) = File::new(path_str) {
-                    files.push(Content::File(file));
-                }
+                let file = File::new(&path_str)?;
+                files.push(Content::File(file));
             } else if path.is_dir() {
-                if let Ok(dir) = Directory::new(path.to_str().unwrap()) {
-                    files.push(Content::Directory(dir));
-                }
+                let dir = Directory::new(&path_str)?;
+                files.push(Content::Directory(dir));
             }
         }
 
@@ -129,7 +130,7 @@ impl Directory {
     }
 }
 
-impl Displayable for Directory {
+impl TreeDisplayItem for Directory {
     fn display(&self, prefix: &str, last: bool) {
         let line = if last { "└── " } else { "├── " };
 

@@ -3,7 +3,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use crate::content::{Content, Directory, Displayable};
+use crate::content::{Content, Directory, TreeDisplayItem};
 use crate::subs::Replacer;
 
 use dirs::data_dir;
@@ -33,12 +33,16 @@ pub struct Recipe {
 
 impl Recipe {
     pub fn imprint(name: String, description: Option<String>) -> io::Result<Self> {
-        let curr_dir = env::current_dir()?;
+        let curr_dir: PathBuf = env::current_dir()?;
 
-        if let None = curr_dir.to_str() {
-            return Err(io::Error::new(io::ErrorKind::Other, "Error reading file"));
-        }
-        let mut dir_obj = Directory::new(curr_dir.to_str().unwrap())?;
+        let curr_dir_str = curr_dir
+            .to_str()
+            .map_or_else(
+                || curr_dir.to_string_lossy().into_owned(),
+                String::from
+            );
+
+        let mut dir_obj = Directory::new(&curr_dir_str)?;
         dir_obj.sort();
 
         let contents = dir_obj.files;
@@ -49,6 +53,7 @@ impl Recipe {
             .map(|(lang, det)| (*lang, det.len()))
             .collect();
 
+        // Sort languages by percentage of recipe
         breakdown.sort_by(|a, b| b.1.cmp(&a.1));
 
         let languages: Vec<_> = breakdown
@@ -58,6 +63,8 @@ impl Recipe {
                 if let Some(hex) = lang.color {
                     let hex = &hex[1..].to_string();
 
+                    // Falls back to 255, 255, 255 when unable to correctly parse
+                    // colour from hyperpolyglot
                     let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(255);
                     let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(255);
                     let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(255);
