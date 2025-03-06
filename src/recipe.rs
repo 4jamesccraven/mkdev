@@ -37,10 +37,7 @@ impl Recipe {
 
         let curr_dir_str = curr_dir
             .to_str()
-            .map_or_else(
-                || curr_dir.to_string_lossy().into_owned(),
-                String::from
-            );
+            .map_or_else(|| curr_dir.to_string_lossy().into_owned(), String::from);
 
         let mut dir_obj = Directory::new(&curr_dir_str)?;
         dir_obj.sort();

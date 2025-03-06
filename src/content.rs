@@ -92,13 +92,11 @@ impl Directory {
             let path = entry?.path();
             let path = make_relative(path);
 
-            let path_str = path
-                .to_str()
-                .map_or_else(
-                    // If path is not valid UTF-8, try a lossy conversion
-                    || path.to_string_lossy().into_owned(),
-                    String::from
-                );
+            let path_str = path.to_str().map_or_else(
+                // If path is not valid UTF-8, try a lossy conversion
+                || path.to_string_lossy().into_owned(),
+                String::from,
+            );
 
             if path.is_file() {
                 let file = File::new(&path_str)?;

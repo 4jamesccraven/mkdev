@@ -90,7 +90,11 @@ fn main() {
             let re = Replacer::new();
 
             Recipe::build(&dir, &recipe.contents, args.verbose, &re).unwrap_or_else(|error| {
-                panic!("Unable to write `{}` to {}: {error:?}", recipe.name, dir.display());
+                panic!(
+                    "Unable to write `{}` to {}: {error:?}",
+                    recipe.name,
+                    dir.display()
+                );
             });
         }
     }
