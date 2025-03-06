@@ -1,58 +1,19 @@
+use crate::config::Config;
+
 use std::collections::HashMap;
+use std::process::Command;
 use std::path::PathBuf;
 
-use chrono::{Datelike, Local};
 use regex::Regex;
-use whoami::username;
 
 pub struct Replacer {
-    map: HashMap<String, Box<dyn Fn(&PathBuf) -> String>>,
+    map: HashMap<String, String>,
 }
 
 impl Replacer {
     pub fn new() -> Self {
-        let map = [
-            (
-                "dir",
-                Box::new(|dir: &PathBuf| dir.to_string_lossy().to_string())
-                    as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-            (
-                "user",
-                Box::new(|_dir: &PathBuf| username()) as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-            (
-                "day",
-                Box::new(|_dir: &PathBuf| {
-                    let now = Local::now();
-                    now.day().to_string()
-                }) as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-            (
-                "month",
-                Box::new(|_dir: &PathBuf| {
-                    let now = Local::now();
-                    now.month().to_string()
-                }) as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-            (
-                "year",
-                Box::new(|_dir: &PathBuf| {
-                    let now = Local::now();
-                    now.year().to_string()
-                }) as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-            (
-                "weekday",
-                Box::new(|_dir: &PathBuf| {
-                    let now = Local::now();
-                    now.weekday().to_string()
-                }) as Box<dyn Fn(&PathBuf) -> String>,
-            ),
-        ]
-        .map(|(r, c)| (r.to_string(), c))
-        .into_iter()
-        .collect();
+        let cfg = Config::get();
+        let map = cfg.subs.clone();
 
         Self { map }
     }
@@ -81,14 +42,36 @@ impl Replacer {
                     _ => {
                         if let Some(val) = s {
                             match_ = val.as_str();
-                            break;
                         }
                     }
                 }
             }
 
             if let Some(val) = self.map.get(match_) {
-                val(dir)
+                // Special case
+                if val == "mk::dir" {
+                    return dir.to_string_lossy().to_string();
+                }
+
+                let mut parsed = val.split_whitespace().peekable();
+
+                if parsed.peek().is_none() {
+                    fallback.to_string()
+                } else {
+                    let mut cmd = Command::new(&parsed.next().unwrap());
+                    cmd.args(parsed);
+
+                    if let Ok(out) = cmd.output() {
+                        String::from_utf8_lossy(&out.stdout)
+                            .to_string()
+                            .strip_suffix("\n")
+                            .unwrap()
+                            .to_owned()
+                    } else {
+                        eprintln!("Warning: command `{val}` failed");
+                        fallback.to_string()
+                    }
+                }
             } else {
                 fallback.to_string()
             }

@@ -1,5 +1,6 @@
 mod cli;
 mod content;
+mod config;
 mod recipe;
 mod subs;
 
