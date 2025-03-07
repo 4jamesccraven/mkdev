@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
-    version = "3.0.2",
+    version = "3.1.0",
     author = "James Craven <4jamesccraven@gmail.com>",
     about = "Save directories to paste them later.",
     subcommand_negates_reqs(true)
