@@ -1,10 +1,11 @@
+use crate::config::Config;
+use crate::content::{Content, Directory, TreeDisplayItem};
+use crate::subs::Replacer;
+
 use std::env;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
-
-use crate::content::{Content, Directory, TreeDisplayItem};
-use crate::subs::Replacer;
 
 use dirs::data_dir;
 use hyperpolyglot::{get_language_breakdown, Language};
@@ -13,8 +14,16 @@ use toml;
 
 pub fn get_data_dir() -> io::Result<PathBuf> {
     let err = io::Error::new(io::ErrorKind::Other, "Error getting data directory");
-    let mut data_dir = data_dir().ok_or(err)?;
-    data_dir.push("mkdev");
+    let cfg = Config::get();
+
+    let data_dir = match &cfg.recipe_dir {
+        Some(dir) => dir.clone(),
+        None => {
+           let mut temp = data_dir().ok_or(err)?;
+           temp.push("mkdev");
+           temp
+        }
+    };
 
     if !data_dir.is_dir() {
         fs::create_dir_all(&data_dir)?;

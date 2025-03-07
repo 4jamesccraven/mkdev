@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::default::Default;
 use std::fs;
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use serde::{Serialize, Deserialize};
@@ -10,7 +11,7 @@ static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
-    pub recipe_dir: Option<String>,
+    pub recipe_dir: Option<PathBuf>,
     pub subs: HashMap<String, String>
 }
 
