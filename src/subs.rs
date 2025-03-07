@@ -1,8 +1,8 @@
 use crate::config::Config;
 
 use std::collections::HashMap;
-use std::process::Command;
 use std::path::PathBuf;
+use std::process::Command;
 
 use regex::Regex;
 
@@ -22,9 +22,7 @@ impl Replacer {
         let combined = self
             .map
             .keys()
-            .map(|r| {
-                format!(r"\{{\{{({})\}}\}}", r)
-            })
+            .map(|r| format!(r"\{{\{{({})\}}\}}", r))
             .collect::<Vec<_>>()
             .join("|");
 
@@ -32,9 +30,11 @@ impl Replacer {
 
         re.replace_all(text, |caps: &regex::Captures| {
             // Find the group that was matched on
-            let match_ = caps.iter().skip(1).find_map(|s| {
-                s.map(|m| m.as_str())
-            }).unwrap_or("");
+            let match_ = caps
+                .iter()
+                .skip(1)
+                .find_map(|s| s.map(|m| m.as_str()))
+                .unwrap_or("");
 
             // Set the original string as a fallback
             let fallback = caps.get(0).map_or("", |m| m.as_str());
@@ -47,17 +47,20 @@ impl Replacer {
                     let sub: Result<String, &'static str> = (|| {
                         let mut parsed = val.split_whitespace();
 
-                        let mut cmd = Command::new(&parsed.next().ok_or("Unable to parse command")?);
+                        let mut cmd =
+                            Command::new(&parsed.next().ok_or("Unable to parse command")?);
                         cmd.args(parsed);
 
                         let utf8_err: &'static str = "Unable to get command output";
 
-                        let output = String::from_utf8_lossy(&cmd.output().map_err(|_| utf8_err)?.stdout).into_owned();
+                        let output =
+                            String::from_utf8_lossy(&cmd.output().map_err(|_| utf8_err)?.stdout)
+                                .into_owned();
 
                         let out = output
-                                .strip_suffix("\n")
-                                .unwrap_or_else(|| &output)
-                                .to_owned();
+                            .strip_suffix("\n")
+                            .unwrap_or_else(|| &output)
+                            .to_owned();
 
                         Ok(out)
                     })();
@@ -66,10 +69,8 @@ impl Replacer {
                         eprintln!("Unable to substitute `{}`: {}", match_, err);
                         fallback.to_string()
                     })
-                },
-                None => {
-                    fallback.to_string()
                 }
+                None => fallback.to_string(),
             }
         })
         .to_string()

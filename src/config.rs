@@ -4,15 +4,15 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use serde::{Serialize, Deserialize};
 use dirs;
+use serde::{Deserialize, Serialize};
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub recipe_dir: Option<PathBuf>,
-    pub subs: HashMap<String, String>
+    pub subs: HashMap<String, String>,
 }
 
 impl Config {
@@ -64,15 +64,12 @@ impl Default for Config {
             ("user", "whoami"),
             ("day", "date +%d"),
             ("month", "date +%m"),
-            ("year", "date +%Y")
+            ("year", "date +%Y"),
         ]
-        .map(|(k, v)| {
-            (k.to_owned(), v.to_owned())
-        })
+        .map(|(k, v)| (k.to_owned(), v.to_owned()))
         .into_iter()
         .collect();
 
         Self { recipe_dir, subs }
     }
 }
-

@@ -19,9 +19,9 @@ pub fn get_data_dir() -> io::Result<PathBuf> {
     let data_dir = match &cfg.recipe_dir {
         Some(dir) => dir.clone(),
         None => {
-           let mut temp = data_dir().ok_or(err)?;
-           temp.push("mkdev");
-           temp
+            let mut temp = data_dir().ok_or(err)?;
+            temp.push("mkdev");
+            temp
         }
     };
 
