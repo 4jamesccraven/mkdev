@@ -17,13 +17,8 @@ scripts, and other projects.
 Features
 --------
 - Automated copying and pasting of directories and their contents
-- Simple text substitutions for certain predefined values:
-  - Destination Directory
-  - Username
-  - Date Info (day, month, year, weekday)
-  - Automatic Github-style language detection for recipes
-  - Tools to visualise recipe contents
-
+- Simple text substitutions based on user configurations
+ 
 Installation
 ------------
 ### Using Cargo
