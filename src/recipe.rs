@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::content::{Content, Directory, TreeDisplayItem};
 use crate::subs::Replacer;
 
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io;
@@ -12,6 +13,7 @@ use hyperpolyglot::{get_language_breakdown, Language};
 use serde::{Deserialize, Serialize};
 use toml;
 
+/// Get the user's preferred data dir, or use the default XDG_DATA_DIR
 pub fn get_data_dir() -> io::Result<PathBuf> {
     let err = io::Error::new(io::ErrorKind::Other, "Error getting data directory");
     let cfg = Config::get();
@@ -90,12 +92,14 @@ impl Recipe {
         })
     }
 
-    pub fn gather() -> io::Result<Vec<Recipe>> {
+    /// Attempt to find all user defined recipes, returning error values to propagated to
+    /// error-handling functions
+    pub fn gather() -> io::Result<HashMap<String, Recipe>> {
         let data_dir = get_data_dir()?;
 
         let files = fs::read_dir(data_dir)?;
 
-        let mut recipes = Vec::new();
+        let mut recipes: Vec<Recipe> = Vec::new();
 
         for file in files {
             let path = file?.path();
@@ -110,9 +114,16 @@ impl Recipe {
             }
         }
 
+        let recipes = recipes
+            .iter()
+            .map(|r| (r.name.clone(), r.to_owned()))
+            .collect();
+
         Ok(recipes)
     }
 
+    /// Save the recipe object by serialising self into the data directory
+    // TODO: Separate printing logic from function
     pub fn save(&self) -> io::Result<()> {
         let mut data_dir = get_data_dir()?;
 
@@ -125,6 +136,8 @@ impl Recipe {
         Ok(())
     }
 
+    /// Delete the recipe by deleting its serialised self
+    // TODO: Separate printing logic from function
     pub fn delete(&self) -> io::Result<()> {
         let mut data_dir = get_data_dir()?;
 
@@ -137,6 +150,8 @@ impl Recipe {
         Ok(())
     }
 
+    /// Display contents if `tree` or summary info
+    // TODO: Separate printing logic from function
     pub fn list(&self, tree: bool) {
         if tree {
             println!("\x1b[1m{}\x1b[0m", self.name);
@@ -158,6 +173,7 @@ impl Recipe {
         }
     }
 
+    /// Build an individual recipe, recursing into sub-directories if there are any
     pub fn build(
         dir: &PathBuf,
         contents: &Vec<Content>,

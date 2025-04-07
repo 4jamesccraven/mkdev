@@ -44,18 +44,19 @@ impl Replacer {
                 Some(val) if val == "mk::dir" => dir.to_string_lossy().to_string(),
                 // Substitution in Arbitrary case
                 Some(val) => {
+                    // This has to be a closure to take in the environment
                     let sub: Result<String, &'static str> = (|| {
-                        let mut parsed = val.split_whitespace();
-
-                        let mut cmd =
-                            Command::new(&parsed.next().ok_or("Unable to parse command")?);
-                        cmd.args(parsed);
-
                         let utf8_err: &'static str = "Unable to get command output";
 
-                        let output =
-                            String::from_utf8_lossy(&cmd.output().map_err(|_| utf8_err)?.stdout)
-                                .into_owned();
+                        // Treat the string as a command and try to pass it
+                        // to sh TODO: fix for windows as it will not have sh
+                        let cmd = Command::new("sh")
+                            .arg("-c")
+                            .arg(&val)
+                            .output()
+                            .map_err(|_| utf8_err)?;
+
+                        let output = String::from_utf8_lossy(&cmd.stdout).into_owned();
 
                         let out = output
                             .strip_suffix("\n")

@@ -3,9 +3,9 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
-    version = "3.1.0",
+    version = "3.1.1",
     author = "James Craven <4jamesccraven@gmail.com>",
-    about = "Save directories to paste them later.",
+    about = "Save your boilerplate instead of writing it.",
     subcommand_negates_reqs(true)
 )]
 pub struct Cli {
