@@ -49,12 +49,20 @@ impl Replacer {
                         let utf8_err: &'static str = "Unable to get command output";
 
                         // Treat the string as a command and try to pass it
-                        // to sh TODO: fix for windows as it will not have sh
-                        let cmd = Command::new("sh")
-                            .arg("-c")
-                            .arg(&val)
-                            .output()
-                            .map_err(|_| utf8_err)?;
+                        let cmd = if cfg!(target_family = "unix") {
+                            Command::new("sh")
+                                .arg("-c")
+                                .arg(&val)
+                                .output()
+                                .map_err(|_| utf8_err)?
+                        } else {
+                            // Use cmd instead of sh if not on Unix
+                            Command::new("cmd")
+                                .arg("/C")
+                                .arg(&val)
+                                .output()
+                                .map_err(|_| utf8_err)?
+                        };
 
                         let output = String::from_utf8_lossy(&cmd.stdout).into_owned();
 
