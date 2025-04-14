@@ -92,7 +92,7 @@ impl Recipe {
         })
     }
 
-    /// Attempt to find all user defined recipes, returning error values to propagated to
+    /// Attempt to find all user defined recipes, returning error values to propagate to
     /// error-handling functions
     pub fn gather() -> io::Result<HashMap<String, Recipe>> {
         let data_dir = get_data_dir()?;
@@ -123,34 +123,28 @@ impl Recipe {
     }
 
     /// Save the recipe object by serialising self into the data directory
-    // TODO: Separate printing logic from function
-    pub fn save(&self) -> io::Result<()> {
+    pub fn save(&self) -> io::Result<PathBuf> {
         let mut data_dir = get_data_dir()?;
 
         data_dir.push(format!("{}.toml", self.name));
 
         fs::write(&data_dir, toml::to_string(&self).unwrap())?;
 
-        println!("Recipe saved successfully to {}.", &data_dir.display());
-
-        Ok(())
+        Ok(data_dir)
     }
 
     /// Delete the recipe by deleting its serialised self
-    // TODO: Separate printing logic from function
-    pub fn delete(&self) -> io::Result<()> {
+    pub fn delete(&self) -> io::Result<PathBuf> {
         let mut data_dir = get_data_dir()?;
 
         data_dir.push(format!("{}.toml", self.name));
 
         fs::remove_file(&data_dir)?;
 
-        println!("Deleted recipe at {}.", &data_dir.display());
-
-        Ok(())
+        Ok(data_dir)
     }
 
-    /// Display contents if `tree` or summary info
+    /// Display contents of `tree` or summary info
     // TODO: Separate printing logic from function
     pub fn list(&self, tree: bool) {
         if tree {

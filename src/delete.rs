@@ -7,9 +7,15 @@ pub fn delete_recipe(recipe: String, user_recipes: &HashMap<String, Recipe>) -> 
     let to_delete = user_recipes.get(recipe.as_str());
 
     match to_delete {
-        Some(recipe) => recipe
-            .delete()
-            .map_err(|error| format!("Unable to delete `{}`: {error:?}", recipe.name)),
+        Some(recipe) => {
+            let deleted_file = recipe
+                .delete()
+                .map_err(|error| format!("Unable to delete `{}`: {error:?}", recipe.name))?;
+
+            println!("Deleted recipe at {}.", &deleted_file.display());
+
+            Ok(())
+        }
         None => Err(String::from("No such recipe \"{recipe}\".")),
     }
 }

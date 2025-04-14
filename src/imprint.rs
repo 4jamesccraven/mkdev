@@ -6,8 +6,11 @@ pub fn imprint_recipe(recipe: String, description: Option<String>) -> Result<(),
     let new = Recipe::imprint(recipe, description).map_err(|error| {
         format!("Unable to read current_working directory for the recipe: {error:?}")
     })?;
-    new.save()
+    let save_location = new
+        .save()
         .map_err(|error| format!("Unable to save instantiated recipe: {error:?}"))?;
+
+    println!("Recipe saved successfully to {}.", &save_location.display());
 
     Ok(())
 }

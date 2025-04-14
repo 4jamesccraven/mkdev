@@ -6,9 +6,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 pub fn make_relative(path: PathBuf) -> PathBuf {
-    // Safe becuase appropriate checks will
-    // have already been made
-    let cwd = env::current_dir().unwrap();
+    let cwd = env::current_dir().expect("Appropriate checks will have been made by this point.");
 
     if path.starts_with(&cwd) {
         path.strip_prefix(cwd).unwrap_or(&path).to_path_buf()
