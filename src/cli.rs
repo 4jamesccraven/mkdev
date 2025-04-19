@@ -36,6 +36,7 @@ pub enum Commands {
         recipe: String,
 
         #[arg(short, long)]
+        /// Description to be associated with recipe
         description: Option<String>,
     },
     /// Delete a recipe
