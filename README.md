@@ -60,14 +60,11 @@ later, where you keep your packages:
   environment.systemPackages = with pkgs; [
     # Other packages
     ...
-    inputs.mkdev.packages.SYSTEM_ARCHITECTURE.mkdev
+    inputs.mkdev.packages.${pkgs.system}.mkdev
     ...
   ];
 }
 ```
-note that `SYSTEM_ARCHITECTURE` is a placeholder. In general it is
-ARCHITECTURE-OS; e.g. `x86_64-linux` (most common, you probably have this
-if on NixOS), `x86_64-darwin` (MacOS), `aarch64-linux`, etc.
 
 Documentation
 -------------
