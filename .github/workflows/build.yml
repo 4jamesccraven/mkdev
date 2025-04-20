@@ -37,15 +37,21 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          cp target/${{ matrix.target }}/release/mk dist/mk
+
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            BIN_NAME=mk.exe
+          else
+            BIN_NAME=mk
+          fi
+
+          cp target/${{ matrix.target }}/release/$BIN_NAME dist/$BIN_NAME
           cp LICENSE dist/LICENSE
 
           cd dist
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            mv mk mk.exe
-            powershell.exe -Command "Compress-Archive -Path mk.exe, LICENSE -DestinationPath mk-${{ matrix.target }}.zip"
+            powershell.exe -Command "Compress-Archive -Path $BIN_NAME, LICENSE -DestinationPath mk-${{ matrix.target }}.zip"
           else
-            tar -czf mk-${{ matrix.target }}.tar.gz mk LICENSE
+            tar -czf mk-${{ matrix.target }}.tar.gz $BIN_NAME LICENSE
           fi
 
       - name: Upload to GitHub Release
