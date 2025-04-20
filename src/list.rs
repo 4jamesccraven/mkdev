@@ -13,12 +13,11 @@ pub fn list_recipe(
                 format!("No such recipe \"{recipe}\". Run `mk list` to see valid recipes.")
             })?;
 
-            recipe.list(true);
+            println!("{}", recipe.display_contents());
         }
         None => {
             for recipe in user_recipes.values() {
-                recipe.list(false);
-                println!()
+                println!("{}\n", recipe);
             }
         }
     }

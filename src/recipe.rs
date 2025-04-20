@@ -1,9 +1,10 @@
 use crate::config::Config;
-use crate::content::{Content, Directory, TreeDisplayItem};
+use crate::content::{Content, Directory};
 use crate::subs::Replacer;
 
 use std::collections::HashMap;
 use std::env;
+use std::fmt::Display;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -144,27 +145,17 @@ impl Recipe {
         Ok(data_dir)
     }
 
-    /// Display contents of `tree` or summary info
-    // TODO: Separate printing logic from function
-    pub fn list(&self, tree: bool) {
-        if tree {
-            println!("\x1b[1m{}\x1b[0m", self.name);
-            let mut iter = self.contents.iter().peekable();
+    /// Display contents of `tree`
+    pub fn display_contents(&self) -> String {
+        let mut out = format!("\x1b[1m{}\x1b[0m\n", self.name);
+        let mut iter = self.contents.iter().peekable();
 
-            while let Some(obj) = iter.next() {
-                obj.display("".into(), iter.peek().is_none());
-            }
-        } else {
-            print!("\x1b[1m{}\x1b[0m ( ", self.name);
-            for language in &self.languages {
-                print!("{} ", language);
-            }
-            println!(")");
-
-            if !&self.description.is_empty() {
-                println!("  {}", &self.description);
-            }
+        while let Some(obj) = iter.next() {
+            let next = obj.produce_tree_string("".into(), iter.peek().is_none());
+            out.push_str(&next);
         }
+
+        out
     }
 
     /// Build an individual recipe, recursing into sub-directories if there are any
@@ -200,5 +191,17 @@ impl Recipe {
         }
 
         Ok(())
+    }
+}
+
+impl Display for Recipe {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "\x1b[1m{}\x1b[0m ( {} )\n  {}",
+            self.name,
+            self.languages.join(" "),
+            self.description
+        )
     }
 }

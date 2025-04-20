@@ -15,9 +15,9 @@ pub fn make_relative(path: PathBuf) -> PathBuf {
     }
 }
 
-pub trait TreeDisplayItem {
-    fn display(&self, prefix: &str, last: bool);
-}
+// pub trait TreeDisplayItem {
+//     fn produce_tree_string(&self, prefix: &str, last: bool);
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
@@ -33,13 +33,11 @@ impl Content {
             Content::Directory(dir) => dir.name.clone(),
         }
     }
-}
 
-impl TreeDisplayItem for Content {
-    fn display(&self, prefix: &str, last: bool) {
+    pub fn produce_tree_string(&self, prefix: &str, last: bool) -> String {
         match self {
-            Self::File(f) => f.display(prefix, last),
-            Self::Directory(d) => d.display(prefix, last),
+            Self::File(f) => f.produce_tree_string(prefix, last),
+            Self::Directory(d) => d.produce_tree_string(prefix, last),
         }
     }
 }
@@ -57,10 +55,8 @@ impl File {
 
         Ok(Self { name, content })
     }
-}
 
-impl TreeDisplayItem for File {
-    fn display(&self, prefix: &str, last: bool) {
+    pub fn produce_tree_string(&self, prefix: &str, last: bool) -> String {
         let line = if last { "└── " } else { "├── " };
 
         let text = if let Some(pos) = self.name.rfind('/') {
@@ -70,7 +66,7 @@ impl TreeDisplayItem for File {
             self.name.clone()
         };
 
-        println!("\x1b[38;5;8m{}{}\x1b[0m{}", prefix, line, text);
+        format!("\x1b[38;5;8m{}{}\x1b[0m{}\n", prefix, line, text)
     }
 }
 
@@ -124,15 +120,13 @@ impl Directory {
             }
         }
     }
-}
 
-impl TreeDisplayItem for Directory {
-    fn display(&self, prefix: &str, last: bool) {
+    pub fn produce_tree_string(&self, prefix: &str, last: bool) -> String {
         let line = if last { "└── " } else { "├── " };
 
         let text = format!("\x1b[34m{}\x1b[0m", self.name);
 
-        println!("\x1b[38;5;8m{}{}\x1b[0m{}", prefix, line, text);
+        let mut out = format!("\x1b[38;5;8m{}{}\x1b[0m{}\n", prefix, line, text);
 
         let new_prefix = if last { "    " } else { "│   " };
         let new_prefix = format!("{prefix}{new_prefix}");
@@ -140,7 +134,10 @@ impl TreeDisplayItem for Directory {
         let mut iter = self.files.iter().peekable();
 
         while let Some(obj) = iter.next() {
-            obj.display(&new_prefix, iter.peek().is_none());
+            let next = obj.produce_tree_string(&new_prefix, iter.peek().is_none());
+            out.push_str(&next);
         }
+
+        out
     }
 }
