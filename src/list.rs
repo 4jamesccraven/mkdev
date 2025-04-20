@@ -16,7 +16,11 @@ pub fn list_recipe(
             println!("{}", recipe.display_contents());
         }
         None => {
-            for recipe in user_recipes.values() {
+            let mut recipes: Vec<_> = user_recipes.values().collect();
+
+            recipes.sort_by(|a, b| a.name.cmp(&b.name));
+
+            for recipe in recipes {
                 println!("{}\n", recipe);
             }
         }

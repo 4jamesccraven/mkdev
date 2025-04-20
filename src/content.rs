@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-pub fn make_relative(path: PathBuf) -> PathBuf {
+fn make_relative(path: PathBuf) -> PathBuf {
     let cwd = env::current_dir().expect("Appropriate checks will have been made by this point.");
 
     if path.starts_with(&cwd) {
@@ -14,10 +14,6 @@ pub fn make_relative(path: PathBuf) -> PathBuf {
         path
     }
 }
-
-// pub trait TreeDisplayItem {
-//     fn produce_tree_string(&self, prefix: &str, last: bool);
-// }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]

@@ -57,16 +57,18 @@ impl Recipe {
         let contents = dir_obj.files;
         let description = description.unwrap_or("".into());
 
+        // Converts HashMap<&name, detected_info> -> Vec<(name, num_matching_files)>
         let mut breakdown: Vec<_> = get_language_breakdown(curr_dir)
             .iter()
             .map(|(lang, det)| (*lang, det.len()))
             .collect();
 
-        // Sort languages by percentage of recipe
+        // Sort languages by number of matching files
         breakdown.sort_by(|a, b| b.1.cmp(&a.1));
 
         let languages: Vec<_> = breakdown
             .iter()
+            // Discard the count, as we only needed it to sort
             .filter_map(|(lang, _)| Language::try_from(*lang).ok())
             .map(|lang| {
                 if let Some(hex) = lang.color {
@@ -106,11 +108,16 @@ impl Recipe {
             let path = file?.path();
 
             if path.extension() == Some(std::ffi::OsStr::new("toml")) && path.is_file() {
-                let file_contents = fs::read_to_string(path)?;
-                let recipe = toml::from_str(&file_contents);
+                let file_contents = fs::read_to_string(&path)?;
+                let recipe: Result<Recipe, _> = toml::from_str(&file_contents);
 
-                if let Ok(recipe) = recipe {
-                    recipes.push(recipe);
+                match recipe {
+                    Ok(recipe) => {
+                        recipes.push(recipe);
+                    }
+                    Err(_) => {
+                        eprintln!("mkdev: warning: {} is not a valid recipe.", path.display());
+                    }
                 }
             }
         }

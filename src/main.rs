@@ -27,7 +27,7 @@ fn main() {
     let status = try_get_status(args, recipes);
 
     if let Err(why) = status {
-        eprintln!("mkdev: error: {why:?}");
+        eprintln!("mkdev: error: {why}");
         std::process::exit(1);
     }
 }

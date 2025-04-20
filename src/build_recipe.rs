@@ -21,6 +21,7 @@ pub fn build_recipes(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result
         .map(|r| format!("No such recipe \"{r}\"."))
         .collect();
 
+    // There is an error if there are any non-existent recipes specified by the user
     let is_err = !non_existant_recipes.is_empty();
 
     if is_err {
@@ -30,6 +31,7 @@ pub fn build_recipes(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result
 
     let re = Replacer::new();
 
+    // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
         None => current_dir().map_err(|error| format!("Unable to get cwd: {error:?}"))?,
