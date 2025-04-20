@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
-    version = "3.1.1",
+    version = "3.1.2",
     author = "James Craven <4jamesccraven@gmail.com>",
     about = "Save your boilerplate instead of writing it.",
     subcommand_negates_reqs(true)
