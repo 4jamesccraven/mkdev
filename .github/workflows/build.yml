@@ -3,7 +3,7 @@ name: Build Binaries
 on:
   push:
     tags:
-      - 'v*' # Triggers only on version tags like v3.1.2
+      - 'v*'
 
 jobs:
   build:
@@ -34,6 +34,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package binary with LICENSE
+        shell: bash
         run: |
           mkdir -p dist
           cp target/${{ matrix.target }}/release/mk dist/mk
@@ -42,7 +43,7 @@ jobs:
           cd dist
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             mv mk mk.exe
-            7z a mk-${{ matrix.target }}.zip mk.exe LICENSE
+            powershell.exe -Command "Compress-Archive -Path mk.exe, LICENSE -DestinationPath mk-${{ matrix.target }}.zip"
           else
             tar -czf mk-${{ matrix.target }}.tar.gz mk LICENSE
           fi
