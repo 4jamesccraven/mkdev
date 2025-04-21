@@ -1,9 +1,12 @@
-{lib, pkgs}:
+{ lib, pkgs }:
 
 with pkgs;
+let
+  manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+in
 rustPlatform.buildRustPackage {
-  pname = "mkdev";
-  version = "3.2.0";
+  pname = manifest.name;
+  version = manifest.version;
 
   src = ./.;
 
