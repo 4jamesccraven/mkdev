@@ -1,11 +1,15 @@
-use clap::{Parser, Subcommand};
+use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(
     name = "mkdev",
-    version = "3.1.2",
-    author = "James Craven <4jamesccraven@gmail.com>",
-    about = "Save your boilerplate instead of writing it.",
+    version = crate_version!(),
+    long_version = concat!(
+        crate_version!(), " — ", crate_description!(), "\n",
+        "© 2025 ", crate_authors!(), ". Licensed under MIT License — see LICENSE for details."
+    ),
+    author = crate_authors!(),
+    about = crate_description!(),
     subcommand_negates_reqs(true)
 )]
 pub struct Cli {
