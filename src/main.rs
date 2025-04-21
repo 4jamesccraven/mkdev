@@ -6,6 +6,7 @@ mod delete;
 mod imprint;
 mod list;
 mod recipe;
+mod recipe_completer;
 mod subs;
 
 use build_recipe::build_recipes;
@@ -17,9 +18,12 @@ use recipe::Recipe;
 
 use std::collections::HashMap;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::CompleteEnv;
 
 fn main() {
+    CompleteEnv::with_factory(Cli::command).complete();
+
     let args = Cli::parse();
 
     let recipes = load_user_data();
@@ -42,16 +46,18 @@ fn load_user_data() -> HashMap<String, Recipe> {
 }
 
 /// Dispatcher for various actions
-fn try_get_status(args: Cli, recipes: HashMap<String, Recipe>) -> Result<(), String> {
+fn try_get_status(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result<(), String> {
     match args.command {
-        Some(command) => match command {
-            Imprint {
-                recipe,
-                description,
-            } => imprint_recipe(recipe, description),
-            Delete { recipe } => delete_recipe(recipe, &recipes),
-            List { recipe } => list_recipe(recipe, &recipes),
-        },
-        None => build_recipes(args, recipes),
+        Evoke {
+            recipes,
+            dir_name,
+            verbose,
+        } => build_recipes(recipes, dir_name, verbose, user_recipes),
+        Imprint {
+            recipe,
+            description,
+        } => imprint_recipe(recipe, description),
+        Delete { recipe } => delete_recipe(recipe, &user_recipes),
+        List { recipe } => list_recipe(recipe, &user_recipes),
     }
 }

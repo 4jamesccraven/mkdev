@@ -1,4 +1,3 @@
-use crate::cli::Cli;
 use crate::recipe::Recipe;
 use crate::subs::Replacer;
 
@@ -7,12 +6,13 @@ use std::env::current_dir;
 use std::path::PathBuf;
 
 /// Create all requested directory in the requested directories
-pub fn build_recipes(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result<(), String> {
-    let rec_args = args
-        .recipes
-        .expect("The argument parser should catch this if it's none.");
-
-    let non_existant_recipes: Vec<String> = rec_args
+pub fn build_recipes(
+    recipes: Vec<String>,
+    dir_name: Option<String>,
+    verbose: bool,
+    user_recipes: HashMap<String, Recipe>,
+) -> Result<(), String> {
+    let non_existant_recipes: Vec<String> = recipes
         .iter()
         .filter_map(|r| match user_recipes.contains_key(r) {
             false => Some(r),
@@ -32,17 +32,17 @@ pub fn build_recipes(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result
     let re = Replacer::new();
 
     // Build to the cwd, or a directory specified by the user
-    let dir = match &args.dir_name {
+    let dir = match dir_name {
         Some(dir) => PathBuf::from(dir),
         None => current_dir().map_err(|error| format!("Unable to get cwd: {error:?}"))?,
     };
 
-    rec_args.iter().try_for_each(|r| {
+    recipes.iter().try_for_each(|r| {
         let recipe = user_recipes
             .get(r)
             .expect("Invalid recipes should have been filtered out.");
 
-        Recipe::build(&dir, &recipe.contents, args.verbose, &re).map_err(|error| {
+        Recipe::build(&dir, &recipe.contents, verbose, &re).map_err(|error| {
             format!(
                 "Unable to write `{}` to `{}`: {error:?}",
                 recipe.name,

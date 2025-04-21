@@ -1,8 +1,11 @@
+use crate::recipe_completer::recipe_completer;
+
 use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
+use clap_complete::engine::ArgValueCompleter;
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "mkdev",
+    name = "mk",
     version = crate_version!(),
     long_version = concat!(
         crate_version!(), " — ", crate_description!(), "\n",
@@ -10,29 +13,32 @@ use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
     ),
     author = crate_authors!(),
     about = crate_description!(),
-    subcommand_negates_reqs(true)
 )]
 pub struct Cli {
-    /// The recipe to construct
-    #[arg(required = true)]
-    pub recipes: Option<Vec<String>>,
-
-    /// Target directory for recipe
-    #[arg(last = true)]
-    pub dir_name: Option<String>,
-
-    /// Prints the name of each file on creation
-    #[arg(short, long)]
-    pub verbose: bool,
-
     #[command(subcommand)]
-    pub command: Option<Commands>,
+    pub command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    /// Build a recipe/some recipes by name
+    #[command(aliases = ["build", "b", "conjure", "summon", "invoke"])]
+    Evoke {
+        /// The recipe(s) to build
+        #[arg(add = ArgValueCompleter::new(recipe_completer))]
+        recipes: Vec<String>,
+
+        /// Target directory for recipe output
+        #[arg(last = true)]
+        dir_name: Option<String>,
+
+        /// Prints debug info during build
+        #[arg(short, long)]
+        verbose: bool,
+    },
     /// Create a recipe by "imprinting" the contents
     /// of the current directory
+    #[command(aliases = ["clone", "i"])]
     Imprint {
         /// The name of the recipe to imprint.
         /// NOTE: this action IS destructive and
@@ -46,8 +52,12 @@ pub enum Commands {
     /// Delete a recipe
     Delete {
         /// The recipe to delete
+        #[arg(add = ArgValueCompleter::new(recipe_completer))]
         recipe: String,
     },
     /// List recipes, or the contents of a specific one
-    List { recipe: Option<String> },
+    List {
+        #[arg(add = ArgValueCompleter::new(recipe_completer))]
+        recipe: Option<String>,
+    },
 }

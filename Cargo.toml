@@ -1,6 +1,6 @@
 [package]
 name = "mkdev"
-version = "3.1.2"
+version = "3.2.0"
 edition = "2021"
 authors = ["James Craven <4jamesccraven@gmail.com>"]
 description = "Save your boilerplate instead of writing it."
@@ -11,6 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["cargo", "derive"] }
+clap_complete = { version = "4.5.47", features = ["unstable-dynamic"] }
 dirs = "5.0.1"
 hyperpolyglot = "0.1.7"
 regex = "1.11.1"

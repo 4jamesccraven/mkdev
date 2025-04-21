@@ -3,7 +3,7 @@
 with pkgs;
 rustPlatform.buildRustPackage {
   pname = "mkdev";
-  version = "3.1.2";
+  version = "3.2.0";
 
   src = ./.;
 
