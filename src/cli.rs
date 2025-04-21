@@ -1,3 +1,4 @@
+use crate::list::OutputType;
 use crate::recipe_completer::recipe_completer;
 
 use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
@@ -57,7 +58,11 @@ pub enum Commands {
     },
     /// List recipes, or the contents of a specific one
     List {
+        /// Specific recipe
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
         recipe: Option<String>,
+        /// Style of output
+        #[arg(short, long)]
+        r#type: Option<OutputType>,
     },
 }

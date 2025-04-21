@@ -136,4 +136,23 @@ impl Directory {
 
         out
     }
+
+    pub fn produce_file_names(&self) -> String {
+        let mut out = format!("{}/\n", self.name);
+
+        for file in &self.files {
+            match file {
+                Content::File(file) => {
+                    let file_name = format!("{}\n", file.name);
+                    out.push_str(&file_name);
+                }
+                Content::Directory(directory) => {
+                    let contents = directory.produce_file_names();
+                    out.push_str(&contents);
+                }
+            }
+        }
+
+        out
+    }
 }

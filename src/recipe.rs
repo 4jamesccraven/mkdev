@@ -136,7 +136,7 @@ impl Recipe {
 
         data_dir.push(format!("{}.toml", self.name));
 
-        fs::write(&data_dir, toml::to_string(&self).unwrap())?;
+        fs::write(&data_dir, toml::to_string_pretty(&self).unwrap())?;
 
         Ok(data_dir)
     }
@@ -152,7 +152,7 @@ impl Recipe {
         Ok(data_dir)
     }
 
-    /// Display contents of `tree`
+    /// Display contents of `tree` with default style
     pub fn display_contents(&self) -> String {
         let mut out = format!("\x1b[1m{}\x1b[0m\n", self.name);
         let mut iter = self.contents.iter().peekable();
@@ -160,6 +160,26 @@ impl Recipe {
         while let Some(obj) = iter.next() {
             let next = obj.produce_tree_string("".into(), iter.peek().is_none());
             out.push_str(&next);
+        }
+
+        out
+    }
+
+    /// Display all file names associated with the recipe
+    pub fn display_contents_plain(&self) -> String {
+        let mut out = String::new();
+
+        for obj in &self.contents {
+            match obj {
+                Content::File(file) => {
+                    let filname = format!("{}\n", file.name);
+                    out.push_str(&filname);
+                }
+                Content::Directory(dir) => {
+                    let dir_contents = format!("{}", dir.produce_file_names());
+                    out.push_str(&dir_contents);
+                }
+            }
         }
 
         out

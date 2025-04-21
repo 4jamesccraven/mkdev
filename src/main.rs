@@ -58,6 +58,6 @@ fn try_get_status(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result<()
             description,
         } => imprint_recipe(recipe, description),
         Delete { recipe } => delete_recipe(recipe, &user_recipes),
-        List { recipe } => list_recipe(recipe, &user_recipes),
+        List { recipe, r#type } => list_recipe(recipe, r#type, &user_recipes),
     }
 }
