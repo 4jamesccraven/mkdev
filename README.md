@@ -8,6 +8,7 @@
 ```
 ![image](https://img.shields.io/badge/release-3.2.0-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
+<a href="https://github.com/4jamesccraven/mkdev/wiki">![image](https://img.shields.io/badge/documentation-🔗-orange)</a>
 
 A CLI Tool for Tinkerers
 ------------------------
@@ -18,58 +19,8 @@ Features
 --------
 - Automated copying and pasting of directories and their contents
 - Simple text substitutions based on user configurations
- 
-Installation
-------------
-### Using Cargo
-```
-$ cargo install --git https://github.com/4jamesccraven/mkdev
-```
-### Using Nix
-First ensure you have [flakes](https://wiki.nixos.org/wiki/Flakes) enabled.
 
-`flake.nix`
-```nix
-{
-  description = "mkdev installation example";
-
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    mkdev.url = "github:4jamesccraven/mkdev";
-  };
-
-  outputs =
-    {nixpkgs, ...}@inputs:
-    {
-       nixosConfigurations.HOSTNAME = nixpkgs.lib.nixosSystem {
-         specialArgs = {
-           inherit inputs;
-         };
-         modules = [
-           ./configuration.nix
-         ];
-       };
-    };
-}
-```
-later, where you keep your packages:
-```nix
-{pkgs, inputs}:
-
-{
-  environment.systemPackages = with pkgs; [
-    # Other packages
-    ...
-    inputs.mkdev.packages.${pkgs.system}.mkdev
-    ...
-  ];
-}
-```
-
-Documentation
--------------
-- [Usage](https://github.com/4jamesccraven/mkdev/blob/main/docs/usage.md)
-- [Config Documentation](https://github.com/4jamesccraven/mkdev/blob/main/docs/config.md)
+See the [wiki](https://github.com/4jamesccraven/mkdev/wiki) for more info.
 
 History
 ------
