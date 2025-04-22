@@ -1,4 +1,4 @@
-use crate::recipe::Recipe;
+use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
 

@@ -1,5 +1,5 @@
-use crate::recipe::Recipe;
-use crate::subs::Replacer;
+use mkdev_recipe::recipe::Recipe;
+use mkdev_recipe::subs::Replacer;
 
 use std::collections::HashMap;
 use std::env::current_dir;

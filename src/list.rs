@@ -1,21 +1,10 @@
-use crate::recipe::Recipe;
-use OutputType::*;
+use mkdev_cli::output_type::OutputType::{self, *};
+use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
 
-use clap::ValueEnum;
 use serde_json;
 use toml;
-
-#[derive(Debug, Clone, ValueEnum)]
-#[non_exhaustive]
-/// The style of output desired by the user. Used by the --type flag
-pub enum OutputType {
-    Default,
-    Plain,
-    JSON,
-    TOML,
-}
 
 /// List out a recipe or its contents, returning error messages on failure
 pub fn list_recipe(
@@ -83,5 +72,6 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
             toml::to_string_pretty(recipe)
                 .expect("Recipes are built with serde, and should unwrap")
         ),
+        _ => unreachable!(),
     }
 }

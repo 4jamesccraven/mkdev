@@ -1,20 +1,15 @@
 mod build_recipe;
-mod cli;
-mod config;
-mod content;
 mod delete;
 mod imprint;
 mod list;
-mod recipe;
-mod recipe_completer;
-mod subs;
 
 use build_recipe::build_recipes;
-use cli::{Cli, Commands::*};
 use delete::delete_recipe;
 use imprint::imprint_recipe;
 use list::list_recipe;
-use recipe::Recipe;
+
+use mkdev_cli::cli::{Cli, Commands::*};
+use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
 

@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 
 use dirs;
 use serde::{Deserialize, Serialize};
+use toml;
 
 // There should only ever be one instance of the config to prevent
 // multiple intialisations

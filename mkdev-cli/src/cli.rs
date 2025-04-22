@@ -1,19 +1,18 @@
-use crate::list::OutputType;
+use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
 
-use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use clap_complete::engine::ArgValueCompleter;
+
+include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
 
 #[derive(Parser, Debug)]
 #[command(
     name = "mk",
-    version = crate_version!(),
-    long_version = concat!(
-        crate_version!(), " — ", crate_description!(), "\n",
-        "© 2025 ", crate_authors!(), ". Licensed under MIT License — see LICENSE for details."
-    ),
-    author = crate_authors!(),
-    about = crate_description!(),
+    version = VERSION,
+    long_version = LONG_VERSION,
+    author = AUTHORS,
+    about = DESCRIPTION,
 )]
 pub struct Cli {
     #[command(subcommand)]

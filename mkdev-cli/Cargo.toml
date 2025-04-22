@@ -1,0 +1,10 @@
+[package]
+name = "mkdev-cli"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+clap = { version = "4.5.23", features = ["cargo", "derive"] }
+clap_complete = { version = "4.5.47", features = ["unstable-dynamic"] }
+mkdev-recipe = { path = "../mkdev-recipe"}

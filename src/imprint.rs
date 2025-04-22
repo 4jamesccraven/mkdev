@@ -1,4 +1,4 @@
-use crate::recipe::Recipe;
+use mkdev_recipe::recipe::Recipe;
 
 /// Atttempts to call recipe's imprint and save methods, returning an error message
 /// on failure
