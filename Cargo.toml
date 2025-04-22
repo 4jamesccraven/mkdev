@@ -4,17 +4,10 @@ version = "3.2.0"
 edition = "2021"
 authors = ["James Craven <4jamesccraven@gmail.com>"]
 description = "Save your boilerplate instead of writing it."
-build = "build.rs"
 
 [[bin]]
 name = "mk"
 path = "src/main.rs"
-
-[build-dependencies]
-clap = { version = "4.5.23", features = ["cargo", "derive"] }
-clap_mangen = "0.2.26"
-mkdev-cli = { path = "./mkdev-cli" }
-mkdev-recipe = { path = "./mkdev-recipe/" }
 
 [dependencies]
 clap = { version = "4.5.23", features = ["cargo", "derive"] }

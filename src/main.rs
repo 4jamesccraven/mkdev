@@ -9,6 +9,7 @@ use imprint::imprint_recipe;
 use list::list_recipe;
 
 use mkdev_cli::cli::{Cli, Commands::*};
+use mkdev_cli::man::man_env;
 use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -18,6 +19,7 @@ use clap_complete::CompleteEnv;
 
 fn main() {
     CompleteEnv::with_factory(Cli::command).complete();
+    man_env();
 
     let args = Cli::parse();
 
