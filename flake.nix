@@ -1,5 +1,5 @@
 {
-  description = "";
+  description = "Save your boilerplate instead of writing it.";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
