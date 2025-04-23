@@ -19,8 +19,11 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
-        packages.mkdev = pkgs.callPackage ./package.nix { };
-        packages.default = self.packages.${system}.mkdev;
+        packages = {
+          default = self.packages.${system}.mkdev;
+          mkdev = pkgs.callPackage ./mkdev.nix { };
+          mkf = pkgs.callPackage ./mkf.nix { mk = self.packages.${system}.mkdev; };
+        };
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
