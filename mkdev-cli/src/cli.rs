@@ -30,6 +30,10 @@ pub struct Cli {
     /// Generate default standard config to stdout
     #[arg(short, long)]
     pub gen_config: bool,
+
+    /// Displays current config to stdout
+    #[arg(short, long)]
+    pub print_config: bool,
 }
 
 #[derive(Subcommand, Debug)]

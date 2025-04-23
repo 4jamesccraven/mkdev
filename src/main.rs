@@ -1,16 +1,17 @@
-mod build_recipe;
+mod config_hook;
 mod delete;
+mod evoke;
 mod imprint;
 mod list;
 
-use build_recipe::build_recipes;
+use config_hook::config_hook;
 use delete::delete_recipe;
+use evoke::build_recipes;
 use imprint::imprint_recipe;
 use list::list_recipe;
 
 use mkdev_cli::cli::{Cli, Commands::*};
 use mkdev_cli::man::man_env;
-use mkdev_recipe::config::Config;
 use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -43,16 +44,7 @@ fn load_user_data() -> HashMap<String, Recipe> {
 
 /// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), String> {
-    if args.gen_config {
-        let config_str = toml::to_string_pretty(&Config::default())
-            .expect("Default configuration should alway serialise.");
-
-        print!("{config_str}");
-    }
-
-    if let Some(path) = args.config {
-        Config::override_path(path);
-    }
+    config_hook(&args);
 
     let user_recipes = load_user_data();
 
