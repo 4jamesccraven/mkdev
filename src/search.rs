@@ -4,7 +4,7 @@ use mkdev_recipe::config::Config;
 use duct::cmd;
 
 pub fn search(action: Option<SearchableCommands>) -> Result<(), String> {
-    let config = Config::get();
+    let config = Config::get()?;
 
     if !config.fzf_integration {
         return Err("fzf_integration is not enabled.".into());

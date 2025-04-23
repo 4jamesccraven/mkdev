@@ -25,8 +25,15 @@ pub struct Config {
 
 impl Config {
     /// Retrieve the config
-    pub fn get() -> &'static Config {
-        CONFIG.get_or_init(Config::load)
+    pub fn get() -> Result<&'static Config, String> {
+        if CONFIG.get().is_none() {
+            let config = Config::load()?;
+            CONFIG
+                .set(config)
+                .map_err(|_| "Failed to set CONFIG".to_string())?;
+        }
+
+        Ok(CONFIG.get().expect("Should be set"))
     }
 
     /// Override the default config path.
@@ -41,12 +48,12 @@ impl Config {
     /// Reads the file from the default location, or generates a file
     /// if it does not already exist.
     /// TODO: make this pass up Result <Config, String> so it doesn't panic
-    fn load() -> Config {
+    fn load() -> Result<Config, String> {
         // The config file is overridden, or is default
         let config_file = match CONFIG_PATH_OVERRIDE.get() {
             Some(path) => path.clone(),
             None => dirs::config_dir()
-                .expect("Unable to access user configuration directory")
+                .ok_or("Unable to access user configuration directory: {why}.")?
                 .join("mkdev")
                 .join("config.toml"),
         };
@@ -54,8 +61,9 @@ impl Config {
         // Ensure the parent directory exists
         if let Some(dir) = config_file.parent() {
             if !dir.is_dir() {
-                let _ = fs::create_dir_all(&dir)
-                    .expect("Unable to create mkdev configuration directory");
+                let _ = fs::create_dir_all(&dir).map_err(|why| {
+                    format!("Unable to create mkdev configuration directory: {why:?}")
+                })?;
             }
         }
 
@@ -65,17 +73,18 @@ impl Config {
                 .expect("Default configuration should always serialize correctly");
 
             let _ = fs::write(config_file, serialized_default)
-                .expect("Unable to write default configuration file");
+                .map_err(|why| format!("Unable to write default configuration file: {why:?}"))?;
 
-            cfg
+            Ok(cfg)
         } else {
-            let cfg_contents =
-                fs::read_to_string(config_file).expect("Unable to read configuration file");
+            let cfg_contents = fs::read_to_string(config_file)
+                .map_err(|why| format!("Unable to read configuration file: {why:?}"))?;
 
-            let cfg: Config = toml::from_str(&cfg_contents)
-                .expect("Invalid configuration file. Please ensure it is properly formatted.");
+            let cfg: Config = toml::from_str(&cfg_contents).map_err(|_| {
+                "Invalid configuration file. Please ensure it is properly formatted.".to_string()
+            })?;
 
-            cfg
+            Ok(cfg)
         }
     }
 }

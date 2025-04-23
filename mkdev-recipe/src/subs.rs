@@ -12,7 +12,8 @@ pub struct Replacer {
 
 impl Replacer {
     pub fn new() -> Self {
-        let cfg = Config::get();
+        let cfg = Config::get().expect("Config formatting error should be detected by this point.");
+
         let map = cfg.subs.clone();
 
         Self { map }

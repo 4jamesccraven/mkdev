@@ -38,7 +38,8 @@ fn main() {
 /// Load user recipes into a hashmap for easy searching
 fn load_user_data() -> HashMap<String, Recipe> {
     let recipes = Recipe::gather().unwrap_or_else(|error| {
-        panic!("Error gathering stored recipes: {error:?}");
+        eprintln!("Error gathering stored recipes: {error}");
+        std::process::exit(1);
     });
 
     recipes
