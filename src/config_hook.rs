@@ -31,8 +31,16 @@ pub fn config_hook(args: &Cli) {
     }
 
     if args.print_config {
-        let config = toml::to_string_pretty(&Config::get())
-            .expect("Improperly formatted configuration file.");
+        let config = match Config::get() {
+            Ok(config) => config,
+            Err(why) => {
+                eprintln!("mkdev: error: could not get config {why}.");
+                std::process::exit(1);
+            }
+        };
+
+        let config =
+            toml::to_string_pretty(&config).expect("Improperly formatted configuration file.");
 
         if args.command.is_some() {
             eprintln!("mkdev: warning: subcommand suppressed by `--print-config` flag.");
