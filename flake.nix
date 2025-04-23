@@ -18,7 +18,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
       in
-      rec {
+      {
         packages.mkdev = pkgs.callPackage ./package.nix { };
         packages.default = self.packages.${system}.mkdev;
 
@@ -29,6 +29,8 @@
             rustfmt
             libgcc
           ];
+
+          CONFIG = "${./.dev-config.toml}";
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
         };

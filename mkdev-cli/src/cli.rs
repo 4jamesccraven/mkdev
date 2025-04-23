@@ -1,5 +1,6 @@
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
+use crate::searchable::SearchableCommands;
 
 use std::path::PathBuf;
 
@@ -80,5 +81,11 @@ pub enum Commands {
         /// Style of output
         #[arg(short, long)]
         r#type: Option<OutputType>,
+    },
+    /// Search for a package, then perform and action with it
+    #[command(aliases = ["s", "fzf", "f"])]
+    Search {
+        /// Alternative action to perform on matched recipe
+        action: Option<SearchableCommands>,
     },
 }
