@@ -12,7 +12,6 @@ path = "src/main.rs"
 [dependencies]
 clap = { version = "4.5.23", features = ["cargo", "derive"] }
 clap_complete = { version = "4.5.47", features = ["unstable-dynamic"] }
-duct = "0.13.7"
 mkdev-cli = { path = "./mkdev-cli" }
 mkdev-recipe = { path = "./mkdev-recipe/" }
 serde = { version = "1.0.216", features = ["derive"] }

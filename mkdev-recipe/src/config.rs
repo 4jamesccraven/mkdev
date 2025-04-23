@@ -17,8 +17,6 @@ static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 pub struct Config {
     /// The directory that data for mkdev is stored in
     pub recipe_dir: Option<PathBuf>,
-    /// Whether or not fzf integration should be enabled
-    pub fzf_integration: bool,
     /// User defined in-line substitution commands
     pub subs: HashMap<String, String>,
 }
@@ -93,8 +91,6 @@ impl Default for Config {
     fn default() -> Self {
         let recipe_dir: _ = None;
 
-        let fzf_integration = false;
-
         let subs: HashMap<String, String> = [
             ("dir", "mk::dir"),
             ("user", "whoami"),
@@ -106,10 +102,6 @@ impl Default for Config {
         .into_iter()
         .collect();
 
-        Self {
-            recipe_dir,
-            fzf_integration,
-            subs,
-        }
+        Self { recipe_dir, subs }
     }
 }

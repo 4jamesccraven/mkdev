@@ -3,14 +3,12 @@ mod delete;
 mod evoke;
 mod imprint;
 mod list;
-mod search;
 
 use config_hook::config_hook;
 use delete::delete_recipe;
 use evoke::build_recipes;
 use imprint::imprint_recipe;
 use list::list_recipe;
-use search::search;
 
 use mkdev_cli::cli::{Cli, Commands::*};
 use mkdev_cli::man::man_env;
@@ -64,7 +62,6 @@ fn try_get_status(args: Cli) -> Result<(), String> {
             } => imprint_recipe(recipe, description),
             Delete { recipe } => delete_recipe(recipe, &user_recipes),
             List { recipe, r#type } => list_recipe(recipe, r#type, &user_recipes),
-            Search { action } => search(action),
         },
         None => Err("No action specified.".into()),
     }

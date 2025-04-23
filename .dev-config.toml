@@ -1,5 +1,3 @@
-fzf_integration = true
-
 [subs]
 user = "whoami"
 dir = "mk::dir"
