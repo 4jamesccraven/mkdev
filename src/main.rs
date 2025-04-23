@@ -10,6 +10,7 @@ use list::list_recipe;
 
 use mkdev_cli::cli::{Cli, Commands::*};
 use mkdev_cli::man::man_env;
+use mkdev_recipe::config::Config;
 use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -23,9 +24,7 @@ fn main() {
 
     let args = Cli::parse();
 
-    let recipes = load_user_data();
-
-    let status = try_get_status(args, recipes);
+    let status = try_get_status(args);
 
     if let Err(why) = status {
         eprintln!("mkdev: error: {why}");
@@ -43,18 +42,34 @@ fn load_user_data() -> HashMap<String, Recipe> {
 }
 
 /// Dispatcher for various actions
-fn try_get_status(args: Cli, user_recipes: HashMap<String, Recipe>) -> Result<(), String> {
+fn try_get_status(args: Cli) -> Result<(), String> {
+    if args.gen_config {
+        let config_str = toml::to_string_pretty(&Config::default())
+            .expect("Default configuration should alway serialise.");
+
+        print!("{config_str}");
+    }
+
+    if let Some(path) = args.config {
+        Config::override_path(path);
+    }
+
+    let user_recipes = load_user_data();
+
     match args.command {
-        Evoke {
-            recipes,
-            dir_name,
-            verbose,
-        } => build_recipes(recipes, dir_name, verbose, user_recipes),
-        Imprint {
-            recipe,
-            description,
-        } => imprint_recipe(recipe, description),
-        Delete { recipe } => delete_recipe(recipe, &user_recipes),
-        List { recipe, r#type } => list_recipe(recipe, r#type, &user_recipes),
+        Some(command) => match command {
+            Evoke {
+                recipes,
+                dir_name,
+                verbose,
+            } => build_recipes(recipes, dir_name, verbose, user_recipes),
+            Imprint {
+                recipe,
+                description,
+            } => imprint_recipe(recipe, description),
+            Delete { recipe } => delete_recipe(recipe, &user_recipes),
+            List { recipe, r#type } => list_recipe(recipe, r#type, &user_recipes),
+        },
+        None => Err("No action specified.".into()),
     }
 }

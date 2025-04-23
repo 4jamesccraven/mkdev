@@ -10,7 +10,7 @@ use std::io;
 use std::path::PathBuf;
 
 use dirs::data_dir;
-use hyperpolyglot::{get_language_breakdown, Language};
+use hyperpolyglot::{Language, get_language_breakdown};
 use serde::{Deserialize, Serialize};
 use toml;
 

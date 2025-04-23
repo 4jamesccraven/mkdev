@@ -1,11 +1,14 @@
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
 
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use clap_complete::engine::ArgValueCompleter;
 
 include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
 
+#[deny(missing_docs)]
 #[derive(Parser, Debug)]
 #[command(
     name = "mk",
@@ -14,9 +17,19 @@ include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
     author = AUTHORS,
     about = DESCRIPTION,
 )]
+/// Command Line Interface for Mkdev
 pub struct Cli {
+    /// Command to be passed
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
+
+    /// Specifies configuration file to load
+    #[arg(short, long)]
+    pub config: Option<PathBuf>,
+
+    /// Generate default standard config to stdout
+    #[arg(short, long)]
+    pub gen_config: bool,
 }
 
 #[derive(Subcommand, Debug)]
