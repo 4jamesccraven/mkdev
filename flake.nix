@@ -33,8 +33,6 @@
             libgcc
           ];
 
-          CONFIG = "${./.dev-config.toml}";
-
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
         };
       }

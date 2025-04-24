@@ -1,6 +1,0 @@
-[subs]
-user = "whoami"
-dir = "mk::dir"
-day = "date +%d"
-year = "date +%Y"
-month = "date +%m"
