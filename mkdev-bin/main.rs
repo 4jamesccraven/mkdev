@@ -1,17 +1,16 @@
-mod config_hook;
+mod config;
 mod delete;
 mod evoke;
 mod imprint;
 mod list;
 
-use config_hook::config_hook;
 use delete::delete_recipe;
 use evoke::build_recipes;
 use imprint::imprint_recipe;
 use list::list_recipe;
 
 use mkdev_cli::cli::{Cli, Commands::*};
-use mkdev_cli::man::man_env;
+use mkdev_cli::man;
 use mkdev_recipe::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -20,12 +19,12 @@ use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
 
 fn main() {
+    // Produce completion scripts using clap_complete...
     CompleteEnv::with_factory(Cli::command).complete();
+    // ... or try to do mkdev's business logic
+    let status = try_get_status(Cli::parse());
 
-    let args = Cli::parse();
-
-    let status = try_get_status(args);
-
+    // Gracefully inform user of error, then exit with fail code
     if let Err(why) = status {
         eprintln!("mkdev: error: {why}");
         std::process::exit(1);
@@ -44,8 +43,9 @@ fn load_user_data() -> HashMap<String, Recipe> {
 
 /// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), String> {
-    man_env(&args);
-    config_hook(&args);
+    // Arguments that cause an exit before subcommand logic
+    man::hook(&args);
+    config::hook(&args);
 
     let user_recipes = load_user_data();
 

@@ -1,7 +1,7 @@
 use clap_complete::engine::CompletionCandidate;
 use mkdev_recipe::recipe::Recipe;
 
-/// A arg completer valid recipe names
+/// An argument completer that gets valid recipe names
 pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     let mut completions = vec![];
 

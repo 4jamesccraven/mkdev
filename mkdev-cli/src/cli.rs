@@ -6,6 +6,8 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use clap_complete::engine::ArgValueCompleter;
 
+// This trickery is necessary to pull version info et al. from the Cargo.toml of the parent crate.
+// See ./mkdev-cli/build.rs for more info on how this is created
 include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
 
 #[deny(missing_docs)]
@@ -41,7 +43,9 @@ pub struct Cli {
     pub man_page: bool,
 }
 
+#[deny(missing_docs)]
 #[derive(Subcommand, Debug)]
+/// Commands to be passed
 pub enum Commands {
     /// Build a recipe/some recipes by name. Aliases: [build | invoke]
     #[command(aliases = ["build", "conjure", "invoke", "summon"])]

@@ -34,6 +34,8 @@
           ];
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
+          # Can enable when needed by running `eval $ALIAS_CARGO_CLEAN_ALL`
+          ALIAS_CARGO_CLEAN_ALL = "alias cargo-clean-all='find -name Cargo.toml -execdir cargo clean \\;'";
         };
       }
     );

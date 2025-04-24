@@ -16,12 +16,13 @@ use toml;
 
 /// Get the user's preferred data dir, or use the default XDG_DATA_DIR
 pub fn get_data_dir() -> io::Result<PathBuf> {
-    let cfg = Config::get();
-    if let Err(why) = cfg {
-        let err = io::Error::new(io::ErrorKind::Other, why);
-        return Err(err);
-    }
-    let cfg = cfg.unwrap();
+    let cfg = match Config::get() {
+        Ok(cfg) => cfg,
+        Err(why) => {
+            let err = io::Error::new(io::ErrorKind::Other, why);
+            return Err(err);
+        }
+    };
 
     let err = io::Error::new(io::ErrorKind::Other, "Error getting data directory");
     let data_dir = match &cfg.recipe_dir {

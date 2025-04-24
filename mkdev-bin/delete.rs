@@ -10,7 +10,7 @@ pub fn delete_recipe(recipe: String, user_recipes: &HashMap<String, Recipe>) -> 
         Some(recipe) => {
             let deleted_file = recipe
                 .delete()
-                .map_err(|error| format!("Unable to delete `{}`: {error:?}", recipe.name))?;
+                .map_err(|error| format!("Unable to delete `{}`: {error}", recipe.name))?;
 
             println!("Deleted recipe at {}.", &deleted_file.display());
 

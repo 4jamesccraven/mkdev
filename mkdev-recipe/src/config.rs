@@ -45,7 +45,6 @@ impl Config {
     /// Private api for loading the config if it is not already loaded.
     /// Reads the file from the default location, or generates a file
     /// if it does not already exist.
-    /// TODO: make this pass up Result <Config, String> so it doesn't panic
     fn load() -> Result<Config, String> {
         // The config file is overridden, or is default
         let config_file = match CONFIG_PATH_OVERRIDE.get() {

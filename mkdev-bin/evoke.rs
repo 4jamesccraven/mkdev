@@ -12,20 +12,22 @@ pub fn build_recipes(
     verbose: bool,
     user_recipes: HashMap<String, Recipe>,
 ) -> Result<(), String> {
+    if recipes.is_empty() {
+        return Err("No recipes specified.".to_string());
+    }
+
     let non_existant_recipes: Vec<String> = recipes
         .iter()
         .filter_map(|r| match user_recipes.contains_key(r) {
             false => Some(r),
             true => None,
         })
-        .map(|r| format!("No such recipe \"{r}\"."))
+        .map(|r| r.to_string())
         .collect();
 
     // There is an error if there are any non-existent recipes specified by the user
-    let is_err = !non_existant_recipes.is_empty();
-
-    if is_err {
-        let message = format!("Invalid recipes:\n{}", non_existant_recipes.join("\n"));
+    if !non_existant_recipes.is_empty() {
+        let message = format!("Invalid recipe(s):\n{}", non_existant_recipes.join("\n"));
         return Err(message);
     }
 
@@ -34,7 +36,7 @@ pub fn build_recipes(
     // Build to the cwd, or a directory specified by the user
     let dir = match dir_name {
         Some(dir) => PathBuf::from(dir),
-        None => current_dir().map_err(|error| format!("Unable to get cwd: {error:?}"))?,
+        None => current_dir().map_err(|why| format!("Unable to get cwd: {why}"))?,
     };
 
     recipes.iter().try_for_each(|r| {
@@ -42,9 +44,9 @@ pub fn build_recipes(
             .get(r)
             .expect("Invalid recipes should have been filtered out.");
 
-        Recipe::build(&dir, &recipe.contents, verbose, &re).map_err(|error| {
+        Recipe::build(&dir, &recipe.contents, verbose, &re).map_err(|why| {
             format!(
-                "Unable to write `{}` to `{}`: {error:?}",
+                "Unable to write `{}` to `{}`: {why}",
                 recipe.name,
                 dir.display()
             )
