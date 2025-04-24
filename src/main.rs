@@ -21,7 +21,6 @@ use clap_complete::CompleteEnv;
 
 fn main() {
     CompleteEnv::with_factory(Cli::command).complete();
-    man_env();
 
     let args = Cli::parse();
 
@@ -45,6 +44,7 @@ fn load_user_data() -> HashMap<String, Recipe> {
 
 /// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), String> {
+    man_env(&args);
     config_hook(&args);
 
     let user_recipes = load_user_data();

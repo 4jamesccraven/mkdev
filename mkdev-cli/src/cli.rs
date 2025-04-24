@@ -16,6 +16,7 @@ include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
     long_version = LONG_VERSION,
     author = AUTHORS,
     about = DESCRIPTION,
+    disable_help_subcommand = true,
 )]
 /// Command Line Interface for Mkdev
 pub struct Cli {
@@ -23,8 +24,8 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
 
-    /// Specifies configuration file to load
-    #[arg(short, long)]
+    /// Specifies configuration file to load.
+    #[arg(short, long, env = "CONFIG")]
     pub config: Option<PathBuf>,
 
     /// Generate default standard config to stdout
@@ -34,12 +35,16 @@ pub struct Cli {
     /// Displays current config to stdout
     #[arg(short, long)]
     pub print_config: bool,
+
+    /// Displays the manpage
+    #[arg(long, hide = true, env = "MANPAGE")]
+    pub man_page: bool,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Build a recipe/some recipes by name
-    #[command(aliases = ["build", "b", "conjure", "summon", "invoke"])]
+    /// Build a recipe/some recipes by name. Aliases: [build | invoke]
+    #[command(aliases = ["build", "conjure", "invoke", "summon"])]
     Evoke {
         /// The recipe(s) to build
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
@@ -53,13 +58,12 @@ pub enum Commands {
         #[arg(short, long)]
         verbose: bool,
     },
-    /// Create a recipe by "imprinting" the contents
-    /// of the current directory
-    #[command(aliases = ["clone", "i"])]
+    /// Create a recipe by cloning the contents of the current directory. Aliases: [clone]
+    #[command(aliases = ["clone"])]
     Imprint {
         /// The name of the recipe to imprint.
-        /// NOTE: this action IS destructive and
-        /// can overwrite existing recipes
+        /// NOTE: this action IS destructive and can overwrite existing recipes
+        #[arg(verbatim_doc_comment)]
         recipe: String,
 
         #[arg(short, long)]
@@ -72,7 +76,8 @@ pub enum Commands {
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
         recipe: String,
     },
-    /// List recipes, or the contents of a specific one
+    /// List recipes, or the contents of a specific one. Aliases: [show]
+    #[command(aliases = ["show"])]
     List {
         /// Specific recipe
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
