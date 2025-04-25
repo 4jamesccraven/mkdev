@@ -27,6 +27,7 @@
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
+            argbash
             cargo
             rustc
             rustfmt
