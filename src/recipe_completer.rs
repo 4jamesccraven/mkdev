@@ -1,5 +1,6 @@
+use crate::recipe::Recipe;
+
 use clap_complete::engine::CompletionCandidate;
-use mkdev_recipe::recipe::Recipe;
 
 /// An argument completer that gets valid recipe names
 pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {

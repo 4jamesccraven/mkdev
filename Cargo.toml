@@ -1,19 +1,28 @@
 [package]
 name = "mkdev"
-version = "3.2.0"
+version = "3.2.1"
 edition = "2021"
 authors = ["James Craven <4jamesccraven@gmail.com>"]
 description = "Save your boilerplate instead of writing it."
+license = "MIT"
+documentation = "https://github.com/4jamesccraven/mkdev/wiki"
+homepage = "https://github.com/4jamesccraven/mkdev"
+repository = "https://github.com/4jamesccraven/mkdev"
+readme = "README.md"
+categories = ["command-line-utilities", "template-engine"]
+exclude = ["*.nix", "flake.lock", "scripts/", ".github/workflows/", "rustfmt.toml", ".gitignore"]
 
 [[bin]]
 name = "mk"
-path = "mkdev-bin/main.rs"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["cargo", "derive"] }
 clap_complete = { version = "4.5.47", features = ["unstable-dynamic"] }
-mkdev-cli = { path = "./mkdev-cli" }
-mkdev-recipe = { path = "./mkdev-recipe/" }
+clap_mangen = "0.2.26"
+dirs = "5.0.1"
+hyperpolyglot = "0.1.7"
+regex = "1.11.1"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.140"
 toml = "0.8.19"

@@ -1,5 +1,5 @@
-use mkdev_cli::cli::Cli;
-use mkdev_recipe::config::Config;
+use crate::cli::Cli;
+use crate::config::Config;
 
 /// Hook that handles flags related to configs
 pub fn hook(args: &Cli) {

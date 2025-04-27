@@ -1,5 +1,5 @@
-use mkdev_cli::output_type::OutputType::{self, *};
-use mkdev_recipe::recipe::Recipe;
+use crate::output_type::OutputType::{self, *};
+use crate::recipe::Recipe;
 
 use std::collections::HashMap;
 
@@ -72,6 +72,5 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
             toml::to_string_pretty(recipe)
                 .expect("Recipes are built with serde, and should unwrap")
         ),
-        _ => unreachable!(),
     }
 }

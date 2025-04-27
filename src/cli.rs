@@ -3,21 +3,21 @@ use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
 use clap_complete::engine::ArgValueCompleter;
-
-// This trickery is necessary to pull version info et al. from the Cargo.toml of the parent crate.
-// See ./mkdev-cli/build.rs for more info on how this is created
-include!(concat!(env!("OUT_DIR"), "/built_metadata.rs"));
 
 #[deny(missing_docs)]
 #[derive(Parser, Debug)]
 #[command(
     name = "mk",
-    version = VERSION,
-    long_version = LONG_VERSION,
-    author = AUTHORS,
-    about = DESCRIPTION,
+    version = crate_version!(),
+    long_version = concat!(
+        crate_version!(), " — ", crate_description!(),
+        "\n© 2025 ", crate_authors!(),
+        ".\nLicensed under MIT License — see https://github.com/4jamesccraven/mkdev/blob/main/LICENSE for details.",
+    ),
+    author = crate_authors!(),
+    about = crate_description!(),
     disable_help_subcommand = true,
 )]
 /// Command Line Interface for Mkdev

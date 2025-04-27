@@ -6,7 +6,7 @@
  |  |  | |    \_ |_____/ |______   \/     .___/ /\ |_/ /
                                           \____(_)\___/ 
 ```
-![image](https://img.shields.io/badge/release-3.2.0-orange)
+![image](https://img.shields.io/badge/release-3.2.1-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
 <a href="https://github.com/4jamesccraven/mkdev/wiki">![image](https://img.shields.io/badge/documentation-🔗-orange)</a>
 
