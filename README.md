@@ -8,7 +8,8 @@
 ```
 ![image](https://img.shields.io/badge/release-3.2.1-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
-<a href="https://github.com/4jamesccraven/mkdev/wiki">![image](https://img.shields.io/badge/documentation-🔗-orange)</a>
+[![image](https://img.shields.io/badge/documentation-🔗-orange)](https://github.com/4jamesccraven/mkdev/wiki)
+[![Packaging status](https://repology.org/badge/tiny-repos/mkdev.svg)](https://github.com/4jamesccraven/mkdev/wiki/Installing)
 
 A CLI Tool for Tinkerers
 ------------------------
@@ -19,8 +20,16 @@ Features
 --------
 - Automated copying and pasting of directories and their contents
 - Simple text substitutions based on user configurations
+- An fzf-powered shell script to quickly search through, deploy, and delete your
+  recipes
+- A [wiki](https://github.com/4jamesccraven/mkdev/wiki) with information on how
+  to install, use, and configure mkdev
 
-See the [wiki](https://github.com/4jamesccraven/mkdev/wiki) for more info.
+Packaging Status
+----------------
+[![Packaging status](https://repology.org/badge/vertical-allrepos/mkdev.svg)](https://repology.org/project/mkdev/versions)
+
+[Installation Guide](https://github.com/4jamesccraven/mkdev/wiki/Installing)
 
 History
 ------
@@ -36,7 +45,7 @@ to make a custom, buggy built-in tui text editor... very cool, but definitely no
 ideal.
 
 So the motivation of this re-write was two-fold: improve the ergononmics of the
-program and to use a better-suited and **faster** language.
+program and to use a better-suited and *faster* language.
 
 - [mkdev 1.2](https://github.com/4jamesccraven/mkdev/tree/4d4ac6dd5fe044b7ba3d71d610716b5f3b9685d7)
 - [mkdev 2.0](https://github.com/4jamesccraven/mkdev/tree/v2)
@@ -44,7 +53,6 @@ program and to use a better-suited and **faster** language.
 
 Contributing
 ------------
-While I doubt anyone ever will, pull requests are more than welcome.
-This project has a special place in my heart as it is the longest
-running project I have, and I will probably continue to update it as long as it
-interests me.
+Contributions, feature suggestions, and issues are welcomed.
+
+[Contribution Licensing Information](https://github.com/4jamesccraven/mkdev/wiki/Contribution-Licensing-Information)
