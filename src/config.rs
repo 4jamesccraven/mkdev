@@ -90,16 +90,38 @@ impl Default for Config {
     fn default() -> Self {
         let recipe_dir: _ = None;
 
-        let subs: HashMap<String, String> = [
-            ("dir", "mk::dir"),
-            ("user", "whoami"),
-            ("day", "date +%d"),
-            ("month", "date +%m"),
-            ("year", "date +%Y"),
-        ]
-        .map(|(k, v)| (k.to_owned(), v.to_owned()))
-        .into_iter()
-        .collect();
+        let default_subs = if cfg!(target_family = "unix") {
+            [
+                ("dir", "mk::dir"),
+                ("user", "whoami"),
+                ("day", "date +%d"),
+                ("month", "date +%m"),
+                ("year", "date +%Y"),
+            ]
+        } else {
+            [
+                ("dir", "mk::dir"),
+                ("user", "whoami"),
+                (
+                    "day",
+                    "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a",
+                ),
+                (
+                    "month",
+                    "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a",
+                ),
+                (
+                    "year",
+                    "for /f \"tokens=3 delims=/\" %a in ('date /t') do @echo %a",
+                ),
+            ]
+        };
+
+        let subs: HashMap<String, String> = default_subs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .into_iter()
+            .collect();
 
         Self { recipe_dir, subs }
     }

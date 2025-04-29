@@ -23,6 +23,11 @@ impl Replacer {
         let combined = self
             .map
             .keys()
+            // Creates a regular expression that matches {{key1}} or {{key2}} ...
+            // The exact string produced is of form \{\{(key1)\}\}|\{\{(key2)\}\}|...
+            // This does two things:
+            // 1. Search for "{{key}}"
+            // 2. Captures "key" into a group for later usage
             .map(|r| format!(r"\{{\{{({})\}}\}}", r))
             .collect::<Vec<_>>()
             .join("|");

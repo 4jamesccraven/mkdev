@@ -19,10 +19,12 @@ pub fn build_recipes(
     let non_existant_recipes: Vec<String> = recipes
         .iter()
         .filter_map(|r| match user_recipes.contains_key(r) {
-            false => Some(r),
+            false => {
+                let r = r.to_string();
+                Some(r)
+            }
             true => None,
         })
-        .map(|r| r.to_string())
         .collect();
 
     // There is an error if there are any non-existent recipes specified by the user
