@@ -8,4 +8,5 @@ pub enum OutputType {
     Plain,
     JSON,
     TOML,
+    Nix,
 }

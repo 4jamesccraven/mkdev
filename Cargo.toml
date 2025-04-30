@@ -30,3 +30,6 @@ toml = "0.8.19"
 [profile.release]
 codegen-units = 1
 lto = true
+
+[dev-dependencies]
+indexmap = { version = "2.9.0", features = ["serde"] }

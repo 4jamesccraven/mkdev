@@ -1,3 +1,4 @@
+use crate::nix;
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::Recipe;
 
@@ -54,6 +55,14 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
             serde_json::to_string_pretty(&recipes)
                 .expect("Recipes are built with serde, and should unwrap")
         ),
+        Nix => {
+            let output = nix::to_string(&recipes);
+
+            match output {
+                Ok(r) => println!("{r}"),
+                Err(why) => eprintln!("error: {why}"),
+            }
+        }
         _ => unreachable!(),
     }
 }
@@ -72,5 +81,13 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
             toml::to_string_pretty(recipe)
                 .expect("Recipes are built with serde, and should unwrap")
         ),
+        Nix => {
+            let output = nix::to_string(&recipe);
+
+            match output {
+                Ok(r) => println!("{r}"),
+                Err(why) => eprintln!("error: {why}"),
+            }
+        }
     }
 }

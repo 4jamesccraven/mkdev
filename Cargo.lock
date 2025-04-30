@@ -395,6 +395,7 @@ checksum = "cea70ddb795996207ad57735b50c5982d8844f38ba9ee5f1aedcfb708a2aa11e"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
+ "serde",
 ]
 
 [[package]]
@@ -477,6 +478,7 @@ dependencies = [
  "clap_mangen",
  "dirs",
  "hyperpolyglot",
+ "indexmap 2.9.0",
  "regex",
  "serde",
  "serde_json",
