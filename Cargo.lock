@@ -480,6 +480,7 @@ dependencies = [
  "hyperpolyglot",
  "indexmap 2.9.0",
  "regex",
+ "ser_nix",
  "serde",
  "serde_json",
  "toml",
@@ -722,6 +723,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "ser_nix"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d641b15dd8f559b3e0b98178fcdcd081ed56ade974cbfbec2768e0857ca5634"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

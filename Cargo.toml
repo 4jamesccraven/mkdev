@@ -25,6 +25,7 @@ hyperpolyglot = "0.1.7"
 regex = "1.11.1"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.140"
+ser_nix = "0.1.0"
 toml = "0.8.19"
 
 [profile.release]

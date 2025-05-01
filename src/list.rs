@@ -1,9 +1,9 @@
-use crate::nix;
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::Recipe;
 
 use std::collections::HashMap;
 
+use ser_nix;
 use serde_json;
 use toml;
 
@@ -56,7 +56,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
                 .expect("Recipes are built with serde, and should unwrap")
         ),
         Nix => {
-            let output = nix::to_string(&recipes);
+            let output = ser_nix::to_string(&recipes);
 
             match output {
                 Ok(r) => println!("{r}"),
@@ -82,7 +82,7 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
                 .expect("Recipes are built with serde, and should unwrap")
         ),
         Nix => {
-            let output = nix::to_string(&recipe);
+            let output = ser_nix::to_string(&recipe);
 
             match output {
                 Ok(r) => println!("{r}"),

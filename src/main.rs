@@ -7,7 +7,6 @@ mod evoke;
 mod imprint;
 mod list;
 mod man;
-mod nix;
 mod output_type;
 mod recipe;
 mod recipe_completer;
