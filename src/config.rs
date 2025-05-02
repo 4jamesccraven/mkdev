@@ -90,6 +90,7 @@ impl Default for Config {
     fn default() -> Self {
         let recipe_dir: _ = None;
 
+        #[rustfmt::skip]
         let default_subs = if cfg!(target_family = "unix") {
             [
                 ("dir", "mk::dir"),
@@ -102,18 +103,9 @@ impl Default for Config {
             [
                 ("dir", "mk::dir"),
                 ("user", "whoami"),
-                (
-                    "day",
-                    "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a",
-                ),
-                (
-                    "month",
-                    "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a",
-                ),
-                (
-                    "year",
-                    "for /f \"tokens=3 delims=/\" %a in ('date /t') do @echo %a",
-                ),
+                ("day", "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a"),
+                ("month", "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a"),
+                ("year", "for /f \"tokens=3 delims=/\" %a in ('date /t') do @echo %a"),
             ]
         };
 
