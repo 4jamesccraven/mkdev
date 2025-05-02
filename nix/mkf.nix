@@ -10,5 +10,5 @@ writeShellApplication {
     fzf
   ];
 
-  text = lib.readFile ./scripts/mkf.sh;
+  text = lib.readFile ../scripts/mkf.sh;
 }

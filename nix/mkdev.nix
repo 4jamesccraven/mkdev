@@ -2,15 +2,15 @@
 
 with pkgs;
 let
-  manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
+  manifest = (pkgs.lib.importTOML ../Cargo.toml).package;
 in
 rustPlatform.buildRustPackage {
   pname = manifest.name;
   version = manifest.version;
 
-  src = ./.;
+  src = ../.;
 
-  cargoLock.lockFile = ./Cargo.lock;
+  cargoLock.lockFile = ../Cargo.lock;
 
   nativeBuildInputs = [ installShellFiles ];
 

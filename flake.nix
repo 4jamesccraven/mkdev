@@ -21,8 +21,8 @@
       {
         packages = {
           default = self.packages.${system}.mkdev;
-          mkdev = pkgs.callPackage ./mkdev.nix { };
-          mkf = pkgs.callPackage ./mkf.nix { mk = self.packages.${system}.mkdev; };
+          mkdev = pkgs.callPackage ./nix/mkdev.nix { };
+          mkf = pkgs.callPackage ./nix/mkf.nix { mk = self.packages.${system}.mkdev; };
         };
 
         devShells.default = pkgs.mkShell {
@@ -35,9 +35,10 @@
           ];
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
-          # Can enable when needed by running `eval $ALIAS_CARGO_CLEAN_ALL`
-          ALIAS_CARGO_CLEAN_ALL = "alias cargo-clean-all='find -name Cargo.toml -execdir cargo clean \\;'";
         };
       }
-    );
+    )
+    // flake-utils.lib.eachDefaultSystemPassThrough (system: {
+      homeManagerModule = import ./nix/home-manager.nix { inherit (self.packages.${system}) mkdev; };
+    });
 }
