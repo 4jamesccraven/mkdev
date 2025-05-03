@@ -26,15 +26,15 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
 
-    /// Specifies configuration file to load.
+    /// Specify configuration file to load.
     #[arg(short, long, env = "CONFIG")]
     pub config: Option<PathBuf>,
 
-    /// Generate default standard config to stdout
+    /// Display default config to stdout
     #[arg(short, long)]
     pub gen_config: bool,
 
-    /// Displays current config to stdout
+    /// Display current config to stdout
     #[arg(short, long)]
     pub print_config: bool,
 
@@ -58,7 +58,7 @@ pub enum Commands {
         #[arg(last = true)]
         dir_name: Option<String>,
 
-        /// Prints debug info during build
+        /// Print debug info during build
         #[arg(short, long)]
         verbose: bool,
 
@@ -70,11 +70,10 @@ pub enum Commands {
     #[command(aliases = ["clone"])]
     Imprint {
         /// The name of the recipe to imprint.
-        #[arg(verbatim_doc_comment)]
         recipe: String,
 
-        #[arg(short, long)]
         /// Description to be associated with recipe
+        #[arg(short, long)]
         description: Option<String>,
 
         /// Supress warnings about destructive actions
@@ -97,6 +96,7 @@ pub enum Commands {
         /// Specific recipe
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
         recipe: Option<String>,
+
         /// Style of output
         #[arg(short, long)]
         r#type: Option<OutputType>,
