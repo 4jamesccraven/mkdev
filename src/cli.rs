@@ -47,7 +47,7 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 /// Commands to be passed
 pub enum Commands {
-    /// Build a recipe/some recipes by name. Aliases: [build | invoke]
+    /// Build a recipe/some recipes by name [Aliases: build | invoke]
     #[command(aliases = ["build", "conjure", "invoke", "summon"])]
     Evoke {
         /// The recipe(s) to build
@@ -66,7 +66,7 @@ pub enum Commands {
         #[arg(short, long)]
         supress_warnings: bool,
     },
-    /// Create a recipe by cloning the contents of the current directory. Aliases: [clone]
+    /// Create a recipe by cloning the contents of the current directory [Alias: clone]
     #[command(aliases = ["clone"])]
     Imprint {
         /// The name of the recipe to imprint.
@@ -80,6 +80,10 @@ pub enum Commands {
         /// Supress warnings about destructive actions
         #[arg(short, long)]
         supress_warnings: bool,
+
+        /// Write the recipe as a Nix expression & save it to FILE
+        #[arg(short = 'n', long, value_name = "FILE")]
+        to_nix: Option<PathBuf>,
     },
     /// Delete a recipe
     Delete {
@@ -87,7 +91,7 @@ pub enum Commands {
         #[arg(add = ArgValueCompleter::new(recipe_completer))]
         recipe: String,
     },
-    /// List recipes, or the contents of a specific one. Aliases: [show]
+    /// List recipes, or the contents of a specific one [Alias: show]
     #[command(aliases = ["show"])]
     List {
         /// Specific recipe
