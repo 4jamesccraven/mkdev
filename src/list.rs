@@ -1,3 +1,4 @@
+use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::Recipe;
 
@@ -12,7 +13,7 @@ pub fn list_recipe(
     recipe: Option<String>,
     output_type: Option<OutputType>,
     user_recipes: HashMap<String, Recipe>,
-) -> Result<(), String> {
+) -> Result<(), Error> {
     let output_type = match output_type {
         Some(output_type) => output_type,
         None => OutputType::Default,
@@ -20,9 +21,9 @@ pub fn list_recipe(
 
     match recipe {
         Some(recipe) => {
-            let recipe = user_recipes.get(recipe.as_str()).ok_or_else(|| {
-                format!("No such recipe \"{recipe}\". Run `mk list` to see valid recipes.")
-            })?;
+            let recipe = user_recipes
+                .get(recipe.as_str())
+                .ok_or_else(|| Invalid("recipe".into(), Some(vec![recipe])))?;
 
             display_one(recipe, output_type);
         }

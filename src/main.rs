@@ -7,6 +7,7 @@ mod evoke;
 mod imprint;
 mod list;
 mod man;
+mod mkdev_error;
 mod output_type;
 mod recipe;
 mod recipe_completer;
@@ -18,6 +19,7 @@ use imprint::imprint_recipe;
 use list::list_recipe;
 
 use cli::{Cli, Commands::*};
+use mkdev_error::Error::*;
 use recipe::Recipe;
 
 use std::collections::HashMap;
@@ -33,7 +35,7 @@ fn main() {
 
     // Gracefully inform user of error, then exit with fail code
     if let Err(why) = status {
-        eprintln!("mkdev: error: {why}");
+        eprintln!("mkdev: {why}");
         std::process::exit(1);
     }
 }
@@ -49,7 +51,7 @@ fn load_user_data() -> HashMap<String, Recipe> {
 }
 
 /// Dispatcher for various actions
-fn try_get_status(args: Cli) -> Result<(), String> {
+fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     // Arguments that cause an exit before subcommand logic
     man::hook(&args);
     config_hook::hook(&args);
@@ -73,6 +75,6 @@ fn try_get_status(args: Cli) -> Result<(), String> {
             Delete { recipe } => delete_recipe(recipe, user_recipes),
             List { recipe, r#type } => list_recipe(recipe, r#type, user_recipes),
         },
-        None => Err("No action specified.".into()),
+        None => Err(NoneSpecified("action".into())),
     }
 }
