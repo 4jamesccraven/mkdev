@@ -10,6 +10,7 @@ pub fn build_recipes(
     recipes: Vec<String>,
     dir_name: Option<String>,
     verbose: bool,
+    suppress_warnings: bool,
     user_recipes: HashMap<String, Recipe>,
 ) -> Result<(), String> {
     if recipes.is_empty() {
@@ -46,7 +47,7 @@ pub fn build_recipes(
             .get(r)
             .expect("Invalid recipes should have been filtered out.");
 
-        Recipe::build(&dir, &recipe.contents, verbose, &re).map_err(|why| {
+        Recipe::build(&dir, &recipe.contents, verbose, suppress_warnings, &re).map_err(|why| {
             format!(
                 "Unable to write `{}` to `{}`: {why}",
                 recipe.name,

@@ -11,7 +11,7 @@ use toml;
 pub fn list_recipe(
     recipe: Option<String>,
     output_type: Option<OutputType>,
-    user_recipes: &HashMap<String, Recipe>,
+    user_recipes: HashMap<String, Recipe>,
 ) -> Result<(), String> {
     let output_type = match output_type {
         Some(output_type) => output_type,

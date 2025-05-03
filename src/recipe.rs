@@ -10,7 +10,7 @@ use std::io;
 use std::path::PathBuf;
 
 use dirs::data_dir;
-use hyperpolyglot::{Language, get_language_breakdown};
+use hyperpolyglot::{get_language_breakdown, Language};
 use serde::{Deserialize, Serialize};
 use toml;
 
@@ -196,6 +196,7 @@ impl Recipe {
         dir: &PathBuf,
         contents: &Vec<Content>,
         verbose: bool,
+        suppress_warnings: bool,
         re: &Replacer,
     ) -> io::Result<()> {
         if !dir.is_dir() {
@@ -206,6 +207,14 @@ impl Recipe {
             let mut path = dir.clone();
             let name = re.sub(&content.get_name(), dir);
             path.push(name);
+
+            if path.is_file() && !suppress_warnings {
+                use std::io::ErrorKind::*;
+                return Err(io::Error::new(
+                    AlreadyExists,
+                    format!("'{}' already exists.", path.display()),
+                ));
+            }
 
             if verbose {
                 println!("{}", path.display());
@@ -218,7 +227,7 @@ impl Recipe {
                 }
                 Content::Directory(directory) => {
                     fs::create_dir_all(&path)?;
-                    Recipe::build(&dir, &directory.files, verbose, re)?;
+                    Recipe::build(&dir, &directory.files, verbose, suppress_warnings, re)?;
                 }
             }
         }

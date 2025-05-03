@@ -61,18 +61,25 @@ pub enum Commands {
         /// Prints debug info during build
         #[arg(short, long)]
         verbose: bool,
+
+        /// Supress warnings about destructive actions
+        #[arg(short, long)]
+        supress_warnings: bool,
     },
     /// Create a recipe by cloning the contents of the current directory. Aliases: [clone]
     #[command(aliases = ["clone"])]
     Imprint {
         /// The name of the recipe to imprint.
-        /// NOTE: this action IS destructive and can overwrite existing recipes
         #[arg(verbatim_doc_comment)]
         recipe: String,
 
         #[arg(short, long)]
         /// Description to be associated with recipe
         description: Option<String>,
+
+        /// Supress warnings about destructive actions
+        #[arg(short, long)]
+        supress_warnings: bool,
     },
     /// Delete a recipe
     Delete {
