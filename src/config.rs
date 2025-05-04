@@ -94,6 +94,7 @@ impl Default for Config {
         let default_subs = if cfg!(target_family = "unix") {
             [
                 ("dir", "mk::dir"),
+                ("name", "mk::name"),
                 ("user", "whoami"),
                 ("day", "date +%d"),
                 ("month", "date +%m"),
@@ -102,6 +103,7 @@ impl Default for Config {
         } else {
             [
                 ("dir", "mk::dir"),
+                ("name", "mk::name"),
                 ("user", "whoami"),
                 ("day", "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a"),
                 ("month", "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a"),

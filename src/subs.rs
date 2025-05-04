@@ -19,7 +19,7 @@ impl Replacer {
         Self { map }
     }
 
-    pub fn sub(&self, text: &str, dir: &PathBuf) -> String {
+    pub fn sub(&self, text: &str, name: &str, dir: &PathBuf) -> String {
         let combined = self
             .map
             .keys()
@@ -46,8 +46,9 @@ impl Replacer {
             let fallback = caps.get(0).map_or("", |m| m.as_str());
 
             match self.map.get(match_) {
-                // Special case
+                // Special cases
                 Some(val) if val == "mk::dir" => dir.to_string_lossy().to_string(),
+                Some(val) if val == "mk::name" => name.to_string(),
                 // Substitution in Arbitrary case
                 Some(val) => {
                     // This has to be a closure to take in the environment

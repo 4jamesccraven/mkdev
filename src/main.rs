@@ -60,20 +60,10 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
 
     match args.command {
         Some(command) => match command {
-            Evoke {
-                recipes,
-                dir_name,
-                verbose,
-                supress_warnings,
-            } => build_recipes(recipes, dir_name, verbose, supress_warnings, user_recipes),
-            Imprint {
-                recipe,
-                description,
-                supress_warnings,
-                to_nix,
-            } => imprint_recipe(recipe, description, supress_warnings, to_nix, user_recipes),
-            Delete { recipe } => delete_recipe(recipe, user_recipes),
-            List { recipe, r#type } => list_recipe(recipe, r#type, user_recipes),
+            Evoke(sub_args) => build_recipes(sub_args, user_recipes),
+            Imprint(sub_args) => imprint_recipe(sub_args, user_recipes),
+            Delete(sub_args) => delete_recipe(sub_args, user_recipes),
+            List(sub_args) => list_recipe(sub_args, user_recipes),
         },
         None => Err(NoneSpecified("action".into())),
     }

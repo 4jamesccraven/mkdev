@@ -1,29 +1,23 @@
+use crate::cli::Imprint;
 use crate::mkdev_error::Error::{self, *};
 use crate::recipe::Recipe;
 
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
 
 use ser_nix;
 
 /// Atttempts to call recipe's imprint and save methods, returning an error message
 /// on failure
-pub fn imprint_recipe(
-    recipe: String,
-    description: Option<String>,
-    suppress_warnings: bool,
-    to_nix: Option<PathBuf>,
-    user_recipes: HashMap<String, Recipe>,
-) -> Result<(), Error> {
-    let new = Recipe::imprint(recipe, description).map_err(|why| {
+pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+    let new = Recipe::imprint(args.recipe, args.description).map_err(|why| {
         Error::from_io(
             "Unable to read current_working directory for the recipe".into(),
             &why,
         )
     })?;
 
-    if let Some(path) = to_nix {
+    if let Some(path) = args.to_nix {
         let nix_expression = match ser_nix::to_string(&new) {
             Ok(expr) => expr,
             Err(why) => {
@@ -39,7 +33,7 @@ pub fn imprint_recipe(
 
     let destructive = user_recipes.iter().any(|(recipe, _)| recipe == &new.name);
 
-    if destructive && !suppress_warnings {
+    if destructive && !args.suppress_warnings {
         return Err(DestructionWarning(new.name));
     }
 

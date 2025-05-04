@@ -1,3 +1,4 @@
+use crate::cli::List;
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::Recipe;
@@ -9,17 +10,13 @@ use serde_json;
 use toml;
 
 /// List out a recipe or its contents, returning error messages on failure
-pub fn list_recipe(
-    recipe: Option<String>,
-    output_type: Option<OutputType>,
-    user_recipes: HashMap<String, Recipe>,
-) -> Result<(), Error> {
-    let output_type = match output_type {
+pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+    let output_type = match args.r#type {
         Some(output_type) => output_type,
         None => OutputType::Default,
     };
 
-    match recipe {
+    match args.recipe {
         Some(recipe) => {
             let recipe = user_recipes
                 .get(recipe.as_str())

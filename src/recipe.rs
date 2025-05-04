@@ -1,3 +1,4 @@
+use crate::cli::Evoke;
 use crate::config::Config;
 use crate::content::{Content, Directory};
 use crate::subs::Replacer;
@@ -195,8 +196,7 @@ impl Recipe {
     pub fn build(
         dir: &PathBuf,
         contents: &Vec<Content>,
-        verbose: bool,
-        suppress_warnings: bool,
+        extra_args: &Evoke,
         re: &Replacer,
     ) -> io::Result<()> {
         if !dir.is_dir() {
@@ -205,10 +205,13 @@ impl Recipe {
 
         for content in contents {
             let mut path = dir.clone();
-            let name = re.sub(&content.get_name(), dir);
+            let project_name = extra_args.name.as_ref().expect(
+                "Name is converted to a Some variant in the `build_recipes` wrapper function.",
+            );
+            let name = re.sub(&content.get_name(), &project_name, dir);
             path.push(name);
 
-            if path.is_file() && !suppress_warnings {
+            if path.is_file() && !extra_args.suppress_warnings {
                 use std::io::ErrorKind::*;
                 return Err(io::Error::new(
                     AlreadyExists,
@@ -216,18 +219,18 @@ impl Recipe {
                 ));
             }
 
-            if verbose {
+            if extra_args.verbose {
                 println!("{}", path.display());
             }
 
             match content {
                 Content::File(file) => {
-                    let content = re.sub(&file.content, dir);
+                    let content = re.sub(&file.content, &project_name, dir);
                     fs::write(&path, content)?;
                 }
                 Content::Directory(directory) => {
                     fs::create_dir_all(&path)?;
-                    Recipe::build(&dir, &directory.files, verbose, suppress_warnings, re)?;
+                    Recipe::build(&dir, &directory.files, &extra_args, re)?;
                 }
             }
         }

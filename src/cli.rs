@@ -49,56 +49,77 @@ pub struct Cli {
 pub enum Commands {
     /// Build a recipe/some recipes by name [Aliases: build | invoke]
     #[command(aliases = ["build", "conjure", "invoke", "summon"])]
-    Evoke {
-        /// The recipe(s) to build
-        #[arg(add = ArgValueCompleter::new(recipe_completer))]
-        recipes: Vec<String>,
-
-        /// Target directory for recipe output
-        #[arg(last = true)]
-        dir_name: Option<String>,
-
-        /// Print debug info during build
-        #[arg(short, long)]
-        verbose: bool,
-
-        /// Supress warnings about destructive actions
-        #[arg(short, long)]
-        supress_warnings: bool,
-    },
+    Evoke(Evoke),
     /// Create a recipe by cloning the contents of the current directory [Alias: clone]
     #[command(aliases = ["clone"])]
-    Imprint {
-        /// The name of the recipe to imprint.
-        recipe: String,
-
-        /// Description to be associated with recipe
-        #[arg(short, long)]
-        description: Option<String>,
-
-        /// Supress warnings about destructive actions
-        #[arg(short, long)]
-        supress_warnings: bool,
-
-        /// Write the recipe as a Nix expression & save it to FILE
-        #[arg(short = 'n', long, value_name = "FILE")]
-        to_nix: Option<PathBuf>,
-    },
+    Imprint(Imprint),
     /// Delete a recipe
-    Delete {
-        /// The recipe to delete
-        #[arg(add = ArgValueCompleter::new(recipe_completer))]
-        recipe: String,
-    },
+    Delete(Delete),
     /// List recipes, or the contents of a specific one [Alias: show]
     #[command(aliases = ["show"])]
-    List {
-        /// Specific recipe
-        #[arg(add = ArgValueCompleter::new(recipe_completer))]
-        recipe: Option<String>,
+    List(List),
+}
 
-        /// Style of output
-        #[arg(short, long)]
-        r#type: Option<OutputType>,
-    },
+#[deny(missing_docs)]
+#[derive(Parser, Clone, Debug)]
+pub struct Evoke {
+    /// The recipe(s) to build
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipes: Vec<String>,
+
+    /// Target directory for recipe output
+    #[arg(last = true)]
+    pub dir_name: Option<String>,
+
+    /// The 'name' of the instantiated recipe. This replaces substitutions that evaluate to
+    /// mk::name
+    #[arg(short, long)]
+    pub name: Option<String>,
+
+    /// Print debug info during build
+    #[arg(short, long)]
+    pub verbose: bool,
+
+    /// Supress warnings about destructive actions
+    #[arg(short, long)]
+    pub suppress_warnings: bool,
+}
+
+#[deny(missing_docs)]
+#[derive(Parser, Debug)]
+pub struct Imprint {
+    /// The name of the recipe to imprint.
+    pub recipe: String,
+
+    /// Description to be associated with recipe
+    #[arg(short, long)]
+    pub description: Option<String>,
+
+    /// Supress warnings about destructive actions
+    #[arg(short, long)]
+    pub suppress_warnings: bool,
+
+    /// Write the recipe as a Nix expression & save it to FILE
+    #[arg(short = 'n', long, value_name = "FILE")]
+    pub to_nix: Option<PathBuf>,
+}
+
+#[deny(missing_docs)]
+#[derive(Parser, Debug)]
+pub struct Delete {
+    /// The recipe to delete
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipe: String,
+}
+
+#[deny(missing_docs)]
+#[derive(Parser, Debug)]
+pub struct List {
+    /// Specific recipe
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipe: Option<String>,
+
+    /// Style of output
+    #[arg(short, long)]
+    pub r#type: Option<OutputType>,
 }
