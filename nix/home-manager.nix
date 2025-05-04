@@ -45,6 +45,7 @@ in
           subs = {
             day = "date +%d";
             dir = "mk::dir";
+            name = "mk::name";
             month = "date +%m";
             user = "whoami";
             year = "date +%Y";
