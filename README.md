@@ -22,6 +22,7 @@ Features
 - Simple text substitutions based on user configurations
 - An fzf-powered shell script to quickly search through, deploy, and delete your
   recipes
+- A [home-manager](https://nixos.wiki/wiki/Home_Manager) module to configure mkdev declaratively
 - A [wiki](https://github.com/4jamesccraven/mkdev/wiki) with information on how
   to install, use, and configure mkdev
 
