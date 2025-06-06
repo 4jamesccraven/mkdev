@@ -1,6 +1,6 @@
 [package]
 name = "mkdev"
-version = "3.2.2"
+version = "3.2.3"
 edition = "2021"
 authors = ["James Craven <4jamesccraven@gmail.com>"]
 description = "Save your boilerplate instead of writing it."
@@ -31,6 +31,3 @@ toml = "0.8.19"
 [profile.release]
 codegen-units = 1
 lto = true
-
-[dev-dependencies]
-indexmap = { version = "2.9.0", features = ["serde"] }
