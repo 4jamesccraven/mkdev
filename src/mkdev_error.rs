@@ -1,48 +1,47 @@
-use std::fmt::Display;
 use std::io;
 
-#[derive(Clone, Debug)]
+use ser_nix;
+use thiserror;
+
+#[derive(thiserror::Error, Clone, Debug)]
 pub enum Error {
+    #[error("No {0} specified.")]
     NoneSpecified(String),
+
+    #[error("invalid {0}{examples}", examples = {
+        match .1 {
+            Some(eg) => format!(":\n{}", eg.join("\n")),
+            None => String::from("."),
+        }
+    })]
     Invalid(String, Option<Vec<String>>),
+
+    #[error("{0}: {1}")]
     IoBased(String, String),
+
+    #[error("failed to serialise {0}: {1}")]
     SerialisationError(String, String),
+
     #[allow(unused)]
+    #[error("failed to deserialise {0}: {1}")]
     DeserialisationError(String, String),
+
+    #[error("'{0}' already exists. Use -s to overwrite.")]
     DestructionWarning(String),
 }
 
-impl Error {
-    pub fn from_io(context: &str, why: &io::Error) -> Self {
-        Self::IoBased(context.into(), format!("{why}"))
+pub trait ResultExt<T> {
+    fn context(self, s: &str) -> Result<T, Error>;
+}
+
+impl<T> ResultExt<T> for Result<T, io::Error> {
+    fn context(self, s: &str) -> Result<T, Error> {
+        self.map_err(|e| Error::IoBased(s.to_string(), e.to_string()))
     }
 }
 
-impl std::error::Error for Error {}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Error::*;
-        match self {
-            NoneSpecified(object) => f.write_fmt(format_args!("no {object} specified.")),
-            Invalid(object, examples) => {
-                let examples = match examples {
-                    Some(eg) => format!(":\n{}", eg.join("\n")),
-                    None => String::from("."),
-                };
-
-                f.write_fmt(format_args!("invalid {object}{examples}"))
-            }
-            IoBased(context, why) => f.write_fmt(format_args!("{context}: {why}")),
-            SerialisationError(object, why) => {
-                f.write_fmt(format_args!("failed to serialise {object}: {why}"))
-            }
-            DeserialisationError(object, why) => {
-                f.write_fmt(format_args!("failed to deserialise {object}: {why}"))
-            }
-            DestructionWarning(object) => f.write_fmt(format_args!(
-                "'{object}' already exists. Use -s to overwrite."
-            )),
-        }
+impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
+    fn context(self, s: &str) -> Result<T, Error> {
+        self.map_err(|e| Error::SerialisationError(s.to_string(), e.to_string()))
     }
 }

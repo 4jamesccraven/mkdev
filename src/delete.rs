@@ -1,5 +1,8 @@
 use crate::cli::Delete;
-use crate::mkdev_error::Error::{self, *};
+use crate::mkdev_error::{
+    Error::{self, *},
+    ResultExt,
+};
 use crate::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -10,9 +13,9 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 
     match to_delete {
         Some(recipe) => {
-            let deleted_file = recipe.delete().map_err(|error| {
-                Error::from_io(&format!("Unable to delete `{}`", recipe.name), &error)
-            })?;
+            let deleted_file = recipe
+                .delete()
+                .context(&format!("Unable to delete `{}`", recipe.name))?;
 
             println!("Deleted recipe at {}.", &deleted_file.display());
 

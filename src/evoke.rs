@@ -1,5 +1,8 @@
 use crate::cli::Evoke;
-use crate::mkdev_error::Error::{self, *};
+use crate::mkdev_error::{
+    Error::{self, *},
+    ResultExt,
+};
 use crate::recipe::Recipe;
 use crate::subs::Replacer;
 
@@ -41,7 +44,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
-        None => current_dir().map_err(|why| Error::from_io("unable to get cwd", &why))?,
+        None => current_dir().context("unable to get cwd")?,
     };
 
     let extra_args = args.clone();
@@ -50,10 +53,9 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
             .get(r)
             .expect("Invalid recipes should have been filtered out.");
 
-        Recipe::build(&dir, &recipe.contents, &extra_args, &re).map_err(|why| {
-            let context = format!("Unable to write `{}` to `{}`", recipe.name, dir.display());
-            Error::from_io(&context, &why)
-        })
+        // Context for failure, should building fail
+        let context = format!("Unable to write `{}` to `{}`", recipe.name, dir.display());
+        Recipe::build(&dir, &recipe.contents, &extra_args, &re).context(&context)
     })?;
 
     Ok(())
