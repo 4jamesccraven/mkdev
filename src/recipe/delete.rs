@@ -1,11 +1,14 @@
+use super::{get_data_dir, Recipe};
 use crate::cli::Delete;
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
 };
-use crate::recipe::Recipe;
 
 use std::collections::HashMap;
+use std::fs;
+use std::io;
+use std::path::PathBuf;
 
 /// Attempt to delete a config from the users directory, returning an error on failure
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
@@ -22,5 +25,18 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
             Ok(())
         }
         None => Err(Invalid("recipe".into(), Some(vec![args.recipe]))),
+    }
+}
+
+impl Recipe {
+    /// Delete the recipe by deleting its serialised self
+    pub fn delete(&self) -> io::Result<PathBuf> {
+        let mut data_dir = get_data_dir()?;
+
+        data_dir.push(format!("{}.toml", self.name));
+
+        fs::remove_file(&data_dir)?;
+
+        Ok(data_dir)
     }
 }

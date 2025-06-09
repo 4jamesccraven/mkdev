@@ -3,6 +3,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
 fn make_relative(path: PathBuf) -> PathBuf {
@@ -62,7 +63,12 @@ impl File {
             self.name.clone()
         };
 
-        format!("\x1b[38;5;8m{}{}\x1b[0m{}\n", prefix, line, text)
+        format!(
+            "{}{}{}\n",
+            prefix.truecolor(128, 128, 128),
+            line.truecolor(128, 128, 128),
+            text
+        )
     }
 }
 
@@ -120,9 +126,14 @@ impl Directory {
     pub fn produce_tree_string(&self, prefix: &str, last: bool) -> String {
         let line = if last { "└── " } else { "├── " };
 
-        let text = format!("\x1b[34m{}\x1b[0m", self.name);
+        let text = format!("{}", self.name.blue());
 
-        let mut out = format!("\x1b[38;5;8m{}{}\x1b[0m{}\n", prefix, line, text);
+        let mut out = format!(
+            "{}{}{}\n",
+            prefix.truecolor(128, 128, 128),
+            line.truecolor(128, 128, 128),
+            text
+        );
 
         let new_prefix = if last { "    " } else { "│   " };
         let new_prefix = format!("{prefix}{new_prefix}");

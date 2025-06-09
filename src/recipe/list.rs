@@ -1,10 +1,12 @@
+use super::Recipe;
 use crate::cli::List;
+use crate::content::Content;
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
-use crate::recipe::Recipe;
 
 use std::collections::HashMap;
 
+use colored::Colorize;
 use ser_nix;
 use serde_json;
 use toml;
@@ -47,6 +49,8 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
 
     match output_type {
         Default => recipes.iter().for_each(|r| println!("{}\n", r)),
+        #[rustfmt::skip]
+        Debug => recipes.iter().for_each(|r| { dbg!(r); }),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         JSON => println!(
             "{}",
@@ -68,6 +72,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
 fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
         Default => print!("{}", recipe.display_contents()),
+        Debug => _ = dbg!(recipe),
         Plain => print!("{}", recipe.display_contents_plain()),
         JSON => println!(
             "{}",
@@ -87,5 +92,40 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
                 Err(why) => eprintln!("error: {why}"),
             }
         }
+    }
+}
+
+impl Recipe {
+    /// Display contents of `tree` with default style
+    pub fn display_contents(&self) -> String {
+        let mut out = format!("{}\n", self.name.bold().blue());
+        let mut iter = self.contents.iter().peekable();
+
+        while let Some(obj) = iter.next() {
+            let next = obj.produce_tree_string("".into(), iter.peek().is_none());
+            out.push_str(&next);
+        }
+
+        out
+    }
+
+    /// Display all file names associated with the recipe
+    pub fn display_contents_plain(&self) -> String {
+        let mut out = String::new();
+
+        for obj in &self.contents {
+            match obj {
+                Content::File(file) => {
+                    let filname = format!("{}\n", file.name);
+                    out.push_str(&filname);
+                }
+                Content::Directory(dir) => {
+                    let dir_contents = format!("{}", dir.produce_file_names());
+                    out.push_str(&dir_contents);
+                }
+            }
+        }
+
+        out
     }
 }

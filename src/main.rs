@@ -1,26 +1,18 @@
 mod cli;
 mod config;
-mod config_hook;
 mod content;
-mod delete;
-mod evoke;
-mod imprint;
-mod list;
-mod man;
+mod hooks;
 mod mkdev_error;
 mod output_type;
 mod recipe;
 mod recipe_completer;
 mod subs;
 
-use delete::delete_recipe;
-use evoke::build_recipes;
-use imprint::imprint_recipe;
-use list::list_recipe;
-
 use cli::{Cli, Commands::*};
+use hooks::hooks;
 use mkdev_error::Error::*;
 use recipe::Recipe;
+use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 
 use std::collections::HashMap;
 
@@ -53,8 +45,7 @@ fn load_user_data() -> HashMap<String, Recipe> {
 /// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     // Arguments that cause an exit before subcommand logic
-    man::hook(&args);
-    config_hook::hook(&args);
+    hooks(&args);
 
     let user_recipes = load_user_data();
 

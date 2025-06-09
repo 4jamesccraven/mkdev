@@ -1,8 +1,24 @@
+//! This module consists of functions that "hook" into the beginning of main,
+//! potentially allowing short circuiting of any other logic that mkdev might
+//! do.
+
 use crate::cli::Cli;
 use crate::config::Config;
 
+use std::io::Write;
+
+use clap::CommandFactory;
+use clap_mangen::Man;
+
+pub fn hooks(args: &Cli) {
+    config(args);
+    man(args);
+}
+
+//=Config=//
+
 /// Hook that handles flags related to configs
-pub fn hook(args: &Cli) {
+fn config(args: &Cli) {
     let skip_main_logic = vec![args.gen_config, args.print_config].iter().any(|f| *f);
     let commands_present = args.command.is_some();
 
@@ -52,4 +68,30 @@ fn print_default_config() {
         .expect("Default configuration should alway serialise.");
 
     print!("{config_str}");
+}
+
+//=man page=//
+
+fn man(args: &Cli) {
+    if args.man_page {
+        let command = Cli::command();
+        let man = Man::new(command.clone());
+        let mut output_buffer: Vec<u8> = vec![];
+
+        man.render(&mut output_buffer)
+            .expect("Writing to Vec<u8> is infallible.");
+
+        for subcommand in command.get_subcommands() {
+            Man::new(subcommand.clone())
+                .render(&mut output_buffer)
+                .expect("Writing to Vec<u8> is infallible.");
+        }
+
+        std::io::stdout()
+            .lock()
+            .write(&output_buffer)
+            .expect("Unable to write to stdout");
+
+        std::process::exit(0);
+    }
 }
