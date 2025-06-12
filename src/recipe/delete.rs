@@ -1,4 +1,4 @@
-use super::{get_data_dir, Recipe};
+use super::{recipe_dir, Recipe};
 use crate::cli::Delete;
 use crate::mkdev_error::{
     Error::{self, *},
@@ -18,7 +18,7 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
         Some(recipe) => {
             let deleted_file = recipe
                 .delete()
-                .context(&format!("Unable to delete `{}`", recipe.name))?;
+                .context(&format!("unable to delete `{}`", recipe.name))?;
 
             println!("Deleted recipe at {}.", &deleted_file.display());
 
@@ -31,7 +31,7 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 impl Recipe {
     /// Delete the recipe by deleting its serialised self
     pub fn delete(&self) -> io::Result<PathBuf> {
-        let mut data_dir = get_data_dir()?;
+        let mut data_dir = recipe_dir()?;
 
         data_dir.push(format!("{}.toml", self.name));
 

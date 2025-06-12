@@ -5,6 +5,8 @@ mod lang;
 mod list;
 mod version;
 
+use crate::warning;
+
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
@@ -38,7 +40,7 @@ pub struct Recipe {
 impl Recipe {
     /// Attempt to find all user defined recipes
     pub fn gather() -> io::Result<HashMap<String, Recipe>> {
-        let data_dir = get_data_dir()?;
+        let data_dir = recipe_dir()?;
 
         let files = fs::read_dir(data_dir)?;
 
@@ -56,7 +58,7 @@ impl Recipe {
                         recipes.push(recipe);
                     }
                     None => {
-                        eprintln!("mkdev: warning: {} is not a valid recipe.", path.display());
+                        warning!("{} is not a valid recipe.", path.display());
                     }
                 }
             }
@@ -91,11 +93,11 @@ impl Display for Recipe {
 }
 
 /// Get the user's preferred data dir, or use the default XDG_DATA_DIR
-pub fn get_data_dir() -> io::Result<PathBuf> {
+pub fn recipe_dir() -> io::Result<PathBuf> {
     let cfg = match Config::get() {
         Ok(cfg) => cfg,
         Err(why) => {
-            let err = io::Error::new(io::ErrorKind::Other, why);
+            let err = io::Error::other(why);
             return Err(err);
         }
     };

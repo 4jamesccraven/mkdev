@@ -63,12 +63,7 @@ impl File {
             self.name.clone()
         };
 
-        format!(
-            "{}{}{}\n",
-            prefix.truecolor(128, 128, 128),
-            line.truecolor(128, 128, 128),
-            text
-        )
+        format!("{}{}{}\n", prefix, line.truecolor(128, 128, 128), text)
     }
 }
 
@@ -109,11 +104,14 @@ impl Directory {
     }
 
     pub fn sort(&mut self) {
+        use Content::*;
         self.files.sort_by(|a, b| match (a, b) {
-            (Content::Directory(dir_a), Content::Directory(dir_b)) => dir_a.name.cmp(&dir_b.name),
-            (Content::Directory(_), Content::File(_)) => std::cmp::Ordering::Less,
-            (Content::File(_), Content::Directory(_)) => std::cmp::Ordering::Greater,
-            (Content::File(file_a), Content::File(file_b)) => file_a.name.cmp(&file_b.name),
+            // Directories should come before files
+            (Directory(_), File(_)) => std::cmp::Ordering::Less,
+            (File(_), Directory(_)) => std::cmp::Ordering::Greater,
+            // Default comparison
+            (Directory(dir_a), Directory(dir_b)) => dir_a.name.cmp(&dir_b.name),
+            (File(file_a), File(file_b)) => file_a.name.cmp(&file_b.name),
         });
 
         for content in self.files.iter_mut() {
@@ -128,12 +126,7 @@ impl Directory {
 
         let text = format!("{}", self.name.blue());
 
-        let mut out = format!(
-            "{}{}{}\n",
-            prefix.truecolor(128, 128, 128),
-            line.truecolor(128, 128, 128),
-            text
-        );
+        let mut out = format!("{}{}{}\n", prefix, line.truecolor(128, 128, 128), text);
 
         let new_prefix = if last { "    " } else { "│   " };
         let new_prefix = format!("{prefix}{new_prefix}");

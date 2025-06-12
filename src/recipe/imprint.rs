@@ -1,4 +1,4 @@
-use super::{get_data_dir, Language, Recipe};
+use super::{recipe_dir, Language, Recipe};
 use crate::cli::Imprint;
 use crate::content::Directory;
 use crate::mkdev_error::{
@@ -86,7 +86,7 @@ impl Recipe {
 
     /// Save the recipe object by serialising self into the data directory
     pub fn save(&self) -> io::Result<PathBuf> {
-        let mut data_dir = get_data_dir()?;
+        let mut data_dir = recipe_dir()?;
 
         data_dir.push(format!("{}.toml", self.name));
 

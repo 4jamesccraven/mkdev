@@ -1,3 +1,5 @@
+use crate::mkdev_error::{Error, ResultExt};
+
 use std::collections::HashMap;
 use std::default::Default;
 use std::fs;
@@ -13,7 +15,7 @@ use toml;
 static CONFIG: OnceLock<Config> = OnceLock::new();
 static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     /// The directory that data for mkdev is stored in
     pub recipe_dir: Option<PathBuf>,
@@ -23,12 +25,12 @@ pub struct Config {
 
 impl Config {
     /// Retrieve the config
-    pub fn get() -> Result<&'static Config, String> {
+    pub fn get() -> Result<&'static Config, Error> {
         if CONFIG.get().is_none() {
             let config = Config::load()?;
             CONFIG
                 .set(config)
-                .map_err(|_| "Failed to set CONFIG".to_string())?;
+                .expect("This block only happens if it is not set.");
         }
 
         Ok(CONFIG.get().expect("Should be set"))
@@ -45,12 +47,12 @@ impl Config {
     /// Private api for loading the config if it is not already loaded.
     /// Reads the file from the default location, or generates a file
     /// if it does not already exist.
-    fn load() -> Result<Config, String> {
+    fn load() -> Result<Config, Error> {
         // The config file is overridden, or is default
         let config_file = match CONFIG_PATH_OVERRIDE.get() {
             Some(path) => path.clone(),
             None => dirs::config_dir()
-                .ok_or("Unable to access user configuration directory: {why}.")?
+                .expect("This is generally infallible")
                 .join("mkdev")
                 .join("config.toml"),
         };
@@ -58,9 +60,8 @@ impl Config {
         // Ensure the parent directory exists
         if let Some(dir) = config_file.parent() {
             if !dir.is_dir() {
-                let _ = fs::create_dir_all(&dir).map_err(|why| {
-                    format!("Unable to create mkdev configuration directory: {why:?}")
-                })?;
+                fs::create_dir_all(&dir)
+                    .context("unable to create mkdev configuration directory")?;
             }
         }
 
@@ -69,17 +70,15 @@ impl Config {
             let serialized_default = toml::to_string(&cfg)
                 .expect("Default configuration should always serialize correctly");
 
-            let _ = fs::write(config_file, serialized_default)
-                .map_err(|why| format!("Unable to write default configuration file: {why:?}"))?;
+            fs::write(config_file, serialized_default)
+                .context("unable to write default configuration file")?;
 
             Ok(cfg)
         } else {
-            let cfg_contents = fs::read_to_string(config_file)
-                .map_err(|why| format!("Unable to read configuration file: {why:?}"))?;
+            let cfg_contents =
+                fs::read_to_string(config_file).context("unable to read configuration file")?;
 
-            let cfg: Config = toml::from_str(&cfg_contents).map_err(|_| {
-                "Invalid configuration file. Please ensure it is properly formatted.".to_string()
-            })?;
+            let cfg: Config = toml::from_str(&cfg_contents).context("configuration file")?;
 
             Ok(cfg)
         }
@@ -89,7 +88,6 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         let recipe_dir: _ = None;
-
         #[rustfmt::skip]
         let default_subs = if cfg!(target_family = "unix") {
             [

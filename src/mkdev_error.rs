@@ -30,6 +30,25 @@ pub enum Error {
     DestructionWarning(String),
 }
 
+/// Print a warning to the user
+#[macro_export]
+macro_rules! warning {
+    ($($arg:tt)*) => {{
+        use colored::Colorize;
+        eprintln!("{}: {}", "[mkdev warning]".yellow(), format_args!($($arg)*));
+    }};
+}
+
+/// Exit the program early
+#[macro_export]
+macro_rules! die {
+    ($($arg:tt)*) => {{
+        use colored::Colorize;
+        eprintln!("{}: {}", "[mkdev error]".red(), format_args!($($arg)*));
+        std::process::exit(1);
+    }};
+}
+
 pub trait ResultExt<T> {
     fn context(self, s: &str) -> Result<T, Error>;
 }
@@ -43,5 +62,11 @@ impl<T> ResultExt<T> for Result<T, io::Error> {
 impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
     fn context(self, s: &str) -> Result<T, Error> {
         self.map_err(|e| Error::SerialisationError(s.to_string(), e.to_string()))
+    }
+}
+
+impl<T> ResultExt<T> for Result<T, toml::de::Error> {
+    fn context(self, s: &str) -> Result<T, Error> {
+        self.map_err(|e| Error::DeserialisationError(s.to_string(), e.message().to_string()))
     }
 }

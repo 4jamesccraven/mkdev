@@ -14,7 +14,7 @@ use clap_complete::engine::ArgValueCompleter;
     long_version = concat!(
         crate_version!(), " — ", crate_description!(),
         "\n© 2025 ", crate_authors!(),
-        ".\nLicensed under MIT License — see https://github.com/4jamesccraven/mkdev/blob/main/LICENSE for details.",
+        ".\nLicensed under the MIT License — see https://github.com/4jamesccraven/mkdev/blob/main/LICENSE for details.",
     ),
     author = crate_authors!(),
     about = crate_description!(),

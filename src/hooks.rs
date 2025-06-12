@@ -1,9 +1,8 @@
-//! This module consists of functions that "hook" into the beginning of main,
-//! potentially allowing short circuiting of any other logic that mkdev might
-//! do.
-
+//! Functions that "hook" into the beginning of main, potentially allowing short circuiting of any
+//! other logic that mkdev might do.
 use crate::cli::Cli;
 use crate::config::Config;
+use crate::{die, warning};
 
 use std::io::Write;
 
@@ -23,7 +22,7 @@ fn config(args: &Cli) {
     let commands_present = args.command.is_some();
 
     if skip_main_logic && commands_present {
-        eprintln!("mkdev: warning: subcommand suppressed by one or more flags.");
+        warning!("subcommand suppressed by one or more flags.");
     }
 
     if args.gen_config {
@@ -46,18 +45,12 @@ fn config(args: &Cli) {
 fn print_config() {
     let config = match Config::get() {
         Ok(config) => config,
-        Err(why) => {
-            eprintln!("mkdev: error: could not get config {why}.");
-            std::process::exit(1);
-        }
+        Err(why) => die!("could not get config: {}", why),
     };
 
     let config = match toml::to_string_pretty(&config) {
         Ok(cfg) => cfg,
-        Err(_) => {
-            eprintln!("Improperly formatted configuration file.");
-            std::process::exit(1);
-        }
+        Err(_) => die!("improperly formatted configuration file."),
     };
 
     print!("{config}");

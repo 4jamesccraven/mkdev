@@ -3,6 +3,7 @@ use crate::cli::List;
 use crate::content::Content;
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
+use crate::warning;
 
 use std::collections::HashMap;
 
@@ -39,32 +40,24 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
 
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
     if let TOML = output_type {
-        eprintln!(concat!(
-            "Option \"TOML\" invalid for displaying all recipes. ",
-            "Select a single recipe to if you wish to use this format."
-        ));
-
+        warning!("Option \"TOML\" invalid for displaying multiple recipes. ");
         return;
     }
 
     match output_type {
         Default => recipes.iter().for_each(|r| println!("{}\n", r)),
-        #[rustfmt::skip]
-        Debug => recipes.iter().for_each(|r| { dbg!(r); }),
+        Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         JSON => println!(
             "{}",
             serde_json::to_string_pretty(&recipes)
-                .expect("Recipes are built with serde, and should unwrap")
+                .expect("Recipes are instantiated with serde, and should unwrap")
         ),
-        Nix => {
-            let output = ser_nix::to_string(&recipes);
-
-            match output {
-                Ok(r) => println!("{r}"),
-                Err(why) => eprintln!("error: {why}"),
-            }
-        }
+        Nix => println!(
+            "{}",
+            ser_nix::to_string(&recipes)
+                .expect("Recipes are instantiated with serde, and should unwrap")
+        ),
         _ => unreachable!(),
     }
 }
@@ -72,26 +65,23 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
 fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
         Default => print!("{}", recipe.display_contents()),
-        Debug => _ = dbg!(recipe),
+        Debug => println!("{:#?}", recipe),
         Plain => print!("{}", recipe.display_contents_plain()),
         JSON => println!(
             "{}",
             serde_json::to_string_pretty(recipe)
-                .expect("Recipes are built with serde, and should unwrap")
+                .expect("Recipes are instantiated with serde, and should unwrap")
         ),
         TOML => println!(
             "{}",
             toml::to_string_pretty(recipe)
-                .expect("Recipes are built with serde, and should unwrap")
+                .expect("Recipes are instantiated with serde, and should unwrap")
         ),
-        Nix => {
-            let output = ser_nix::to_string(&recipe);
-
-            match output {
-                Ok(r) => println!("{r}"),
-                Err(why) => eprintln!("error: {why}"),
-            }
-        }
+        Nix => println!(
+            "{}",
+            ser_nix::to_string(&recipe)
+                .expect("Recipes are instantiated with serde, and should unwrap")
+        ),
     }
 }
 
