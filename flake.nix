@@ -29,9 +29,10 @@
           buildInputs = with pkgs; [
             argbash
             cargo
+            gh
+            libgcc
             rustc
             rustfmt
-            libgcc
           ];
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
