@@ -1,7 +1,7 @@
 use super::Recipe;
 
 use crate::cli::Evoke;
-use crate::content::Content;
+use crate::content::RecipeItem;
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
@@ -68,45 +68,67 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
 /// Builds a single recipe by taking in its contents and instantiating it recursively
 fn build(
     dir: &PathBuf,
-    contents: &Vec<Content>,
+    contents: &Vec<RecipeItem>,
     extra_args: &Evoke,
     re: &Replacer,
 ) -> io::Result<()> {
+    // If the intended destination does not exist, make it.
     if !dir.is_dir() {
         fs::create_dir_all(&dir)?;
     }
 
     for content in contents {
-        let mut path = dir.clone();
+        // Unwrap the project_name for substitutions
         let project_name = extra_args
             .name
             .as_ref()
             .expect("Name is converted to a Some variant in the `build_recipes` wrapper function.");
-        let name = re.sub(&content.get_name(), &project_name, dir);
-        path.push(name);
 
-        if path.is_file() && !extra_args.suppress_warnings {
-            use std::io::ErrorKind::*;
-            return Err(io::Error::new(
-                AlreadyExists,
-                format!("'{}' already exists.", path.display()),
-            ));
-        }
+        let dest = dir.join(content.name());
+        ensure_parent(&dest)?;
 
         if extra_args.verbose {
-            println!("{}", path.display());
+            eprintln!("{}", &dest.display());
         }
 
         match content {
-            Content::File(file) => {
+            RecipeItem::File(file) => {
+                // perform substitutions on the name and contents
+                let name = re.sub(&dest.to_string_lossy(), &project_name, dir);
                 let content = re.sub(&file.content, &project_name, dir);
-                fs::write(&path, content)?;
+
+                // Warn users if the file would be rewritten instead of continuing
+                if dest.is_file() && !extra_args.suppress_warnings {
+                    use std::io::ErrorKind::*;
+                    return Err(io::Error::new(
+                        AlreadyExists,
+                        format!("'{}' already exists.", file.name.display()),
+                    ));
+                }
+
+                fs::write(&name, content)?;
             }
-            Content::Directory(directory) => {
-                fs::create_dir_all(&path)?;
-                build(&dir, &directory.files, &extra_args, re)?;
+            RecipeItem::Directory(dir_name) => {
+                // Perform substitutions on the dirname
+                let name = re.sub(&dir_name.to_string_lossy(), &project_name, dir);
+                let dest = dir.join(name);
+
+                fs::create_dir_all(&dest)?;
             }
         }
+    }
+
+    Ok(())
+}
+
+fn ensure_parent(path: &PathBuf) -> io::Result<()> {
+    let parent = match path.parent() {
+        Some(p) => p,
+        None => return Ok(()),
+    };
+
+    if !parent.is_dir() {
+        fs::create_dir_all(parent)?;
     }
 
     Ok(())

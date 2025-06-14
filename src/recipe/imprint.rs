@@ -1,13 +1,12 @@
 use super::{recipe_dir, Language, Recipe};
 use crate::cli::Imprint;
-use crate::content::Directory;
+use crate::content::make_contents;
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
 };
 
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -45,20 +44,12 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 impl Recipe {
     /// Create a `Recipe` by imprinting/cloning the contents of the cwd
     pub fn imprint(name: String, description: Option<String>) -> io::Result<Self> {
-        let curr_dir: PathBuf = env::current_dir()?;
+        let contents = make_contents()?;
 
-        let curr_dir_str = curr_dir
-            .to_str()
-            .map_or_else(|| curr_dir.to_string_lossy().into_owned(), String::from);
-
-        let mut dir_obj = Directory::new(&curr_dir_str)?;
-        dir_obj.sort();
-
-        let contents = dir_obj.files;
         let description = description.unwrap_or("".into());
 
         // Converts HashMap<&name, detected_info> -> Vec<(name, num_matching_files)>
-        let mut breakdown: Vec<_> = get_language_breakdown(curr_dir)
+        let mut breakdown: Vec<_> = get_language_breakdown(".")
             .iter()
             .map(|(lang, files)| (*lang, files.len()))
             .collect();

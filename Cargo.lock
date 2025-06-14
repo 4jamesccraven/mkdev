@@ -487,6 +487,7 @@ dependencies = [
  "colored",
  "dirs",
  "hyperpolyglot",
+ "ignore",
  "once_cell",
  "regex",
  "ser_nix",

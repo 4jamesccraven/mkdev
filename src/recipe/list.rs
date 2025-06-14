@@ -1,6 +1,6 @@
 use super::Recipe;
 use crate::cli::List;
-use crate::content::Content;
+use crate::content::repr_tree;
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::warning;
@@ -89,33 +89,17 @@ impl Recipe {
     /// Display contents of `tree` with default style
     pub fn display_contents(&self) -> String {
         let mut out = format!("{}\n", self.name.bold().blue());
-        let mut iter = self.contents.iter().peekable();
-
-        while let Some(obj) = iter.next() {
-            let next = obj.produce_tree_string("".into(), iter.peek().is_none());
-            out.push_str(&next);
-        }
+        let contents = repr_tree(&self.contents);
+        out.push_str(&contents);
 
         out
     }
 
     /// Display all file names associated with the recipe
     pub fn display_contents_plain(&self) -> String {
-        let mut out = String::new();
+        let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
+        names.sort();
 
-        for obj in &self.contents {
-            match obj {
-                Content::File(file) => {
-                    let filname = format!("{}\n", file.name);
-                    out.push_str(&filname);
-                }
-                Content::Directory(dir) => {
-                    let dir_contents = format!("{}", dir.produce_file_names());
-                    out.push_str(&dir_contents);
-                }
-            }
-        }
-
-        out
+        names.join("\n")
     }
 }

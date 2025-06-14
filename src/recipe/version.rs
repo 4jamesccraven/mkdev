@@ -1,17 +1,11 @@
+use crate::content::File;
+use crate::content::RecipeItem;
+
 use super::Language;
 use super::Recipe;
-use crate::content::Content;
 
 use serde::{Deserialize, Serialize};
 use toml;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RecipeV1 {
-    pub name: String,
-    pub description: String,
-    pub languages: Vec<String>,
-    pub contents: Vec<Content>,
-}
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -19,6 +13,37 @@ enum RecipeVersions {
     V2(Recipe),
     V1(RecipeV1),
 }
+
+// Version 1 //
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RecipeV1 {
+    pub name: String,
+    pub description: String,
+    pub languages: Vec<String>,
+    pub contents: Vec<ContentV1>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ContentV1 {
+    File(FileV1),
+    Directory(DirectoryV1),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileV1 {
+    pub name: String,
+    pub content: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DirectoryV1 {
+    pub name: String,
+    pub files: Vec<ContentV1>,
+}
+
+// \Version 1 //
 
 /// Deserialises a known version of the recipe format, and converts it to the most recent version.
 /// Returns None if the recipe data doesn't match any known format.
@@ -42,13 +67,40 @@ impl From<RecipeVersions> for Recipe {
                     .map(|string| Language::from(string.as_str()))
                     .collect();
 
+                let contents = flatten_v1_recursive(r.contents);
+
                 Recipe {
                     name: r.name,
                     description: r.description,
                     languages,
-                    contents: r.contents,
+                    contents,
                 }
             }
         }
     }
+}
+
+fn flatten_v1_recursive(old: Vec<ContentV1>) -> Vec<RecipeItem> {
+    let mut out = vec![];
+
+    for item in old {
+        match item {
+            ContentV1::File(f) => {
+                let new_f = File {
+                    name: f.name.into(),
+                    content: f.content,
+                };
+
+                out.push(RecipeItem::File(new_f));
+            }
+            ContentV1::Directory(d) => {
+                let mut extended = vec![RecipeItem::Directory(d.name.into())];
+                extended.extend(flatten_v1_recursive(d.files));
+                out.extend(extended);
+            }
+        }
+    }
+
+    out.sort();
+    out
 }

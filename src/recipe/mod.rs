@@ -17,7 +17,7 @@ use version::*;
 use lang::Language;
 
 use crate::config::Config;
-use crate::content::Content;
+use crate::content::RecipeItem;
 
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -34,7 +34,7 @@ pub struct Recipe {
     pub name: String,
     pub description: String,
     pub languages: Vec<Language>,
-    pub contents: Vec<Content>,
+    pub contents: Vec<RecipeItem>,
 }
 
 impl Recipe {
