@@ -1,6 +1,6 @@
 use super::{recipe_dir, Language, Recipe};
 use crate::cli::Imprint;
-use crate::content::make_contents;
+use crate::content::{build_walk, make_contents};
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
@@ -12,12 +12,14 @@ use std::io;
 use std::path::PathBuf;
 
 use hyperpolyglot::get_language_breakdown;
+use ignore::Walk;
 use ser_nix;
 
 /// Atttempts to call recipe's imprint and save methods, returning an error message
 /// on failure
 pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let new = Recipe::imprint(args.recipe, args.description)
+    let walker = build_walk(args.exclude)?;
+    let new = Recipe::imprint(args.recipe, args.description, walker)
         .context("Unable to read current_working directory for the recipe")?;
 
     if let Some(path) = args.to_nix {
@@ -43,8 +45,8 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 
 impl Recipe {
     /// Create a `Recipe` by imprinting/cloning the contents of the cwd
-    pub fn imprint(name: String, description: Option<String>) -> io::Result<Self> {
-        let contents = make_contents()?;
+    pub fn imprint(name: String, description: Option<String>, walker: Walk) -> io::Result<Self> {
+        let contents = make_contents(walker)?;
 
         let description = description.unwrap_or("".into());
 

@@ -1,5 +1,6 @@
 use std::io;
 
+use ignore;
 use ser_nix;
 use thiserror;
 
@@ -17,7 +18,7 @@ pub enum Error {
     Invalid(String, Option<Vec<String>>),
 
     #[error("{0}: {1}")]
-    IoBased(String, String),
+    Io(String, String),
 
     #[error("failed to serialise {0}: {1}")]
     SerialisationError(String, String),
@@ -55,7 +56,7 @@ pub trait ResultExt<T> {
 
 impl<T> ResultExt<T> for Result<T, io::Error> {
     fn context(self, s: &str) -> Result<T, Error> {
-        self.map_err(|e| Error::IoBased(s.to_string(), e.to_string()))
+        self.map_err(|e| Error::Io(s.to_string(), e.to_string()))
     }
 }
 
@@ -68,5 +69,11 @@ impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
 impl<T> ResultExt<T> for Result<T, toml::de::Error> {
     fn context(self, s: &str) -> Result<T, Error> {
         self.map_err(|e| Error::DeserialisationError(s.to_string(), e.message().to_string()))
+    }
+}
+
+impl From<ignore::Error> for Error {
+    fn from(e: ignore::Error) -> Self {
+        Error::Io("error with exclude flags".into(), e.to_string())
     }
 }

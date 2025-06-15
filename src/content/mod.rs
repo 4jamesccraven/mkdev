@@ -1,13 +1,17 @@
 mod tree;
 
+use ignore::overrides::OverrideBuilder;
 pub use tree::*;
+
+use crate::mkdev_error;
+use crate::mkdev_error::ResultExt;
 
 use std::cmp::Ordering;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use ignore::WalkBuilder;
+use ignore::{Walk, WalkBuilder};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -55,9 +59,8 @@ impl File {
 }
 
 /// Attempt to make a list of all contents in `path`
-pub fn make_contents() -> io::Result<Vec<RecipeItem>> {
+pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     let cwd = std::env::current_dir()?;
-    let walk = WalkBuilder::new(&cwd).standard_filters(true).build();
     let mut out = vec![];
 
     for file in walk {
@@ -96,6 +99,21 @@ pub fn make_contents() -> io::Result<Vec<RecipeItem>> {
 
     out.sort();
     Ok(out)
+}
+
+pub fn build_walk(overrides: Vec<String>) -> Result<Walk, mkdev_error::Error> {
+    let cwd = std::env::current_dir().context("could not build walk object")?;
+
+    let mut ob = OverrideBuilder::new(&cwd);
+    for over in overrides {
+        ob.add(&format!("!{over}"))?;
+    }
+    let user_filters = ob.build()?;
+
+    Ok(WalkBuilder::new(&cwd)
+        .standard_filters(true)
+        .overrides(user_filters)
+        .build())
 }
 
 impl PartialEq for RecipeItem {

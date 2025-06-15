@@ -1,12 +1,12 @@
+#![deny(missing_docs)]
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
 
-use clap::{crate_authors, crate_description, crate_version, Parser, Subcommand};
+use clap::{crate_authors, crate_description, crate_version, ArgAction, Parser, Subcommand};
 use clap_complete::engine::ArgValueCompleter;
 
-#[deny(missing_docs)]
 #[derive(Parser, Debug)]
 #[command(
     name = "mk",
@@ -43,7 +43,6 @@ pub struct Cli {
     pub man_page: bool,
 }
 
-#[deny(missing_docs)]
 #[derive(Subcommand, Debug)]
 /// Commands to be passed
 pub enum Commands {
@@ -60,7 +59,6 @@ pub enum Commands {
     List(List),
 }
 
-#[deny(missing_docs)]
 #[derive(Parser, Clone, Debug)]
 pub struct Evoke {
     /// The recipe(s) to build
@@ -85,7 +83,6 @@ pub struct Evoke {
     pub suppress_warnings: bool,
 }
 
-#[deny(missing_docs)]
 #[derive(Parser, Debug)]
 pub struct Imprint {
     /// The name of the recipe to imprint.
@@ -102,9 +99,12 @@ pub struct Imprint {
     /// Write the recipe as a Nix expression & save it to FILE
     #[arg(short = 'n', long, value_name = "FILE")]
     pub to_nix: Option<PathBuf>,
+
+    /// Paths/globs to exclude from the recipe
+    #[arg(short, long, value_name = "FILE/GLOB", action = ArgAction::Append)]
+    pub exclude: Vec<String>,
 }
 
-#[deny(missing_docs)]
 #[derive(Parser, Debug)]
 pub struct Delete {
     /// The recipe to delete
@@ -112,7 +112,6 @@ pub struct Delete {
     pub recipe: String,
 }
 
-#[deny(missing_docs)]
 #[derive(Parser, Debug)]
 pub struct List {
     /// Specific recipe
