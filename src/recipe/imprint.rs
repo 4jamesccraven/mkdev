@@ -18,7 +18,7 @@ use ser_nix;
 /// Atttempts to call recipe's imprint and save methods, returning an error message
 /// on failure
 pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let walker = build_walk(args.exclude)?;
+    let walker = build_walk(&args)?;
     let new = Recipe::imprint(args.recipe, args.description, walker)
         .context("Unable to read current_working directory for the recipe")?;
 

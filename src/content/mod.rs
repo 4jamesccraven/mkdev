@@ -3,6 +3,7 @@ mod tree;
 use ignore::overrides::OverrideBuilder;
 pub use tree::*;
 
+use crate::cli::Imprint;
 use crate::mkdev_error;
 use crate::mkdev_error::ResultExt;
 
@@ -101,17 +102,17 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     Ok(out)
 }
 
-pub fn build_walk(overrides: Vec<String>) -> Result<Walk, mkdev_error::Error> {
+pub fn build_walk(args: &Imprint) -> Result<Walk, mkdev_error::Error> {
     let cwd = std::env::current_dir().context("could not build walk object")?;
 
     let mut ob = OverrideBuilder::new(&cwd);
-    for over in overrides {
+    for over in &args.exclude {
         ob.add(&format!("!{over}"))?;
     }
     let user_filters = ob.build()?;
 
     Ok(WalkBuilder::new(&cwd)
-        .standard_filters(true)
+        .standard_filters(!args.no_filter)
         .overrides(user_filters)
         .build())
 }

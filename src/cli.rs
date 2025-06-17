@@ -103,6 +103,10 @@ pub struct Imprint {
     /// Paths/globs to exclude from the recipe
     #[arg(short, long, value_name = "FILE/GLOB", action = ArgAction::Append)]
     pub exclude: Vec<String>,
+
+    /// Disable default filters (e.g., .gitignore files)
+    #[arg(long)]
+    pub no_filter: bool,
 }
 
 #[derive(Parser, Debug)]
