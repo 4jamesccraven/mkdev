@@ -2,16 +2,22 @@
 //! other logic that mkdev might do.
 use crate::cli::Cli;
 use crate::config::Config;
+use crate::mkdev_error::{Error, ResultExt};
 use crate::{die, warning};
 
-use std::io::Write;
+use std::fs::File;
+use std::io::BufWriter;
+use std::path::Path;
 
 use clap::CommandFactory;
 use clap_mangen::Man;
 
-pub fn hooks(args: &Cli) {
+/// Call all of Mkdev's hooks
+pub fn hooks(args: &Cli) -> Result<(), Error> {
     config(args);
-    man(args);
+    man(args)?;
+
+    Ok(())
 }
 
 //=Config=//
@@ -65,26 +71,53 @@ fn print_default_config() {
 
 //=man page=//
 
-fn man(args: &Cli) {
+fn man(args: &Cli) -> Result<(), Error> {
     if args.man_page {
         let command = Cli::command();
-        let man = Man::new(command.clone());
-        let mut output_buffer: Vec<u8> = vec![];
 
-        man.render(&mut output_buffer)
-            .expect("Writing to Vec<u8> is infallible.");
+        let out_dir = Path::new("mkdev-man");
+        std::fs::create_dir_all(&out_dir).context("unable to make directory for man pages")?;
 
-        for subcommand in command.get_subcommands() {
-            Man::new(subcommand.clone())
-                .render(&mut output_buffer)
-                .expect("Writing to Vec<u8> is infallible.");
-        }
+        // Get all commands as a Vec<Command>
+        let to_render: Vec<(clap::Command, Option<String>)> = vec![(command.clone(), None)]
+            .into_iter()
+            .chain(
+                command
+                    .get_subcommands()
+                    .map(|sc| (sc.to_owned(), Some("mk".to_string()))),
+            )
+            .collect();
 
-        std::io::stdout()
-            .lock()
-            .write(&output_buffer)
-            .expect("Unable to write to stdout");
+        to_render
+            .into_iter()
+            .try_for_each(|(command, name)| -> Result<(), Error> {
+                // Create a manpage renderer from the command
+                let man = Man::new(command.clone());
+
+                // Calculate the filename, and join it into the directory
+                let base_filename = man.get_filename();
+
+                let filename = match name {
+                    Some(n) => format!("{n}-{base_filename}"),
+                    None => base_filename,
+                };
+
+                let path = out_dir.join(&filename);
+
+                // Create the file and open it for writing
+                let file =
+                    File::create(path).context(&format!("unable to create {}", &filename))?;
+                let mut writer = BufWriter::new(file);
+
+                // Write the contents of the page into the file
+                man.render(&mut writer)
+                    .context(&format!("unable to write {}", &filename))?;
+
+                Ok(())
+            })?;
 
         std::process::exit(0);
     }
+
+    Ok(())
 }

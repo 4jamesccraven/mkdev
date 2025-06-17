@@ -34,7 +34,7 @@ fn main() {
 /// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     // Arguments that cause an exit before subcommand logic
-    hooks(&args);
+    hooks(&args)?;
 
     let user_recipes = Recipe::gather().context("unable to load recipes")?;
 

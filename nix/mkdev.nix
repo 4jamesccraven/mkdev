@@ -20,8 +20,8 @@ rustPlatform.buildRustPackage {
       --zsh <(COMPLETE=zsh $out/bin/mk) \
       --fish <(COMPLETE=fish $out/bin/mk)
 
-    MANPAGE=true $out/bin/mk > mk.1
-    installManPage ./mk.1
+    MANPAGE=true $out/bin/mk
+    installManPage ./mkdev-man/*
   '';
 
   meta = {
