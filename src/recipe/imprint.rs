@@ -13,7 +13,6 @@ use std::path::PathBuf;
 
 use hyperpolyglot::get_language_breakdown;
 use ignore::Walk;
-use ser_nix;
 
 /// Atttempts to call recipe's imprint and save methods, returning an error message
 /// on failure
@@ -66,7 +65,7 @@ impl Recipe {
                 hyperpolyglot::Language::try_from(*lang)
                     .expect("Languages from `get_language_breakdown` are guaranteed")
             })
-            .map(|lang| Language::from(lang))
+            .map(Language::from)
             .collect();
 
         Ok(Self {

@@ -7,7 +7,7 @@ pub enum OutputType {
     Default,
     Debug,
     Plain,
-    JSON,
-    TOML,
+    Json,
+    Toml,
     Nix,
 }

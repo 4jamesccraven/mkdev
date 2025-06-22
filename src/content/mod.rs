@@ -64,37 +64,35 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     let cwd = std::env::current_dir()?;
     let mut out = vec![];
 
-    for file in walk {
-        if let Ok(file) = file {
-            if file.path() == cwd {
-                continue;
-            }
+    for file in walk.flatten() {
+        if file.path() == cwd {
+            continue;
+        }
 
-            let data = file
-                .file_type()
-                .expect("This can only be `None` if this is stdin, which is not allowed");
+        let data = file
+            .file_type()
+            .expect("This can only be `None` if this is stdin, which is not allowed");
 
-            let mut path = file.into_path();
+        let mut path = file.into_path();
 
-            if path.starts_with(&cwd) {
-                path = path
-                    .strip_prefix(&cwd)
-                    .expect("This is checked with `starts_with`")
-                    .into();
-            }
+        if path.starts_with(&cwd) {
+            path = path
+                .strip_prefix(&cwd)
+                .expect("This is checked with `starts_with`")
+                .into();
+        }
 
-            let (is_file, is_dir, is_symlink) = (data.is_file(), data.is_dir(), data.is_symlink());
+        let (is_file, is_dir, is_symlink) = (data.is_file(), data.is_dir(), data.is_symlink());
 
-            // Make File or Directory variant as necessary
-            match (is_file, is_dir, is_symlink) {
-                (true, false, false) => out.push(RecipeItem::file(path)?),
-                (false, true, false) => out.push(RecipeItem::dir(path)),
-                // ignore symlinks (TODO: allow customisation with CLI)
-                (false, false, true) => continue,
-                // All of these methods' results are mutually exclusive
-                // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
-                _ => unreachable!(),
-            }
+        // Make File or Directory variant as necessary
+        match (is_file, is_dir, is_symlink) {
+            (true, false, false) => out.push(RecipeItem::file(path)?),
+            (false, true, false) => out.push(RecipeItem::dir(path)),
+            // ignore symlinks (TODO: allow customisation with CLI)
+            (false, false, true) => continue,
+            // All of these methods' results are mutually exclusive
+            // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
+            _ => unreachable!(),
         }
     }
 
@@ -138,7 +136,7 @@ impl Ord for RecipeItem {
             (Directory(_), File(_)) => Ordering::Less,
             (File(_), Directory(_)) => Ordering::Greater,
             (File(a), File(b)) => a.name.cmp(&b.name),
-            (Directory(a), Directory(b)) => a.cmp(&b),
+            (Directory(a), Directory(b)) => a.cmp(b),
         }
     }
 }

@@ -6,9 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use dirs;
 use serde::{Deserialize, Serialize};
-use toml;
 
 // There should only ever be one instance of the config to prevent
 // multiple intialisations
@@ -60,7 +58,7 @@ impl Config {
         // Ensure the parent directory exists
         if let Some(dir) = config_file.parent() {
             if !dir.is_dir() {
-                fs::create_dir_all(&dir)
+                fs::create_dir_all(dir)
                     .context("unable to create mkdev configuration directory")?;
             }
         }
@@ -87,7 +85,7 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let recipe_dir: _ = None;
+        let recipe_dir = None;
         #[rustfmt::skip]
         let default_subs = if cfg!(target_family = "unix") {
             [
@@ -112,7 +110,6 @@ impl Default for Config {
         let subs: HashMap<String, String> = default_subs
             .iter()
             .map(|(k, v)| (k.to_string(), v.to_string()))
-            .into_iter()
             .collect();
 
         Self { recipe_dir, subs }

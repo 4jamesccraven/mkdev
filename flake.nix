@@ -29,6 +29,7 @@
           buildInputs = with pkgs; [
             argbash
             cargo
+            clippy
             gh
             libgcc
             rustc

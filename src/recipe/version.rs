@@ -5,7 +5,6 @@ use super::Language;
 use super::Recipe;
 
 use serde::{Deserialize, Serialize};
-use toml;
 
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -50,7 +49,7 @@ pub struct DirectoryV1 {
 pub fn deserialise_recipe(value: &str) -> Option<Recipe> {
     toml::from_str::<RecipeVersions>(value)
         .ok()
-        .map(|deserialised| Recipe::from(deserialised))
+        .map(Recipe::from)
 }
 
 impl From<RecipeVersions> for Recipe {

@@ -1,9 +1,5 @@
 use std::io;
 
-use ignore;
-use ser_nix;
-use thiserror;
-
 #[derive(thiserror::Error, Clone, Debug)]
 pub enum Error {
     #[error("No {0} specified.")]
@@ -21,11 +17,11 @@ pub enum Error {
     Io(String, String),
 
     #[error("failed to serialise {0}: {1}")]
-    SerialisationError(String, String),
+    Serialisation(String, String),
 
     #[allow(unused)]
     #[error("failed to deserialise {0}: {1}")]
-    DeserialisationError(String, String),
+    Deserialisation(String, String),
 
     #[error("'{0}' already exists. Use -s to overwrite.")]
     DestructionWarning(String),
@@ -62,13 +58,13 @@ impl<T> ResultExt<T> for Result<T, io::Error> {
 
 impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
     fn context(self, s: &str) -> Result<T, Error> {
-        self.map_err(|e| Error::SerialisationError(s.to_string(), e.to_string()))
+        self.map_err(|e| Error::Serialisation(s.to_string(), e.to_string()))
     }
 }
 
 impl<T> ResultExt<T> for Result<T, toml::de::Error> {
     fn context(self, s: &str) -> Result<T, Error> {
-        self.map_err(|e| Error::DeserialisationError(s.to_string(), e.message().to_string()))
+        self.map_err(|e| Error::Deserialisation(s.to_string(), e.message().to_string()))
     }
 }
 

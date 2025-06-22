@@ -8,9 +8,6 @@ use crate::warning;
 use std::collections::HashMap;
 
 use colored::Colorize;
-use ser_nix;
-use serde_json;
-use toml;
 
 /// List out a recipe or its contents, returning error messages on failure
 pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
@@ -39,7 +36,7 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
 }
 
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
-    if let TOML = output_type {
+    if let Toml = output_type {
         warning!("Option \"TOML\" invalid for displaying multiple recipes. ");
         return;
     }
@@ -48,7 +45,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
         Default => recipes.iter().for_each(|r| println!("{}\n", r)),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
-        JSON => println!(
+        Json => println!(
             "{}",
             serde_json::to_string_pretty(&recipes)
                 .expect("Recipes are instantiated with serde, and should unwrap")
@@ -67,12 +64,12 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
         Default => print!("{}", recipe.display_contents()),
         Debug => println!("{:#?}", recipe),
         Plain => print!("{}", recipe.display_contents_plain()),
-        JSON => println!(
+        Json => println!(
             "{}",
             serde_json::to_string_pretty(recipe)
                 .expect("Recipes are instantiated with serde, and should unwrap")
         ),
-        TOML => println!(
+        Toml => println!(
             "{}",
             toml::to_string_pretty(recipe)
                 .expect("Recipes are instantiated with serde, and should unwrap")

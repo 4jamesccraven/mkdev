@@ -5,18 +5,18 @@ use super::*;
 
 use colored::Colorize;
 
-const WIRE: &'static str = "│   ";
-const CONNECTOR: &'static str = "├── ";
-const CAP: &'static str = "└── ";
-const GAP: &'static str = "    ";
+const WIRE: &str = "│   ";
+const CONNECTOR: &str = "├── ";
+const CAP: &str = "└── ";
+const GAP: &str = "    ";
 
 /// Create a String that represents the file system akin to the output of the program "tree"
-pub fn repr_tree(files: &Vec<RecipeItem>) -> String {
-    let tree = build_recursive_content(&files);
+pub fn repr_tree(files: &[RecipeItem]) -> String {
+    let tree = build_recursive_content(files);
     make_tree_string(&tree, "".into())
 }
 
-fn build_recursive_content(files: &Vec<RecipeItem>) -> Vec<TreeContent> {
+fn build_recursive_content(files: &[RecipeItem]) -> Vec<TreeContent> {
     use RecipeItem::*;
     // Create an intermediate tree
     let mut root = TreeNode::new();
@@ -37,14 +37,14 @@ fn build_recursive_content(files: &Vec<RecipeItem>) -> Vec<TreeContent> {
     let mut out: Vec<_> = root
         .children
         .into_iter()
-        .map(|(name, node)| node.to_tree_content(name))
+        .map(|(name, node)| node.into_tree_content(name))
         .collect();
 
     out.sort_unstable();
     out
 }
 
-fn make_tree_string(cont: &Vec<TreeContent>, prefix: String) -> String {
+fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
     let mut out = String::new();
     let mut rec_iter = cont.iter().peekable();
 
@@ -135,7 +135,7 @@ impl TreeNode {
         }
     }
 
-    fn to_tree_content(self, name: String) -> TreeContent {
+    fn into_tree_content(self, name: String) -> TreeContent {
         use TreeContent::*;
         if self.children.is_empty() {
             Leaf {
@@ -146,7 +146,7 @@ impl TreeNode {
             let mut contents: Vec<_> = self
                 .children
                 .into_iter()
-                .map(|(name, node)| node.to_tree_content(name))
+                .map(|(name, node)| node.into_tree_content(name))
                 .collect();
 
             contents.sort_unstable();

@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::warning;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::Command;
 
 use regex::Regex;
@@ -34,7 +34,7 @@ impl Replacer {
         Self { map, re }
     }
 
-    pub fn sub(&self, text: &str, name: &str, dir: &PathBuf) -> String {
+    pub fn sub(&self, text: &str, name: &str, dir: &Path) -> String {
         self.re
             .replace_all(text, |caps: &regex::Captures| {
                 // Find the group that was matched on
@@ -57,10 +57,10 @@ impl Replacer {
                         let sub: Result<String, std::io::Error> = (|| {
                             // Treat the string as a command and try to pass it to the shell
                             let cmd = if cfg!(target_family = "unix") {
-                                Command::new("sh").arg("-c").arg(&val).output()?
+                                Command::new("sh").arg("-c").arg(val).output()?
                             } else {
                                 // Use cmd instead of sh if not on Unix
-                                Command::new("cmd").arg("/C").arg(&val).output()?
+                                Command::new("cmd").arg("/C").arg(val).output()?
                             };
 
                             let output = String::from_utf8_lossy(&cmd.stdout).into_owned();

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::env::current_dir;
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Create all requested directory in the requested directories
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
@@ -39,7 +39,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         return Err(Invalid("recipe(s)".into(), Some(non_existant_recipes)));
     }
 
-    if let None = &args.name {
+    if args.name.is_none() {
         args.name = Some("NAME".into());
     }
 
@@ -74,7 +74,7 @@ fn build(
 ) -> io::Result<()> {
     // If the intended destination does not exist, make it.
     if !dir.is_dir() {
-        fs::create_dir_all(&dir)?;
+        fs::create_dir_all(dir)?;
     }
 
     for content in contents {
@@ -94,8 +94,8 @@ fn build(
         match content {
             RecipeItem::File(file) => {
                 // perform substitutions on the name and contents
-                let name = re.sub(&dest.to_string_lossy(), &project_name, dir);
-                let content = re.sub(&file.content, &project_name, dir);
+                let name = re.sub(&dest.to_string_lossy(), project_name, dir);
+                let content = re.sub(&file.content, project_name, dir);
 
                 // Warn users if the file would be rewritten instead of continuing
                 if dest.is_file() && !extra_args.suppress_warnings {
@@ -110,7 +110,7 @@ fn build(
             }
             RecipeItem::Directory(dir_name) => {
                 // Perform substitutions on the dirname
-                let name = re.sub(&dir_name.to_string_lossy(), &project_name, dir);
+                let name = re.sub(&dir_name.to_string_lossy(), project_name, dir);
                 let dest = dir.join(name);
 
                 fs::create_dir_all(&dest)?;
@@ -121,7 +121,7 @@ fn build(
     Ok(())
 }
 
-fn ensure_parent(path: &PathBuf) -> io::Result<()> {
+fn ensure_parent(path: &Path) -> io::Result<()> {
     let parent = match path.parent() {
         Some(p) => p,
         None => return Ok(()),

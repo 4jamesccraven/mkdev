@@ -24,7 +24,7 @@ pub fn hooks(args: &Cli) -> Result<(), Error> {
 
 /// Hook that handles flags related to configs
 fn config(args: &Cli) {
-    let skip_main_logic = vec![args.gen_config, args.print_config].iter().any(|f| *f);
+    let skip_main_logic = [args.gen_config, args.print_config].iter().any(|f| *f);
     let commands_present = args.command.is_some();
 
     if skip_main_logic && commands_present {
@@ -76,7 +76,7 @@ fn man(args: &Cli) -> Result<(), Error> {
         let command = Cli::command();
 
         let out_dir = Path::new("mkdev-man");
-        std::fs::create_dir_all(&out_dir).context("unable to make directory for man pages")?;
+        std::fs::create_dir_all(out_dir).context("unable to make directory for man pages")?;
 
         // Get all commands as a Vec<Command>
         let to_render: Vec<(clap::Command, Option<String>)> = vec![(command.clone(), None)]

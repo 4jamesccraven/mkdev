@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use colored::Colorize;
-use hyperpolyglot;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
