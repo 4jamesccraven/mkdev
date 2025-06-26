@@ -37,7 +37,7 @@ jobs:
       - name: Package Binary with LICENSE
         shell: bash
         run: |
-          mkdir -p dist
+          mkdir -p staging
 
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             BIN_NAME=mk.exe
@@ -45,14 +45,16 @@ jobs:
             BIN_NAME=mk
           fi
 
-          cp target/${{ matrix.target }}/release/$BIN_NAME dist/$BIN_NAME
-          cp LICENSE dist/LICENSE
+          cp target/${{ matrix.target }}/release/$BIN_NAME staging/$BIN_NAME
+          cp LICENSE staging/LICENSE
 
-          cd dist
+          mkdir dist
+
+          cd staging
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            powershell.exe -Command "Compress-Archive -Path $BIN_NAME, LICENSE -DestinationPath mk-${{ matrix.target }}.zip"
+            powershell.exe -Command "Compress-Archive -Path $BIN_NAME, LICENSE -DestinationPath ../dist/mk-${{ matrix.target }}.zip"
           else
-            tar -czf mk-${{ matrix.target }}.tar.gz $BIN_NAME LICENSE
+            tar -czf ../dist/mk-${{ matrix.target }}.tar.gz $BIN_NAME LICENSE
           fi
 
       - name: Upload Artifacts
