@@ -103,7 +103,7 @@ pub fn recipe_dir() -> io::Result<PathBuf> {
         }
     };
 
-    let err = io::Error::new(io::ErrorKind::Other, "Error getting data directory");
+    let err = io::Error::other("Error getting data directory");
     let data_dir = match &cfg.recipe_dir {
         Some(dir) => dir.clone(),
         None => {

@@ -67,7 +67,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
 
 /// Builds a single recipe by taking in its contents and instantiating it recursively
 fn build(
-    dir: &PathBuf,
+    dir: &Path,
     contents: &Vec<RecipeItem>,
     extra_args: &Evoke,
     re: &Replacer,
