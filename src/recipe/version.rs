@@ -18,6 +18,7 @@ enum RecipeVersions {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RecipeV1 {
     pub name: String,
+    #[serde(default = "String::new")]
     pub description: String,
     pub languages: Vec<String>,
     pub contents: Vec<ContentV1>,

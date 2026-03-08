@@ -32,6 +32,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Recipe {
     pub name: String,
+    #[serde(default = "String::new")]
     pub description: String,
     pub languages: Vec<Language>,
     pub contents: Vec<RecipeItem>,
