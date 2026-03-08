@@ -1,31 +1,49 @@
 {
   description = "Save your boilerplate instead of writing it.";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-  };
+  inputs.nixpkgs.url = "https://channels.nixos.org/nixos-25.11/nixexprs.tar.xz";
 
   outputs =
     {
       self,
-      flake-utils,
       nixpkgs,
       ...
     }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-      in
-      {
-        packages = {
+    let
+      lib = nixpkgs.lib;
+
+      eachDefaultSystem =
+        func: lib.genAttrs lib.systems.flakeExposed (system: func nixpkgs.legacyPackages.${system});
+    in
+    {
+
+      packages = eachDefaultSystem (
+        pkgs:
+        let
+          system = pkgs.stdenv.hostPlatform.system;
+        in
+        {
           default = self.packages.${system}.mkdev;
           mkdev = pkgs.callPackage ./nix/mkdev.nix { };
-          mkf = pkgs.callPackage ./nix/mkf.nix { mk = self.packages.${system}.mkdev; };
-        };
+          mkf = pkgs.callPackage ./nix/mkf.nix { };
+        }
+      );
 
-        devShells.default = pkgs.mkShell {
+      overlays.default = (
+        prev: final: {
+          mkdev = prev.callPackage ./nix/mkdev.nix { };
+          mkf = prev.callPackage ./nix/mkf.nix { };
+        }
+      );
+
+      homeManagerModules.default = import ./nix/home-manager.nix;
+      homeManagerModule = # .
+        lib.warn # .
+          "mkdev: The option `homeManagerModule' has been renamed to `homeManagerModules.default'." # .
+          self.homeManagerModules.default;
+
+      devShells = eachDefaultSystem (pkgs: {
+        default = pkgs.mkShell {
           buildInputs = with pkgs; [
             argbash
             cargo
@@ -38,9 +56,7 @@
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
         };
-      }
-    )
-    // flake-utils.lib.eachDefaultSystemPassThrough (system: {
-      homeManagerModule = import ./nix/home-manager.nix { inherit (self.packages.${system}) mkdev; };
-    });
+      });
+
+    };
 }

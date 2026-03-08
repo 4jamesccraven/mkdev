@@ -1,4 +1,3 @@
-{ mkdev }:
 {
   pkgs,
   config,
@@ -13,6 +12,7 @@ let
     types
     literalExpression
     ;
+
   cfg = config.programs.mkdev;
   toml = pkgs.formats.toml { };
 in
@@ -23,7 +23,7 @@ in
     package = mkOption {
       description = "The package for mkdev";
       type = types.package;
-      default = mkdev;
+      default = pkgs.callPackage ./mkdev.nix { };
     };
 
     extraPackages = mkOption {
@@ -80,11 +80,11 @@ in
     assertions = lib.mkIf (cfg.recipes != [ ]) [
       {
         assertion = cfg.config ? recipe_dir;
-        message = "programs.mkdev.config.recipe_dir must be set when recipes are declared.";
+        message = "`programs.mkdev.config.recipe_dir' must be set when recipes are declared.";
       }
       {
         assertion = lib.hasPrefix "${config.home.homeDirectory}/" cfg.config.recipe_dir;
-        message = "programs.mkdev.config.recipe_dir must be inside the home directory.";
+        message = "`programs.mkdev.config.recipe_dir' must be inside the home directory.";
       }
     ];
 

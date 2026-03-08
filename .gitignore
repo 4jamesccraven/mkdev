@@ -1,4 +1,3 @@
 /target
 /tests
-/mkdev-cli/target/
-/mkdev-recipe/target/
+.direnv/
