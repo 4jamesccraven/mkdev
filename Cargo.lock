@@ -744,9 +744,9 @@ dependencies = [
 
 [[package]]
 name = "ser_nix"
-version = "0.1.2"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "779f231aae2ed9960f265bdbd187940b5f0ea4fd65dc7f35ed2c684bb95c35e0"
+checksum = "bdc498e93268b6c24439ab750a593108cc39c4b243d51df4f047bca1328e6d38"
 dependencies = [
  "serde",
 ]
