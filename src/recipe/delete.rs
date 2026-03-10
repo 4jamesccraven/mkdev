@@ -1,4 +1,4 @@
-use super::{recipe_dir, Recipe};
+use super::{Recipe, recipe_dir};
 use crate::cli::Delete;
 use crate::mkdev_error::{
     Error::{self, *},

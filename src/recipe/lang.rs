@@ -1,7 +1,7 @@
 use std::fmt::Display;
+use std::sync::LazyLock;
 
 use colored::Colorize;
-use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -43,17 +43,17 @@ impl From<hyperpolyglot::Language> for Language {
 
 impl From<&str> for Language {
     fn from(value: &str) -> Self {
-        static RE: Lazy<Regex> = Lazy::new(|| {
+        static RE: LazyLock<Regex> = LazyLock::new(|| {
             Regex::new(r"^\x1b\[38;2;(\d{1,3});(\d{1,3});(\d{1,3})m(.*?)\x1b\[0m$").unwrap()
         });
 
-        if let Some(caps) = RE.captures(value) {
-            if let (Ok(r), Ok(g), Ok(b)) = (caps[1].parse(), caps[2].parse(), caps[3].parse()) {
-                return Language {
-                    name: caps[4].to_string(),
-                    colour: Some((r, g, b)),
-                };
-            }
+        if let Some(caps) = RE.captures(value)
+            && let (Ok(r), Ok(g), Ok(b)) = (caps[1].parse(), caps[2].parse(), caps[3].parse())
+        {
+            return Language {
+                name: caps[4].to_string(),
+                colour: Some((r, g, b)),
+            };
         }
 
         Language {

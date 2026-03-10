@@ -56,11 +56,10 @@ impl Config {
         };
 
         // Ensure the parent directory exists
-        if let Some(dir) = config_file.parent() {
-            if !dir.is_dir() {
-                fs::create_dir_all(dir)
-                    .context("unable to create mkdev configuration directory")?;
-            }
+        if let Some(dir) = config_file.parent()
+            && !dir.is_dir()
+        {
+            fs::create_dir_all(dir).context("unable to create mkdev configuration directory")?;
         }
 
         if !config_file.is_file() {

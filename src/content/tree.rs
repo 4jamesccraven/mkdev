@@ -176,8 +176,8 @@ impl PartialOrd for TreeContent {
 
 impl Ord for TreeContent {
     fn cmp(&self, other: &Self) -> Ordering {
-        use std::cmp::Ordering::*;
         use TreeContent::*;
+        use std::cmp::Ordering::*;
         // In all cases, this places a directory earlier (less) than a file, and later (greater)
         // for a file. If two of the same type are encountered, they are sorted lexographically as
         // a fallback

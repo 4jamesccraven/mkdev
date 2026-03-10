@@ -4,7 +4,7 @@ use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
 
-use clap::{crate_authors, crate_description, crate_version, ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand, crate_authors, crate_description, crate_version};
 use clap_complete::engine::ArgValueCompleter;
 
 #[derive(Parser, Debug)]

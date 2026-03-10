@@ -1,4 +1,4 @@
-use super::{recipe_dir, Language, Recipe};
+use super::{Language, Recipe, recipe_dir};
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
 use crate::mkdev_error::{
