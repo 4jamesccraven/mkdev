@@ -60,8 +60,7 @@ fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
             // Trivial case, just display the whole prefix and the file
             Leaf { name, empty_dir } => {
                 #[rustfmt::skip]
-                let name = if *empty_dir { name.blue() } else { name.normal()
-                };
+                let name = if *empty_dir { name.blue() } else { name.normal() };
                 let new_line = format!(
                     "{}{}{}\n",
                     prefix.truecolor(128, 128, 128),

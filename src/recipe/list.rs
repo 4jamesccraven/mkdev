@@ -28,21 +28,23 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
             let mut recipes: Vec<_> = user_recipes.values().collect();
             recipes.sort_by(|a, b| a.name.cmp(&b.name));
 
-            display_all(recipes, output_type);
+            display_all(recipes, output_type, !args.no_description);
         }
     }
 
     Ok(())
 }
 
-fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
+fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
     if let Toml = output_type {
         warning!("Option \"TOML\" invalid for displaying multiple recipes. ");
         return;
     }
 
     match output_type {
-        Default => recipes.iter().for_each(|r| println!("{}\n", r)),
+        Default => recipes
+            .iter()
+            .for_each(|r| println!("{}", r.display_summary(show_description))),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         Json => println!(

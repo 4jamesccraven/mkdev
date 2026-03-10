@@ -20,7 +20,6 @@ use crate::config::Config;
 use crate::content::RecipeItem;
 
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -42,9 +41,7 @@ impl Recipe {
     /// Attempt to find all user defined recipes
     pub fn gather() -> io::Result<HashMap<String, Recipe>> {
         let data_dir = recipe_dir()?;
-
         let files = fs::read_dir(data_dir)?;
-
         let mut recipes: Vec<Recipe> = Vec::new();
 
         for file in files {
@@ -72,10 +69,9 @@ impl Recipe {
 
         Ok(recipes)
     }
-}
 
-impl Display for Recipe {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    /// Shows a summary of the recipe
+    fn display_summary(&self, show_description: bool) -> String {
         let lang_string = self
             .languages
             .iter()
@@ -83,12 +79,12 @@ impl Display for Recipe {
             .collect::<Vec<_>>()
             .join(" ");
 
-        write!(
-            f,
-            "{} ( {} )\n  {}",
+        let desc = &format!("\n  {}", self.description);
+        format!(
+            "{} ( {} ){}",
             self.name.bold(),
             lang_string,
-            self.description
+            if show_description { desc } else { "" }
         )
     }
 }
