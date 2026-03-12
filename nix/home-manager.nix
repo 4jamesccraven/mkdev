@@ -36,7 +36,7 @@ in
 
     config = mkOption {
       description = "The contents of the mkdev configuration file.";
-      type = toml.type;
+      inherit (toml) type;
       default = { };
       example = literalExpression ''
         {

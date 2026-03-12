@@ -10,7 +10,7 @@
       ...
     }:
     let
-      lib = nixpkgs.lib;
+      inherit (nixpkgs) lib;
 
       eachDefaultSystem =
         func: lib.genAttrs lib.systems.flakeExposed (system: func nixpkgs.legacyPackages.${system});
@@ -20,7 +20,7 @@
       packages = eachDefaultSystem (
         pkgs:
         let
-          system = pkgs.stdenv.hostPlatform.system;
+          inherit (pkgs.stdenv.hostPlatform) system;
         in
         {
           default = self.packages.${system}.mkdev;
@@ -29,12 +29,10 @@
         }
       );
 
-      overlays.default = (
-        prev: final: {
+      overlays.default = prev: final: {
           mkdev = prev.callPackage ./nix/mkdev.nix { };
           mkf = prev.callPackage ./nix/mkf.nix { };
-        }
-      );
+        };
 
       homeManagerModules.default = import ./nix/home-manager.nix;
       homeManagerModule = # .
@@ -45,13 +43,20 @@
       devShells = eachDefaultSystem (pkgs: {
         default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            argbash
+            # Rust
             cargo
             clippy
-            gh
             libgcc
             rustc
-            rustfmt
+
+            # Nix
+            statix
+
+            # Bash
+            argbash
+
+            # Misc.
+            gh
           ];
 
           RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
