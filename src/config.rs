@@ -85,26 +85,14 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         let recipe_dir = None;
-        #[rustfmt::skip]
-        let default_subs = if cfg!(target_family = "unix") {
-            [
-                ("dir", "mk::dir"),
-                ("name", "mk::name"),
-                ("user", "whoami"),
-                ("day", "date +%d"),
-                ("month", "date +%m"),
-                ("year", "date +%Y"),
-            ]
-        } else {
-            [
-                ("dir", "mk::dir"),
-                ("name", "mk::name"),
-                ("user", "whoami"),
-                ("day", "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a"),
-                ("month", "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a"),
-                ("year", "for /f \"tokens=3 delims=/\" %a in ('date /t') do @echo %a"),
-            ]
-        };
+        let default_subs = [
+            ("dir", "mk::dir"),
+            ("name", "mk::name"),
+            ("user", "whoami"),
+            ("day", "date +%d"),
+            ("month", "date +%m"),
+            ("year", "date +%Y"),
+        ];
 
         let subs: HashMap<String, String> = default_subs
             .iter()

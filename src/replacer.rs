@@ -1,0 +1,247 @@
+#![allow(dead_code)]
+use std::collections::HashMap;
+
+#[derive(Clone, Debug)]
+pub struct ReplaceFmt {
+    subs: HashMap<String, String>,
+    delims: Delimiters,
+    strategy: UnknownToken,
+}
+
+impl ReplaceFmt {
+    pub fn new(
+        subs: HashMap<String, String>,
+        delims: (&str, &str),
+        fallback_strategy: UnknownToken,
+    ) -> Self {
+        Self {
+            subs,
+            delims: Delimiters {
+                open: delims.0.chars().collect(),
+                close: delims.1.chars().collect(),
+            },
+            strategy: fallback_strategy,
+        }
+    }
+
+    pub fn replace(&self, src: &str) -> String {
+        self.replace_with(src, |val| Some(val.to_string()))
+    }
+
+    pub fn replace_with<F>(&self, src: &str, resolver: F) -> String
+    where
+        F: Fn(&str) -> Option<String>,
+    {
+        let parser = Parser {
+            source: src.chars().collect(),
+            curr: 0,
+            delims: self.delims.clone(),
+        };
+
+        let tokens = parser.parse();
+
+        tokens
+            .into_iter()
+            .filter_map(|token| match token {
+                Segment::Text(text) => Some(text),
+                Segment::Token(key) => {
+                    let def = self.subs.get(&key);
+                    match def {
+                        // Special case for reserved names.
+                        Some(val) if key.starts_with("mk::") => Some(val.to_string()),
+                        // User-defined resolution
+                        Some(val) => resolver(val),
+                        // Strategy-defined resolution for failed lookups.
+                        None => match self.strategy {
+                            UnknownToken::PassThrough => Some(key),
+                            UnknownToken::Preserve => Some(format!(
+                                "{}{}{}",
+                                self.delims.open.iter().collect::<String>(),
+                                key,
+                                self.delims.close.iter().collect::<String>()
+                            )),
+                            UnknownToken::Ignore => None,
+                        },
+                    }
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("")
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Parser {
+    source: Vec<char>,
+    curr: usize,
+    delims: Delimiters,
+}
+
+impl Parser {
+    pub fn parse(mut self) -> Vec<Segment> {
+        let mut out = vec![];
+        while !self.at_end() {
+            out.push(self.next_segment());
+        }
+        out
+    }
+
+    fn next_segment(&mut self) -> Segment {
+        if self.has_open() {
+            self.parse_token()
+        } else {
+            self.parse_text()
+        }
+    }
+
+    fn parse_token(&mut self) -> Segment {
+        self.curr += self.delims.open.len();
+        let mut buf = String::new();
+        let mut unclosed = false;
+        loop {
+            if self.at_end() {
+                let prefix: String = self.delims.open.iter().collect();
+                buf.insert_str(0, &prefix);
+                unclosed = true;
+                break;
+            }
+            buf.push(self.advance());
+            if self.has_close() {
+                self.curr += self.delims.close.len();
+                break;
+            }
+        }
+
+        if buf.is_empty() || unclosed {
+            Segment::Text(buf)
+        } else {
+            Segment::Token(buf)
+        }
+    }
+
+    fn parse_text(&mut self) -> Segment {
+        let mut buf = String::new();
+        while !self.has_open() && !self.at_end() {
+            buf.push(self.advance());
+        }
+        Segment::Text(buf)
+    }
+
+    fn advance(&mut self) -> char {
+        let c = self.source[self.curr];
+        self.curr += 1;
+        c
+    }
+
+    fn has_open(&self) -> bool {
+        self.source[self.curr..].starts_with(&self.delims.open)
+    }
+
+    fn has_close(&self) -> bool {
+        self.source[self.curr..].starts_with(&self.delims.close)
+    }
+
+    fn at_end(&self) -> bool {
+        self.curr >= self.source.len()
+    }
+}
+
+#[derive(Clone, Debug)]
+struct Delimiters {
+    open: Vec<char>,
+    close: Vec<char>,
+}
+
+#[derive(Clone, Debug)]
+enum Segment {
+    Token(String),
+    Text(String),
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug)]
+pub enum UnknownToken {
+    /// Pass just the token name
+    PassThrough,
+    /// Pass the token name surrounded by its delimiters
+    Preserve,
+    /// Pass nothing
+    Ignore,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UnknownToken::*;
+    use super::*;
+
+    fn make_fmt(subs: &[(&str, &str)], delims: (&str, &str), strat: UnknownToken) -> ReplaceFmt {
+        ReplaceFmt::new(
+            subs.iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            delims,
+            strat,
+        )
+    }
+
+    #[test]
+    fn replaces_single_token() {
+        let fmt = make_fmt(&[("name", "Alice")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("Hello, {{name}}!"), "Hello, Alice!");
+    }
+
+    #[test]
+    fn replaces_multiple_tokens() {
+        let fmt = make_fmt(&[("a", "foo"), ("b", "bar")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("{{a}} and {{b}}"), "foo and bar");
+    }
+
+    #[test]
+    fn unknown_token_passes_through() {
+        let fmt = make_fmt(&[], ("{{", "}}"), PassThrough);
+        assert_eq!(fmt.replace("{{unknown}}"), "unknown");
+    }
+
+    #[test]
+    fn no_tokens_returns_source_unchanged() {
+        let fmt = make_fmt(&[("x", "y")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("no tokens here"), "no tokens here");
+    }
+
+    #[test]
+    fn empty_source_returns_empty() {
+        let fmt = make_fmt(&[("x", "y")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace(""), "");
+    }
+
+    #[test]
+    fn custom_delimiters() {
+        let fmt = make_fmt(&[("name", "Bob")], ("<", ">"), Ignore);
+        assert_eq!(fmt.replace("Hello, <name>!"), "Hello, Bob!");
+    }
+
+    #[test]
+    fn adjacent_tokens() {
+        let fmt = make_fmt(&[("a", "foo"), ("b", "bar")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("{{a}}{{b}}"), "foobar");
+    }
+
+    #[test]
+    fn token_at_start_and_end() {
+        let fmt = make_fmt(&[("x", "!")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("{{x}}hello{{x}}"), "!hello!");
+    }
+
+    #[test]
+    fn unclosed_delimiter_treated_as_text() {
+        let fmt = make_fmt(&[("name", "Alice")], ("{{", "}}"), Ignore);
+        let result = fmt.replace("{{name");
+        assert!(!result.contains("Alice"));
+    }
+
+    #[test]
+    fn empty_token_treated_as_text() {
+        let fmt = make_fmt(&[("", "oops")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("{{}}"), "{{}}");
+    }
+}

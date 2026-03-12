@@ -1,23 +1,26 @@
 use super::Recipe;
 
 use crate::cli::Evoke;
+use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
 };
-use crate::subs::Replacer;
+use crate::replacer::{ReplaceFmt, UnknownToken};
+use crate::warning;
 
 use std::collections::HashMap;
 use std::env::current_dir;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// Create all requested directory in the requested directories
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let mut args = args;
-
+    // --- Error handling ---
+    // There is an error if no recipes are provided
     if args.recipes.is_empty() {
         return Err(NoneSpecified("recipes".into()));
     }
@@ -39,18 +42,25 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         return Err(Invalid("recipe(s)".into(), Some(non_existant_recipes)));
     }
 
-    if args.name.is_none() {
-        args.name = Some("NAME".into());
-    }
-
-    let re = Replacer::new();
-
+    // --- Replacer setup ---
+    // Ensure project name is set to something
+    let name = match args.name {
+        Some(ref name) => name.clone(),
+        None => "NAME".to_string(),
+    };
     // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
         None => current_dir().context("unable to get cwd")?,
     };
 
+    let mut user_subs = Config::get()?.subs.clone();
+    user_subs.insert("mk::name".to_string(), name);
+    user_subs.insert("mk::dir".to_string(), dir.to_string_lossy().to_string());
+
+    let re = ReplaceFmt::new(user_subs, ("{{", "}}"), UnknownToken::Preserve);
+
+    // --- Build ---
     let extra_args = args.clone();
     args.recipes.iter().try_for_each(|r| {
         let recipe = user_recipes
@@ -70,7 +80,7 @@ fn build(
     dir: &Path,
     contents: &Vec<RecipeItem>,
     extra_args: &Evoke,
-    re: &Replacer,
+    re: &ReplaceFmt,
 ) -> io::Result<()> {
     // If the intended destination does not exist, make it.
     if !dir.is_dir() {
@@ -79,11 +89,6 @@ fn build(
 
     for content in contents {
         // Unwrap the project_name for substitutions
-        let project_name = extra_args
-            .name
-            .as_ref()
-            .expect("Name is converted to a Some variant in the `build_recipes` wrapper function.");
-
         let dest = dir.join(content.name());
         ensure_parent(&dest)?;
 
@@ -94,8 +99,8 @@ fn build(
         match content {
             RecipeItem::File(file) => {
                 // perform substitutions on the name and contents
-                let name = re.sub(&dest.to_string_lossy(), project_name, dir);
-                let content = re.sub(&file.content, project_name, dir);
+                let name = re.replace_with(&dest.to_string_lossy(), run_shell);
+                let content = re.replace_with(&file.content, run_shell);
 
                 // Warn users if the file would be rewritten instead of continuing
                 if dest.is_file() && !extra_args.suppress_warnings {
@@ -110,7 +115,7 @@ fn build(
             }
             RecipeItem::Directory(dir_name) => {
                 // Perform substitutions on the dirname
-                let name = re.sub(&dir_name.to_string_lossy(), project_name, dir);
+                let name = re.replace_with(&dir_name.to_string_lossy(), run_shell);
                 let dest = dir.join(name);
 
                 fs::create_dir_all(&dest)?;
@@ -132,4 +137,22 @@ fn ensure_parent(path: &Path) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn run_shell(cmd: &str) -> Option<String> {
+    let output = Command::new("sh").arg("-c").arg(cmd).output().ok();
+
+    match output {
+        Some(output) => {
+            let mut stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+            if stdout.ends_with('\n') {
+                stdout.pop();
+            }
+            Some(stdout)
+        }
+        None => {
+            warning!("could not run command '{}'", cmd);
+            None
+        }
+    }
 }

@@ -6,7 +6,7 @@ mod mkdev_error;
 mod output_type;
 mod recipe;
 mod recipe_completer;
-mod subs;
+mod replacer;
 
 use cli::{Cli, Commands::*};
 use hooks::hooks;
