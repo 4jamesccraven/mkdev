@@ -5,19 +5,17 @@ mod lang;
 mod list;
 mod version;
 
-use crate::warning;
-
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
 pub use list::*;
 
-use version::*;
-
 use lang::Language;
+use version::*;
 
 use crate::config::Config;
 use crate::content::RecipeItem;
+use crate::warning;
 
 use std::collections::HashMap;
 use std::fs;
