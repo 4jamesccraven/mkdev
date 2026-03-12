@@ -10,7 +10,7 @@ mod replacer;
 
 use cli::{Cli, Commands::*};
 use hooks::hooks;
-use mkdev_error::{Error::*, ResultExt};
+use mkdev_error::ResultExt;
 use recipe::Recipe;
 use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 
@@ -45,6 +45,9 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
             Delete(sub_args) => delete_recipe(sub_args, user_recipes),
             List(sub_args) => list_recipe(sub_args, user_recipes),
         },
-        None => Err(NoneSpecified("action".into())),
+        None => {
+            Cli::command().print_help().unwrap();
+            Ok(())
+        }
     }
 }
