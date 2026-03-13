@@ -1,3 +1,4 @@
+use crate::display::DisplayConfig;
 use crate::mkdev_error::{Error, ResultExt};
 
 use std::collections::HashMap;
@@ -15,10 +16,17 @@ static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    /// The directory that data for mkdev is stored in
+    /// Path to where recipes should be read from/saved to
+    /// Default: None (evaluates to ~/.local/share/mkdev on Linux)
     pub recipe_dir: Option<PathBuf>,
-    /// User defined in-line substitution commands
+    /// User defined variables for recipe building
+    /// Default: See `Config::default`
+    #[serde(default = "default_subs")]
     pub subs: HashMap<String, String>,
+    /// User defined formatting for recipes
+    /// Default: See `DisplayConfig::default`
+    #[serde(default)]
+    pub recipe_fmt: DisplayConfig,
 }
 
 impl Config {
@@ -82,23 +90,31 @@ impl Config {
     }
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        let recipe_dir = None;
-        let default_subs = [
+fn default_subs() -> HashMap<String, String> {
+    HashMap::from_iter(
+        [
             ("dir", "mk::dir"),
             ("name", "mk::name"),
             ("user", "whoami"),
             ("day", "date +%d"),
             ("month", "date +%m"),
             ("year", "date +%Y"),
-        ];
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string())),
+    )
+}
 
-        let subs: HashMap<String, String> = default_subs
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
+impl Default for Config {
+    fn default() -> Self {
+        let recipe_dir = None;
+        let subs = default_subs();
+        let recipe_fmt = DisplayConfig::default();
 
-        Self { recipe_dir, subs }
+        Self {
+            recipe_dir,
+            subs,
+            recipe_fmt,
+        }
     }
 }

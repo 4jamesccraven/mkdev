@@ -8,9 +8,9 @@ mod version;
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
+pub use lang::Language;
 pub use list::*;
 
-use lang::Language;
 use version::*;
 
 use crate::config::Config;
@@ -22,7 +22,6 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use colored::Colorize;
 use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 
@@ -66,24 +65,6 @@ impl Recipe {
             .collect();
 
         Ok(recipes)
-    }
-
-    /// Shows a summary of the recipe
-    fn display_summary(&self, show_description: bool) -> String {
-        let lang_string = self
-            .languages
-            .iter()
-            .map(|l| format!("{l}"))
-            .collect::<Vec<_>>()
-            .join(" ");
-
-        let desc = &format!("\n  {}", self.description);
-        format!(
-            "{} ( {} ){}",
-            self.name.bold(),
-            lang_string,
-            if show_description { desc } else { "" }
-        )
     }
 }
 

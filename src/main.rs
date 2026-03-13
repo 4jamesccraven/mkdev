@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod content;
+mod display;
 mod hooks;
 mod mkdev_error;
 mod output_type;

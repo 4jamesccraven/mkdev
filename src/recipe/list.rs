@@ -1,6 +1,8 @@
 use super::Recipe;
 use crate::cli::List;
+use crate::config::Config;
 use crate::content::repr_tree;
+use crate::display::display_recipes_with_config;
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::warning;
@@ -37,14 +39,21 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
 
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
     if let Toml = output_type {
-        warning!("Option \"TOML\" invalid for displaying multiple recipes. ");
+        warning!("option \"TOML\" invalid for displaying multiple recipes. ");
         return;
     }
 
+    let mut config = Config::get()
+        .expect("config is guaranteed to be set")
+        .recipe_fmt
+        .clone();
+
+    if config.show_descriptions.is_none() {
+        config.show_descriptions = Some(show_description)
+    }
+
     match output_type {
-        Default => recipes
-            .iter()
-            .for_each(|r| println!("{}", r.display_summary(show_description))),
+        Default => println!("{}", display_recipes_with_config(&recipes, &config)),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         Json => println!(
