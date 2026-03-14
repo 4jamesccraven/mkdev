@@ -1,7 +1,5 @@
-mod tree;
-
+//! Utilties for constructing and manipulating the contents of a mkdev recipe.
 use ignore::overrides::OverrideBuilder;
-pub use tree::*;
 
 use crate::cli::Imprint;
 use crate::mkdev_error;
@@ -15,6 +13,7 @@ use std::path::PathBuf;
 use ignore::{Walk, WalkBuilder};
 use serde::{Deserialize, Serialize};
 
+/// The data a mkdev recipe stores.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum RecipeItem {
@@ -23,7 +22,7 @@ pub enum RecipeItem {
 }
 
 impl RecipeItem {
-    /// Returns the name of the item, regardless of type
+    /// Returns the name of the `RecipeItem`.
     pub fn name(&self) -> String {
         let name = match self {
             RecipeItem::File(file) => file.name.to_string_lossy(),
@@ -45,6 +44,7 @@ impl RecipeItem {
     }
 }
 
+/// A file.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub name: PathBuf,
@@ -59,7 +59,9 @@ impl File {
     }
 }
 
-/// Attempt to make a list of all contents in `path`
+/// Recursively detects and saves every file and subdirectory in the current working directory.
+///
+/// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
 pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     let cwd = std::env::current_dir()?;
     let mut out = vec![];
@@ -100,6 +102,9 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     Ok(out)
 }
 
+/// Constructs a recursive walk.
+///
+/// This function exists to allow users to override the walk behaviour.
 pub fn build_walk(args: &Imprint) -> Result<Walk, mkdev_error::Error> {
     let cwd = std::env::current_dir().context("could not build walk object")?;
 

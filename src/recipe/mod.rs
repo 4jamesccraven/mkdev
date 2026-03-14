@@ -1,3 +1,4 @@
+//! mkdev's core library. Defines the recipe schema and provides tools for working with them.
 mod delete;
 mod evoke;
 mod imprint;
@@ -25,17 +26,27 @@ use std::path::PathBuf;
 use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 
+/// A mkdev recipe (v2).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Recipe {
+    /// A unique identifier for the recipe.
+    ///
+    /// Determines both the name of the file the recipe is stored in as well as how mkdev will
+    /// display information about it.
     pub name: String,
+    /// A description of the recipe (Optional)
     #[serde(default = "String::new")]
     pub description: String,
+    /// The programming languages (or file formats) found in the recipe's contents.
     pub languages: Vec<Language>,
+    /// The contents the recipe holds.
     pub contents: Vec<RecipeItem>,
 }
 
 impl Recipe {
-    /// Attempt to find all user defined recipes
+    /// Gathers all recipes from the user directory.
+    ///
+    /// Only files with the .toml extension are checked. An invalid recipe gives a warning.
     pub fn gather() -> io::Result<HashMap<String, Recipe>> {
         let data_dir = recipe_dir()?;
         let files = fs::read_dir(data_dir)?;
@@ -68,7 +79,7 @@ impl Recipe {
     }
 }
 
-/// Get the user's preferred data dir, or use the default XDG_DATA_DIR
+/// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
 pub fn recipe_dir() -> io::Result<PathBuf> {
     let cfg = match Config::get() {
         Ok(cfg) => cfg,

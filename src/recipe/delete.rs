@@ -1,3 +1,6 @@
+//! Implementation of `mk delete`.
+//!
+//! Used to delete recipes from their default location.
 use super::{Recipe, recipe_dir};
 use crate::cli::Delete;
 use crate::mkdev_error::{
@@ -10,7 +13,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-/// Attempt to delete a config from the users directory, returning an error on failure
+/// Deletes a recipe based on command line arguments.
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     let to_delete = user_recipes.get(args.recipe.as_str());
 

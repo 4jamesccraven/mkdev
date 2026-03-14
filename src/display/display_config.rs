@@ -1,3 +1,4 @@
+//! The configuration for displaying a single recipe.
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -61,34 +62,16 @@ impl Default for DisplayConfig {
     }
 }
 
-fn default_recipes_join() -> String {
-    "\n".to_string()
-}
-
-fn default_recipe_fmt() -> String {
-    "{name} ({langs}){desc}".to_string()
-}
-
-fn default_name_fmt() -> String {
-    "{name}".to_string()
-}
-
-fn default_name_bold() -> bool {
-    true
-}
-
-fn default_desc_fmt() -> String {
-    "\n  {desc}".to_string()
-}
-
-fn default_lang_fmt() -> String {
-    "{lang}".to_string()
-}
-
-fn default_lang_colour() -> bool {
-    true
-}
-
-fn default_langs_join() -> String {
-    " ".to_string()
+use config_defaults::*;
+#[rustfmt::skip]
+mod config_defaults {
+    //! Source of truth for `DisplayConfig::default` implementation
+    pub fn default_recipes_join() -> String { "\n".to_string()                     }
+    pub fn default_recipe_fmt()   -> String { "{name} ({langs}){desc}".to_string() }
+    pub fn default_name_fmt()     -> String { "{name}".to_string()                 }
+    pub fn default_name_bold()    -> bool   { true                                 }
+    pub fn default_desc_fmt()     -> String { "\n  {desc}".to_string()             }
+    pub fn default_lang_fmt()     -> String { "{lang}".to_string()                 }
+    pub fn default_lang_colour()  -> bool   { true                                 }
+    pub fn default_langs_join()   -> String { " ".to_string()                      }
 }

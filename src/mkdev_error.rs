@@ -1,10 +1,15 @@
+//! Implementats a unified error type, a unified logging interface, and conversions from common
+//! error types.
 use std::io;
 
+/// mkdev's error type.
 #[derive(thiserror::Error, Clone, Debug)]
 pub enum Error {
-    #[error("No {0} specified.")]
+    /// Indicates that something wasn't specified when it should be.
+    #[error("no {0} specified.")]
     NoneSpecified(String),
 
+    /// Indicates that a value is invalid in the context it was passed.
     #[error("invalid {0}{examples}", examples = {
         match .1 {
             Some(eg) => format!(":\n{}", eg.join("\n")),
@@ -13,21 +18,25 @@ pub enum Error {
     })]
     Invalid(String, Option<Vec<String>>),
 
+    /// Wraps `std::io::Error`.
     #[error("{0}: {1}")]
     Io(String, String),
 
+    /// Indicates that a value failed to serialise.
     #[error("failed to serialise {0}: {1}")]
     Serialisation(String, String),
 
+    /// Indicates that a value failed to deserialise.
     #[allow(unused)]
     #[error("failed to deserialise {0}: {1}")]
     Deserialisation(String, String),
 
+    /// Indicates that an action would be destructive.
     #[error("'{0}' already exists. Use -s to overwrite.")]
     DestructionWarning(String),
 }
 
-/// Print a warning to the user
+/// Print a warning to the stderr.
 #[macro_export]
 macro_rules! warning {
     ($($arg:tt)*) => {{
@@ -36,7 +45,7 @@ macro_rules! warning {
     }};
 }
 
-/// Exit the program early
+/// Print an error message and exit the program early.
 #[macro_export]
 macro_rules! die {
     ($($arg:tt)*) => {{
@@ -46,7 +55,9 @@ macro_rules! die {
     }};
 }
 
+/// Convert the error type of a result to `mkdev_error::Error`
 pub trait ResultExt<T> {
+    /// Converts the `Result` using a context message.
     fn context(self, s: &str) -> Result<T, Error>;
 }
 

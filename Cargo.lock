@@ -488,7 +488,6 @@ dependencies = [
  "dirs",
  "hyperpolyglot",
  "ignore",
- "regex",
  "ser_nix",
  "serde",
  "serde_json",

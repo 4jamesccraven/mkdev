@@ -1,3 +1,8 @@
+//! The implementation of `mk evoke`.
+//!
+//! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
+//! are systematically loaded, formatted with custom substitutions, and copied into the target
+//! directory.
 use super::Recipe;
 
 use crate::cli::Evoke;
@@ -17,7 +22,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Create all requested directory in the requested directories
+/// Evokes a recipe according to arguments from the command line.
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     // --- Error handling ---
     // There is an error if no recipes are provided
@@ -54,9 +59,17 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         None => current_dir().context("unable to get cwd")?,
     };
 
-    let mut user_subs = Config::get()?.subs.clone();
-    user_subs.insert("mk::name".to_string(), name);
-    user_subs.insert("mk::dir".to_string(), dir.to_string_lossy().to_string());
+    let user_subs: HashMap<_, _> = Config::get()?
+        .subs
+        .iter()
+        // Patch in reserved values
+        .map(|(k, v)| match v.as_str() {
+            "mk::name" => (k.clone(), format!("mk::{}", name.clone())),
+            #[rustfmt::skip]
+            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy().to_string())),
+            _ => (k.clone(), v.clone()),
+        })
+        .collect();
 
     let re = ReplaceFmt::new(user_subs, ("{{", "}}"), UnknownToken::Preserve);
 
@@ -68,11 +81,9 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
             .expect("Invalid recipes should have been filtered out.");
 
         // Context for failure, should building fail
-        let context = format!("Unable to write `{}` to `{}`", recipe.name, dir.display());
+        let context = format!("unable to write `{}` to `{}`", recipe.name, dir.display());
         build(&dir, &recipe.contents, &extra_args, &re).context(&context)
-    })?;
-
-    Ok(())
+    })
 }
 
 /// Builds a single recipe by taking in its contents and instantiating it recursively
@@ -88,7 +99,6 @@ fn build(
     }
 
     for content in contents {
-        // Unwrap the project_name for substitutions
         let dest = dir.join(content.name());
         ensure_parent(&dest)?;
 
@@ -102,7 +112,8 @@ fn build(
                 let name = re.replace_with(&dest.to_string_lossy(), run_shell);
                 let content = re.replace_with(&file.content, run_shell);
 
-                // Warn users if the file would be rewritten instead of continuing
+                // Stop if a file would be overwritten unless the user has explicitly suppressed
+                // it.
                 if dest.is_file() && !extra_args.suppress_warnings {
                     use std::io::ErrorKind::*;
                     return Err(io::Error::new(
@@ -126,6 +137,7 @@ fn build(
     Ok(())
 }
 
+/// Ensures that all parent directories of a file exist.
 fn ensure_parent(path: &Path) -> io::Result<()> {
     let parent = match path.parent() {
         Some(p) => p,
@@ -139,11 +151,21 @@ fn ensure_parent(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Runs the provided command.
+///
+/// Calculated reserved values (prefixed with 'mk::') are immediately dumped instead.
 fn run_shell(cmd: &str) -> Option<String> {
+    // Handle reserved names.
+    if cmd.starts_with("mk::") {
+        let out = cmd.strip_prefix("mk::").unwrap().to_string();
+        return Some(out);
+    }
+
     let output = Command::new("sh").arg("-c").arg(cmd).output().ok();
 
     match output {
         Some(output) => {
+            // Convert to utf-8 text and strip the trailing newline (if there is one).
             let mut stdout = String::from_utf8_lossy(&output.stdout).into_owned();
             if stdout.ends_with('\n') {
                 stdout.pop();

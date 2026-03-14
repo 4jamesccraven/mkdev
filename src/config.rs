@@ -1,3 +1,4 @@
+//! mkdev's user configuration file.
 use crate::display::DisplayConfig;
 use crate::mkdev_error::{Error, ResultExt};
 
@@ -30,7 +31,9 @@ pub struct Config {
 }
 
 impl Config {
-    /// Retrieve the config
+    /// Retrieves the user config.
+    ///
+    /// The config is cached on the first call, so it is safe to call it more than once.
     pub fn get() -> Result<&'static Config, Error> {
         if CONFIG.get().is_none() {
             let config = Config::load()?;
@@ -43,7 +46,8 @@ impl Config {
     }
 
     /// Override the default config path.
-    /// Note: users can only do this with a temporary CLI flag.
+    ///
+    /// This is used to implement the global `--config` flag.
     pub fn override_path(path: PathBuf) {
         CONFIG_PATH_OVERRIDE
             .set(path)
@@ -51,8 +55,9 @@ impl Config {
     }
 
     /// Private api for loading the config if it is not already loaded.
-    /// Reads the file from the default location, or generates a file
-    /// if it does not already exist.
+    ///
+    /// The file is read in from the default location (or the user-provided override), or a default
+    /// is provided.
     fn load() -> Result<Config, Error> {
         // The config file is overridden, or is default
         let config_file = match CONFIG_PATH_OVERRIDE.get() {
@@ -90,6 +95,11 @@ impl Config {
     }
 }
 
+/// The default substitutions to be used at build time.
+///
+/// mk::dir and mk::name are special reserved values provided directly by mkdev. The other values
+/// are some simple defaults to get the currently logged in user's username or to get the
+/// components of the date.
 fn default_subs() -> HashMap<String, String> {
     HashMap::from_iter(
         [

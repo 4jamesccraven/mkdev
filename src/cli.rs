@@ -1,3 +1,4 @@
+//! The command line interface for mkdev.
 #![deny(missing_docs)]
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;

@@ -32,9 +32,9 @@ fn main() {
     }
 }
 
-/// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
-    // Arguments that cause an exit before subcommand logic
+    // Handle arguments that are tangential or mutually exclusive with general
+    // recipe logic.
     hooks(&args)?;
 
     let user_recipes = Recipe::gather().context("unable to load recipes")?;
@@ -47,6 +47,7 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
             List(sub_args) => list_recipe(sub_args, user_recipes),
         },
         None => {
+            // Print help and exit if no action is provided
             Cli::command().print_help().unwrap();
             Ok(())
         }

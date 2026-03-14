@@ -1,6 +1,14 @@
+//! A simple parser and formatter for format-string-like behaviour.
+//!
+//! This module is used to implement mkdev's recipe substitutions during `mk evoke` as well as
+//! formatting recipes for the default `mk list` behaviour.
 #![allow(dead_code)]
 use std::collections::HashMap;
 
+/// The primary interface for the formatter.
+///
+/// Takes a set of mappings, the delimiter pairs that indicate a variable, and a strategy for
+/// handling undefined variables.
 #[derive(Clone, Debug)]
 pub struct ReplaceFmt {
     subs: HashMap<String, String>,
@@ -24,10 +32,12 @@ impl ReplaceFmt {
         }
     }
 
+    /// Replaces all variables in `src` according to the formatter's internal mapping.
     pub fn replace(&self, src: &str) -> String {
         self.replace_with(src, |val| Some(val.to_string()))
     }
 
+    /// Replaces all variables by applying `resolver` to the value in the internal mapping.
     pub fn replace_with<F>(&self, src: &str, resolver: F) -> String
     where
         F: Fn(&str) -> Option<String>,
@@ -70,6 +80,7 @@ impl ReplaceFmt {
     }
 }
 
+/// A one-time use parser for a format string.
 #[derive(Clone, Debug)]
 struct Parser {
     source: Vec<char>,

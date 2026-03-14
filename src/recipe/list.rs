@@ -1,8 +1,10 @@
+//! Implementation of `mk list`.
+//!
+//! Supports printing single recipes or all known recipes in various formats.
 use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
-use crate::content::repr_tree;
-use crate::display::display_recipes_with_config;
+use crate::display::{display_recipes_with_config, repr_tree};
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::warning;
@@ -11,12 +13,9 @@ use std::collections::HashMap;
 
 use colored::Colorize;
 
-/// List out a recipe or its contents, returning error messages on failure
+/// List a recipe/recipes in accordance to the provide command line arguments.
 pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let output_type = match args.r#type {
-        Some(output_type) => output_type,
-        None => OutputType::Default,
-    };
+    let output_type = args.r#type.unwrap_or_default();
 
     match args.recipe {
         Some(recipe) => {
@@ -37,6 +36,7 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
     Ok(())
 }
 
+/// Displays all recipes.
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
     if let Toml = output_type {
         warning!("option \"TOML\" invalid for displaying multiple recipes. ");
@@ -53,7 +53,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
     }
 
     match output_type {
-        Default => println!("{}", display_recipes_with_config(&recipes, &config)),
+        Default => print!("{}", display_recipes_with_config(&recipes, &config)),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         Json => println!(
@@ -94,7 +94,7 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
 }
 
 impl Recipe {
-    /// Display contents of `tree` with default style
+    /// Display the recipe's contents in a tree format.
     pub fn display_contents(&self) -> String {
         let mut out = format!("{}\n", self.name.bold().blue());
         let contents = repr_tree(&self.contents);
@@ -103,7 +103,7 @@ impl Recipe {
         out
     }
 
-    /// Display all file names associated with the recipe
+    /// Display the name of all the recipe's contents.
     pub fn display_contents_plain(&self) -> String {
         let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
         names.sort();

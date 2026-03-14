@@ -1,7 +1,9 @@
+//! Tree-like output for the contents of a mkdev recipe.
+use crate::content::RecipeItem;
+
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::path::Path;
-
-use super::*;
 
 use colored::Colorize;
 
@@ -16,6 +18,7 @@ pub fn repr_tree(files: &[RecipeItem]) -> String {
     make_tree_string(&tree, "".into())
 }
 
+/// Nests the default, flat recipe content structure into a recursive tree.
 fn build_recursive_content(files: &[RecipeItem]) -> Vec<TreeContent> {
     use RecipeItem::*;
     // Create an intermediate tree
@@ -44,6 +47,7 @@ fn build_recursive_content(files: &[RecipeItem]) -> Vec<TreeContent> {
     out
 }
 
+/// Displays a tree structure.
 fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
     let mut out = String::new();
     let mut rec_iter = cont.iter().peekable();
@@ -95,7 +99,7 @@ fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
     out
 }
 
-/// Internal Data Type to represent a recursive file tree (akin to previous versions of mkdev)
+/// Internal Data Type to represent a recursive file tree
 enum TreeContent {
     Leaf {
         name: String,
@@ -121,6 +125,7 @@ impl TreeNode {
         }
     }
 
+    /// Insert a path into the tree by breaking it into its components.
     fn insert(&mut self, path: &Path, is_file: bool) {
         let mut current = self;
         // Break the path into its components, and at them one-by-one to the tree
@@ -134,6 +139,7 @@ impl TreeNode {
         }
     }
 
+    /// Convert this node and all children into a `TreeContent`.
     fn into_tree_content(self, name: String) -> TreeContent {
         use TreeContent::*;
         if self.children.is_empty() {

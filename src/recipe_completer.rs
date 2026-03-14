@@ -1,8 +1,9 @@
+//! An internal function that allows shell completions to detect the user's recipes.
 use crate::recipe::Recipe;
 
 use clap_complete::engine::CompletionCandidate;
 
-/// An argument completer that gets valid recipe names
+/// An argument completer for the CLI that returns matching recipe names.
 pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     let mut completions = vec![];
 

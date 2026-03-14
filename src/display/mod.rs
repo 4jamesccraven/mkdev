@@ -1,6 +1,9 @@
+//! User-facing display for recipes.
 mod display_config;
+mod tree;
 
 pub use display_config::DisplayConfig;
+pub use tree::repr_tree;
 
 use crate::recipe::{Language, Recipe};
 use crate::replacer::{ReplaceFmt, UnknownToken};
@@ -12,6 +15,7 @@ use colored::Colorize;
 const DELIMS: (&str, &str) = ("{", "}");
 const FALLBACK: UnknownToken = UnknownToken::Preserve;
 
+/// Formats and displays a list of recipes according to a provided configuration.
 pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) -> String {
     recipes
         .iter()
@@ -20,6 +24,7 @@ pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) 
         .join(&config.recipes_join)
 }
 
+/// Formats a single recipe according to a provided configuration.
 fn cfg_display_recipe(recipe: &Recipe, config: &DisplayConfig) -> String {
     let show_description = config.show_descriptions.unwrap_or(true);
 
@@ -46,10 +51,13 @@ fn cfg_display_recipe(recipe: &Recipe, config: &DisplayConfig) -> String {
     replace(subs, &config.recipe_fmt)
 }
 
+/// Helper function to fill a format string.
+#[inline(always)]
 fn replace(subs: HashMap<String, String>, fmt_string: &str) -> String {
     ReplaceFmt::new(subs, DELIMS, FALLBACK).replace(fmt_string)
 }
 
+/// Displays the recipe name as configured.
 fn cfg_display_recipe_name(name: &str, fmt_string: &str, bold: bool) -> String {
     let name_fmt = if bold {
         name.to_string().bold().to_string()
@@ -61,6 +69,7 @@ fn cfg_display_recipe_name(name: &str, fmt_string: &str, bold: bool) -> String {
     replace(subs, fmt_string)
 }
 
+/// Displays the recipe languages as configured.
 fn cfg_display_langs(
     langs: &[Language],
     fmt_string: &str,
@@ -84,6 +93,7 @@ fn cfg_display_langs(
         .join(join_string)
 }
 
+/// Displays the recipe description as configured.
 fn cfg_display_description(description: &str, fmt_string: &str, show_desc: bool) -> String {
     if !show_desc {
         return "".into();

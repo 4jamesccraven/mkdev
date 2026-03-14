@@ -1,3 +1,9 @@
+//! Implementation of `mk imprint`.
+//!
+//! Imprinting is the intended way of making a new recipe. When a recipe is imprinted, mkdev walks
+//! the current directory recursively and stores the relative path and contents of all text files
+//! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
+//! recipe struct and stored to the recipe directory.
 use super::{Language, Recipe, recipe_dir};
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
@@ -14,12 +20,11 @@ use std::path::PathBuf;
 use hyperpolyglot::get_language_breakdown;
 use ignore::Walk;
 
-/// Atttempts to call recipe's imprint and save methods, returning an error message
-/// on failure
+/// Imprints a recipe using arguments from the command line, and post processes it accordingly.
 pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     let walker = build_walk(&args)?;
     let new = Recipe::imprint(args.recipe, args.description, walker)
-        .context("Unable to read current_working directory for the recipe")?;
+        .context("unable to read current_working directory for the recipe")?;
 
     if let Some(path) = args.to_nix {
         let nix_expression = ser_nix::to_string(&new).context("recipe")?;

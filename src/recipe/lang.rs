@@ -1,8 +1,9 @@
+//! Data type that represents a programming language or file format.
+//!
+//! Interfaces with hyperpolyglot to store the name and colour of a programming language.
 use std::fmt::Display;
-use std::sync::LazyLock;
 
 use colored::Colorize;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -14,10 +15,7 @@ pub struct Language {
 impl Display for Language {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.colour {
-            Some(col) => {
-                let (r, g, b) = col;
-                write!(f, "{}", self.name.truecolor(r, g, b))
-            }
+            Some((r, g, b)) => write!(f, "{}", self.name.truecolor(r, g, b)),
             None => write!(f, "{}", self.name),
         }
     }
@@ -41,24 +39,56 @@ impl From<hyperpolyglot::Language> for Language {
     }
 }
 
+/// Backwards compatibility for V1 Language Strings.
+///
+/// This `From` implementation attempts to parse out a colour if it can, or just uses the given
+/// string as a name and sets colour to none if it can't.
 impl From<&str> for Language {
     fn from(value: &str) -> Self {
-        static RE: LazyLock<Regex> = LazyLock::new(|| {
-            Regex::new(r"^\x1b\[38;2;(\d{1,3});(\d{1,3});(\d{1,3})m(.*?)\x1b\[0m$").unwrap()
-        });
+        let mut name = value;
+        let colour: Option<(u8, u8, u8)> = (|| {
+            let s = value.strip_prefix("\x1b[38;2;")?;
 
-        if let Some(caps) = RE.captures(value)
-            && let (Ok(r), Ok(g), Ok(b)) = (caps[1].parse(), caps[2].parse(), caps[3].parse())
-        {
-            return Language {
-                name: caps[4].to_string(),
-                colour: Some((r, g, b)),
-            };
-        }
+            let (r, s) = s.split_once(';')?;
+            let (g, s) = s.split_once(';')?;
+            let (b, s) = s.split_once('m')?;
 
-        Language {
-            name: value.into(),
-            colour: None,
-        }
+            let r = r.parse().ok()?;
+            let g = g.parse().ok()?;
+            let b = b.parse().ok()?;
+
+            name = s.strip_suffix("\x1b[0m")?;
+
+            Some((r, g, b))
+        })();
+        let name = name.to_string();
+
+        Language { name, colour }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_language_from_ansi_string() {
+        let lang = Language::from("\x1b[38;2;255;100;0mRust\x1b[0m");
+        assert_eq!(lang.name, "Rust");
+        assert_eq!(lang.colour, Some((255, 100, 0)));
+    }
+
+    #[test]
+    fn test_language_from_plain_string() {
+        let lang = Language::from("Rust");
+        assert_eq!(lang.name, "Rust");
+        assert_eq!(lang.colour, None);
+    }
+
+    #[test]
+    fn test_language_from_malformed_ansi_string() {
+        let lang = Language::from("\x1b[38;2;999;0;0mRust\x1b[0m");
+        assert_eq!(lang.name, "\x1b[38;2;999;0;0mRust\x1b[0m");
+        assert_eq!(lang.colour, None);
     }
 }
