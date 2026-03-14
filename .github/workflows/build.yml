@@ -13,10 +13,10 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
           - os: macos-latest
             target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
 
@@ -25,11 +25,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
 
       - name: Build Binary
         run: cargo build --release --target ${{ matrix.target }}
@@ -37,25 +35,11 @@ jobs:
       - name: Package Binary with LICENSE
         shell: bash
         run: |
-          mkdir -p staging
-
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            BIN_NAME=mk.exe
-          else
-            BIN_NAME=mk
-          fi
-
-          cp target/${{ matrix.target }}/release/$BIN_NAME staging/$BIN_NAME
+          mkdir -p staging dist
+          cp target/${{ matrix.target }}/release/mk staging/mk
           cp LICENSE staging/LICENSE
-
-          mkdir dist
-
           cd staging
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            powershell.exe -Command "Compress-Archive -Path $BIN_NAME, LICENSE -DestinationPath ../dist/mk-${{ matrix.target }}.zip"
-          else
-            tar -czf ../dist/mk-${{ matrix.target }}.tar.gz $BIN_NAME LICENSE
-          fi
+          tar -czf ../dist/mk-${{ matrix.target }}.tar.gz mk LICENSE
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
@@ -89,5 +73,5 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "dist/**/*"
-          tag: ${{ steps.get_tag.outputs.tag  }}
+          tag: ${{ steps.get_tag.outputs.tag }}
           name: Release ${{ steps.get_tag.outputs.tag }}

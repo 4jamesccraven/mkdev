@@ -66,7 +66,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         .map(|(k, v)| match v.as_str() {
             "mk::name" => (k.clone(), format!("mk::{}", name.clone())),
             #[rustfmt::skip]
-            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy().to_string())),
+            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy())),
             _ => (k.clone(), v.clone()),
         })
         .collect();
