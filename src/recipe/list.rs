@@ -1,6 +1,10 @@
+//! Implementation of `mk list`.
+//!
+//! Supports printing single recipes or all known recipes in various formats.
 use super::Recipe;
 use crate::cli::List;
-use crate::content::repr_tree;
+use crate::config::Config;
+use crate::display::{display_recipes_with_config, repr_tree};
 use crate::mkdev_error::Error::{self, *};
 use crate::output_type::OutputType::{self, *};
 use crate::warning;
@@ -8,16 +12,10 @@ use crate::warning;
 use std::collections::HashMap;
 
 use colored::Colorize;
-use ser_nix;
-use serde_json;
-use toml;
 
-/// List out a recipe or its contents, returning error messages on failure
+/// List a recipe/recipes in accordance to the provide command line arguments.
 pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let output_type = match args.r#type {
-        Some(output_type) => output_type,
-        None => OutputType::Default,
-    };
+    let output_type = args.r#type.unwrap_or_default();
 
     match args.recipe {
         Some(recipe) => {
@@ -31,24 +29,34 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
             let mut recipes: Vec<_> = user_recipes.values().collect();
             recipes.sort_by(|a, b| a.name.cmp(&b.name));
 
-            display_all(recipes, output_type);
+            display_all(recipes, output_type, !args.no_description);
         }
     }
 
     Ok(())
 }
 
-fn display_all(recipes: Vec<&Recipe>, output_type: OutputType) {
-    if let TOML = output_type {
-        warning!("Option \"TOML\" invalid for displaying multiple recipes. ");
+/// Displays all recipes.
+fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
+    if let Toml = output_type {
+        warning!("option \"TOML\" invalid for displaying multiple recipes. ");
         return;
     }
 
+    let mut config = Config::get()
+        .expect("config is guaranteed to be set")
+        .recipe_fmt
+        .clone();
+
+    if config.show_descriptions.is_none() {
+        config.show_descriptions = Some(show_description)
+    }
+
     match output_type {
-        Default => recipes.iter().for_each(|r| println!("{}\n", r)),
+        Default => print!("{}", display_recipes_with_config(&recipes, &config)),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
-        JSON => println!(
+        Json => println!(
             "{}",
             serde_json::to_string_pretty(&recipes)
                 .expect("Recipes are instantiated with serde, and should unwrap")
@@ -67,12 +75,12 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
         Default => print!("{}", recipe.display_contents()),
         Debug => println!("{:#?}", recipe),
         Plain => print!("{}", recipe.display_contents_plain()),
-        JSON => println!(
+        Json => println!(
             "{}",
             serde_json::to_string_pretty(recipe)
                 .expect("Recipes are instantiated with serde, and should unwrap")
         ),
-        TOML => println!(
+        Toml => println!(
             "{}",
             toml::to_string_pretty(recipe)
                 .expect("Recipes are instantiated with serde, and should unwrap")
@@ -86,7 +94,7 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
 }
 
 impl Recipe {
-    /// Display contents of `tree` with default style
+    /// Display the recipe's contents in a tree format.
     pub fn display_contents(&self) -> String {
         let mut out = format!("{}\n", self.name.bold().blue());
         let contents = repr_tree(&self.contents);
@@ -95,7 +103,7 @@ impl Recipe {
         out
     }
 
-    /// Display all file names associated with the recipe
+    /// Display the name of all the recipe's contents.
     pub fn display_contents_plain(&self) -> String {
         let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
         names.sort();

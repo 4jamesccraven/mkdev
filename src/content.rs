@@ -1,7 +1,5 @@
-mod tree;
-
+//! Utilties for constructing and manipulating the contents of a mkdev recipe.
 use ignore::overrides::OverrideBuilder;
-pub use tree::*;
 
 use crate::cli::Imprint;
 use crate::mkdev_error;
@@ -15,6 +13,7 @@ use std::path::PathBuf;
 use ignore::{Walk, WalkBuilder};
 use serde::{Deserialize, Serialize};
 
+/// The data a mkdev recipe stores.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum RecipeItem {
@@ -23,7 +22,7 @@ pub enum RecipeItem {
 }
 
 impl RecipeItem {
-    /// Returns the name of the item, regardless of type
+    /// Returns the name of the `RecipeItem`.
     pub fn name(&self) -> String {
         let name = match self {
             RecipeItem::File(file) => file.name.to_string_lossy(),
@@ -45,6 +44,7 @@ impl RecipeItem {
     }
 }
 
+/// A file.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct File {
     pub name: PathBuf,
@@ -59,42 +59,42 @@ impl File {
     }
 }
 
-/// Attempt to make a list of all contents in `path`
+/// Recursively detects and saves every file and subdirectory in the current working directory.
+///
+/// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
 pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     let cwd = std::env::current_dir()?;
     let mut out = vec![];
 
-    for file in walk {
-        if let Ok(file) = file {
-            if file.path() == cwd {
-                continue;
-            }
+    for file in walk.flatten() {
+        if file.path() == cwd {
+            continue;
+        }
 
-            let data = file
-                .file_type()
-                .expect("This can only be `None` if this is stdin, which is not allowed");
+        let data = file
+            .file_type()
+            .expect("This can only be `None` if this is stdin, which is not allowed");
 
-            let mut path = file.into_path();
+        let mut path = file.into_path();
 
-            if path.starts_with(&cwd) {
-                path = path
-                    .strip_prefix(&cwd)
-                    .expect("This is checked with `starts_with`")
-                    .into();
-            }
+        if path.starts_with(&cwd) {
+            path = path
+                .strip_prefix(&cwd)
+                .expect("This is checked with `starts_with`")
+                .into();
+        }
 
-            let (is_file, is_dir, is_symlink) = (data.is_file(), data.is_dir(), data.is_symlink());
+        let (is_file, is_dir, is_symlink) = (data.is_file(), data.is_dir(), data.is_symlink());
 
-            // Make File or Directory variant as necessary
-            match (is_file, is_dir, is_symlink) {
-                (true, false, false) => out.push(RecipeItem::file(path)?),
-                (false, true, false) => out.push(RecipeItem::dir(path)),
-                // ignore symlinks (TODO: allow customisation with CLI)
-                (false, false, true) => continue,
-                // All of these methods' results are mutually exclusive
-                // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
-                _ => unreachable!(),
-            }
+        // Make File or Directory variant as necessary
+        match (is_file, is_dir, is_symlink) {
+            (true, false, false) => out.push(RecipeItem::file(path)?),
+            (false, true, false) => out.push(RecipeItem::dir(path)),
+            // ignore symlinks (TODO: allow customisation with CLI)
+            (false, false, true) => continue,
+            // All of these methods' results are mutually exclusive
+            // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
+            _ => unreachable!(),
         }
     }
 
@@ -102,6 +102,9 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
     Ok(out)
 }
 
+/// Constructs a recursive walk.
+///
+/// This function exists to allow users to override the walk behaviour.
 pub fn build_walk(args: &Imprint) -> Result<Walk, mkdev_error::Error> {
     let cwd = std::env::current_dir().context("could not build walk object")?;
 
@@ -138,7 +141,7 @@ impl Ord for RecipeItem {
             (Directory(_), File(_)) => Ordering::Less,
             (File(_), Directory(_)) => Ordering::Greater,
             (File(a), File(b)) => a.name.cmp(&b.name),
-            (Directory(a), Directory(b)) => a.cmp(&b),
+            (Directory(a), Directory(b)) => a.cmp(b),
         }
     }
 }

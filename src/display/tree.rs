@@ -1,22 +1,25 @@
+//! Tree-like output for the contents of a mkdev recipe.
+use crate::content::RecipeItem;
+
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use super::*;
-
 use colored::Colorize;
 
-const WIRE: &'static str = "│   ";
-const CONNECTOR: &'static str = "├── ";
-const CAP: &'static str = "└── ";
-const GAP: &'static str = "    ";
+const WIRE: &str = "│   ";
+const CONNECTOR: &str = "├── ";
+const CAP: &str = "└── ";
+const GAP: &str = "    ";
 
 /// Create a String that represents the file system akin to the output of the program "tree"
-pub fn repr_tree(files: &Vec<RecipeItem>) -> String {
-    let tree = build_recursive_content(&files);
+pub fn repr_tree(files: &[RecipeItem]) -> String {
+    let tree = build_recursive_content(files);
     make_tree_string(&tree, "".into())
 }
 
-fn build_recursive_content(files: &Vec<RecipeItem>) -> Vec<TreeContent> {
+/// Nests the default, flat recipe content structure into a recursive tree.
+fn build_recursive_content(files: &[RecipeItem]) -> Vec<TreeContent> {
     use RecipeItem::*;
     // Create an intermediate tree
     let mut root = TreeNode::new();
@@ -37,14 +40,15 @@ fn build_recursive_content(files: &Vec<RecipeItem>) -> Vec<TreeContent> {
     let mut out: Vec<_> = root
         .children
         .into_iter()
-        .map(|(name, node)| node.to_tree_content(name))
+        .map(|(name, node)| node.into_tree_content(name))
         .collect();
 
     out.sort_unstable();
     out
 }
 
-fn make_tree_string(cont: &Vec<TreeContent>, prefix: String) -> String {
+/// Displays a tree structure.
+fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
     let mut out = String::new();
     let mut rec_iter = cont.iter().peekable();
 
@@ -60,8 +64,7 @@ fn make_tree_string(cont: &Vec<TreeContent>, prefix: String) -> String {
             // Trivial case, just display the whole prefix and the file
             Leaf { name, empty_dir } => {
                 #[rustfmt::skip]
-                let name = if *empty_dir { name.blue() } else { name.normal()
-                };
+                let name = if *empty_dir { name.blue() } else { name.normal() };
                 let new_line = format!(
                     "{}{}{}\n",
                     prefix.truecolor(128, 128, 128),
@@ -96,7 +99,7 @@ fn make_tree_string(cont: &Vec<TreeContent>, prefix: String) -> String {
     out
 }
 
-/// Internal Data Type to represent a recursive file tree (akin to previous versions of mkdev)
+/// Internal Data Type to represent a recursive file tree
 enum TreeContent {
     Leaf {
         name: String,
@@ -122,6 +125,7 @@ impl TreeNode {
         }
     }
 
+    /// Insert a path into the tree by breaking it into its components.
     fn insert(&mut self, path: &Path, is_file: bool) {
         let mut current = self;
         // Break the path into its components, and at them one-by-one to the tree
@@ -135,7 +139,8 @@ impl TreeNode {
         }
     }
 
-    fn to_tree_content(self, name: String) -> TreeContent {
+    /// Convert this node and all children into a `TreeContent`.
+    fn into_tree_content(self, name: String) -> TreeContent {
         use TreeContent::*;
         if self.children.is_empty() {
             Leaf {
@@ -146,7 +151,7 @@ impl TreeNode {
             let mut contents: Vec<_> = self
                 .children
                 .into_iter()
-                .map(|(name, node)| node.to_tree_content(name))
+                .map(|(name, node)| node.into_tree_content(name))
                 .collect();
 
             contents.sort_unstable();
@@ -176,8 +181,8 @@ impl PartialOrd for TreeContent {
 
 impl Ord for TreeContent {
     fn cmp(&self, other: &Self) -> Ordering {
-        use std::cmp::Ordering::*;
         use TreeContent::*;
+        use std::cmp::Ordering::*;
         // In all cases, this places a directory earlier (less) than a file, and later (greater)
         // for a file. If two of the same type are encountered, they are sorted lexographically as
         // a fallback

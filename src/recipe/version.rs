@@ -1,3 +1,7 @@
+//! Backwards compatibility layer for older recipe versions.
+//!
+//! Recipes used to store their data differently; this allows for them to be converted as
+//! losslessly as possible to the newer format with no user intervention.
 use crate::content::File;
 use crate::content::RecipeItem;
 
@@ -5,8 +9,8 @@ use super::Language;
 use super::Recipe;
 
 use serde::{Deserialize, Serialize};
-use toml;
 
+/// Untagged helper struct that can deserialise all known recipe formats.
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum RecipeVersions {
@@ -14,11 +18,51 @@ enum RecipeVersions {
     V1(RecipeV1),
 }
 
-// Version 1 //
+// --- General ---
+
+/// Deserialises a known version of the recipe format, and converts it to the most recent version.
+///
+/// Returns None if the recipe data doesn't match any known format.
+pub fn deserialise_recipe(value: &str) -> Option<Recipe> {
+    toml::from_str::<RecipeVersions>(value)
+        .ok()
+        .map(Recipe::from)
+}
+
+impl From<RecipeVersions> for Recipe {
+    fn from(value: RecipeVersions) -> Self {
+        use RecipeVersions::*;
+        match value {
+            V2(r) => r,
+            V1(r) => {
+                // V1 has hardcoded string languages, so those need to be converted to a language
+                // struct if possible
+                let languages = r
+                    .languages
+                    .into_iter()
+                    .map(|string| Language::from(string.as_str()))
+                    .collect();
+
+                // V1's content was recursive and needs to be flattened.
+                let contents = flatten_v1_recursive(r.contents);
+
+                Recipe {
+                    name: r.name,
+                    description: r.description,
+                    languages,
+                    contents,
+                }
+            }
+        }
+    }
+}
+
+// --- Version 1 ---
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RecipeV1 {
     pub name: String,
+    #[serde(default = "String::new")]
     pub description: String,
     pub languages: Vec<String>,
     pub contents: Vec<ContentV1>,
@@ -43,43 +87,7 @@ pub struct DirectoryV1 {
     pub files: Vec<ContentV1>,
 }
 
-// \Version 1 //
-
-/// Deserialises a known version of the recipe format, and converts it to the most recent version.
-/// Returns None if the recipe data doesn't match any known format.
-pub fn deserialise_recipe(value: &str) -> Option<Recipe> {
-    toml::from_str::<RecipeVersions>(value)
-        .ok()
-        .map(|deserialised| Recipe::from(deserialised))
-}
-
-impl From<RecipeVersions> for Recipe {
-    fn from(value: RecipeVersions) -> Self {
-        use RecipeVersions::*;
-        match value {
-            V2(r) => r,
-            V1(r) => {
-                // V1 has hardcoded string languages, so those need to be converted to a language
-                // struct if possible
-                let languages = r
-                    .languages
-                    .into_iter()
-                    .map(|string| Language::from(string.as_str()))
-                    .collect();
-
-                let contents = flatten_v1_recursive(r.contents);
-
-                Recipe {
-                    name: r.name,
-                    description: r.description,
-                    languages,
-                    contents,
-                }
-            }
-        }
-    }
-}
-
+/// Unravels nested V1 content into a flat Vec.
 fn flatten_v1_recursive(old: Vec<ContentV1>) -> Vec<RecipeItem> {
     let mut out = vec![];
 

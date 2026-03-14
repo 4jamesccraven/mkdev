@@ -1,3 +1,5 @@
+//! mkdev's user configuration file.
+use crate::display::DisplayConfig;
 use crate::mkdev_error::{Error, ResultExt};
 
 use std::collections::HashMap;
@@ -6,9 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use dirs;
 use serde::{Deserialize, Serialize};
-use toml;
 
 // There should only ever be one instance of the config to prevent
 // multiple intialisations
@@ -17,14 +17,23 @@ static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    /// The directory that data for mkdev is stored in
+    /// Path to where recipes should be read from/saved to
+    /// Default: None (evaluates to ~/.local/share/mkdev on Linux)
     pub recipe_dir: Option<PathBuf>,
-    /// User defined in-line substitution commands
+    /// User defined variables for recipe building
+    /// Default: See `Config::default`
+    #[serde(default = "default_subs")]
     pub subs: HashMap<String, String>,
+    /// User defined formatting for recipes
+    /// Default: See `DisplayConfig::default`
+    #[serde(default)]
+    pub recipe_fmt: DisplayConfig,
 }
 
 impl Config {
-    /// Retrieve the config
+    /// Retrieves the user config.
+    ///
+    /// The config is cached on the first call, so it is safe to call it more than once.
     pub fn get() -> Result<&'static Config, Error> {
         if CONFIG.get().is_none() {
             let config = Config::load()?;
@@ -37,7 +46,8 @@ impl Config {
     }
 
     /// Override the default config path.
-    /// Note: users can only do this with a temporary CLI flag.
+    ///
+    /// This is used to implement the global `--config` flag.
     pub fn override_path(path: PathBuf) {
         CONFIG_PATH_OVERRIDE
             .set(path)
@@ -45,8 +55,9 @@ impl Config {
     }
 
     /// Private api for loading the config if it is not already loaded.
-    /// Reads the file from the default location, or generates a file
-    /// if it does not already exist.
+    ///
+    /// The file is read in from the default location (or the user-provided override), or a default
+    /// is provided.
     fn load() -> Result<Config, Error> {
         // The config file is overridden, or is default
         let config_file = match CONFIG_PATH_OVERRIDE.get() {
@@ -58,11 +69,10 @@ impl Config {
         };
 
         // Ensure the parent directory exists
-        if let Some(dir) = config_file.parent() {
-            if !dir.is_dir() {
-                fs::create_dir_all(&dir)
-                    .context("unable to create mkdev configuration directory")?;
-            }
+        if let Some(dir) = config_file.parent()
+            && !dir.is_dir()
+        {
+            fs::create_dir_all(dir).context("unable to create mkdev configuration directory")?;
         }
 
         if !config_file.is_file() {
@@ -85,36 +95,36 @@ impl Config {
     }
 }
 
+/// The default substitutions to be used at build time.
+///
+/// mk::dir and mk::name are special reserved values provided directly by mkdev. The other values
+/// are some simple defaults to get the currently logged in user's username or to get the
+/// components of the date.
+fn default_subs() -> HashMap<String, String> {
+    HashMap::from_iter(
+        [
+            ("dir", "mk::dir"),
+            ("name", "mk::name"),
+            ("user", "whoami"),
+            ("day", "date +%d"),
+            ("month", "date +%m"),
+            ("year", "date +%Y"),
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string())),
+    )
+}
+
 impl Default for Config {
     fn default() -> Self {
-        let recipe_dir: _ = None;
-        #[rustfmt::skip]
-        let default_subs = if cfg!(target_family = "unix") {
-            [
-                ("dir", "mk::dir"),
-                ("name", "mk::name"),
-                ("user", "whoami"),
-                ("day", "date +%d"),
-                ("month", "date +%m"),
-                ("year", "date +%Y"),
-            ]
-        } else {
-            [
-                ("dir", "mk::dir"),
-                ("name", "mk::name"),
-                ("user", "whoami"),
-                ("day", "for /f \"tokens=2 delims=/\" %a in ('date /t') do @echo %a"),
-                ("month", "for /f \"tokens=1 delims=/\" %a in ('date /t') do @echo %a"),
-                ("year", "for /f \"tokens=3 delims=/\" %a in ('date /t') do @echo %a"),
-            ]
-        };
+        let recipe_dir = None;
+        let subs = default_subs();
+        let recipe_fmt = DisplayConfig::default();
 
-        let subs: HashMap<String, String> = default_subs
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .into_iter()
-            .collect();
-
-        Self { recipe_dir, subs }
+        Self {
+            recipe_dir,
+            subs,
+            recipe_fmt,
+        }
     }
 }

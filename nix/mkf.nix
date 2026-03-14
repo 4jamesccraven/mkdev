@@ -1,11 +1,11 @@
-{ mk, pkgs, ... }:
+{ pkgs, ... }:
 
 with pkgs;
 writeShellApplication {
   name = "mkf";
 
   runtimeInputs = [
-    mk
+    mkdev
     bat
     fzf
   ];
