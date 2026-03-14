@@ -1,5 +1,4 @@
-//! Functions that "hook" into the beginning of main, potentially allowing short circuiting of any
-//! other logic that mkdev might do.
+//! Functions that are tangential to or mutually exclusive with recipe logic.
 use crate::cli::Cli;
 use crate::config::Config;
 use crate::mkdev_error::{Error, ResultExt};
@@ -12,7 +11,7 @@ use std::path::Path;
 use clap::CommandFactory;
 use clap_mangen::Man;
 
-/// Call all of Mkdev's hooks
+/// Calls every mkdev hook sequentially.
 pub fn hooks(args: &Cli) -> Result<(), Error> {
     config(args);
     man(args)?;
@@ -20,11 +19,13 @@ pub fn hooks(args: &Cli) -> Result<(), Error> {
     Ok(())
 }
 
-//=Config=//
+// --- Config Hook ---
 
-/// Hook that handles flags related to configs
+/// Handles operations that modify or pertain to mkdev's config file.
+///
+/// The print operations cause the program to exit early.
 fn config(args: &Cli) {
-    let skip_main_logic = vec![args.gen_config, args.print_config].iter().any(|f| *f);
+    let skip_main_logic = [args.gen_config, args.print_config].iter().any(|f| *f);
     let commands_present = args.command.is_some();
 
     if skip_main_logic && commands_present {
@@ -48,6 +49,7 @@ fn config(args: &Cli) {
     }
 }
 
+/// Deserialises and prints the user's current config.
 fn print_config() {
     let config = match Config::get() {
         Ok(config) => config,
@@ -62,6 +64,9 @@ fn print_config() {
     print!("{config}");
 }
 
+/// Prints the default config to stdout.
+///
+/// Can be used to reset user config to default.
 fn print_default_config() {
     let config_str = toml::to_string_pretty(&Config::default())
         .expect("Default configuration should alway serialise.");
@@ -69,14 +74,15 @@ fn print_default_config() {
     print!("{config_str}");
 }
 
-//=man page=//
+// --- Manpage Hook ---
 
+/// Generates all of mkdev's man pages and saves them to './mkdev-man'.
 fn man(args: &Cli) -> Result<(), Error> {
     if args.man_page {
         let command = Cli::command();
 
         let out_dir = Path::new("mkdev-man");
-        std::fs::create_dir_all(&out_dir).context("unable to make directory for man pages")?;
+        std::fs::create_dir_all(out_dir).context("unable to make directory for man pages")?;
 
         // Get all commands as a Vec<Command>
         let to_render: Vec<(clap::Command, Option<String>)> = vec![(command.clone(), None)]

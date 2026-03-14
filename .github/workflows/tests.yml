@@ -1,0 +1,27 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, experimental]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cargo Check
+        run: cargo test --all
+
+      - name: Check Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Cargo Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings

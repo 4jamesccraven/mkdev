@@ -1,10 +1,11 @@
+//! The command line interface for mkdev.
 #![deny(missing_docs)]
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
 
-use clap::{crate_authors, crate_description, crate_version, ArgAction, Parser, Subcommand};
+use clap::{ArgAction, Parser, Subcommand, crate_authors, crate_description, crate_version};
 use clap_complete::engine::ArgValueCompleter;
 
 #[derive(Parser, Debug)]
@@ -13,7 +14,7 @@ use clap_complete::engine::ArgValueCompleter;
     version = crate_version!(),
     long_version = concat!(
         crate_version!(), " — ", crate_description!(),
-        "\n© 2025 ", crate_authors!(),
+        "\n© 2026 ", crate_authors!(),
         ".\nLicensed under the MIT License — see https://github.com/4jamesccraven/mkdev/blob/main/LICENSE for details.",
     ),
     author = crate_authors!(),
@@ -125,4 +126,8 @@ pub struct List {
     /// Style of output
     #[arg(short, long)]
     pub r#type: Option<OutputType>,
+
+    /// Hide description (note: only only applies default style)
+    #[arg(long)]
+    pub no_description: bool,
 }

@@ -1,16 +1,17 @@
 mod cli;
 mod config;
 mod content;
+mod display;
 mod hooks;
 mod mkdev_error;
 mod output_type;
 mod recipe;
 mod recipe_completer;
-mod subs;
+mod replacer;
 
 use cli::{Cli, Commands::*};
 use hooks::hooks;
-use mkdev_error::{Error::*, ResultExt};
+use mkdev_error::ResultExt;
 use recipe::Recipe;
 use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 
@@ -31,9 +32,9 @@ fn main() {
     }
 }
 
-/// Dispatcher for various actions
 fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
-    // Arguments that cause an exit before subcommand logic
+    // Handle arguments that are tangential or mutually exclusive with general
+    // recipe logic.
     hooks(&args)?;
 
     let user_recipes = Recipe::gather().context("unable to load recipes")?;
@@ -45,6 +46,10 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
             Delete(sub_args) => delete_recipe(sub_args, user_recipes),
             List(sub_args) => list_recipe(sub_args, user_recipes),
         },
-        None => Err(NoneSpecified("action".into())),
+        None => {
+            // Print help and exit if no action is provided
+            Cli::command().print_help().unwrap();
+            Ok(())
+        }
     }
 }

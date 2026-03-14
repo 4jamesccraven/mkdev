@@ -488,8 +488,6 @@ dependencies = [
  "dirs",
  "hyperpolyglot",
  "ignore",
- "once_cell",
- "regex",
  "ser_nix",
  "serde",
  "serde_json",
@@ -506,12 +504,6 @@ dependencies = [
  "hermit-abi 0.5.1",
  "libc",
 ]
-
-[[package]]
-name = "once_cell"
-version = "1.21.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "once_cell_polyfill"
@@ -744,9 +736,9 @@ dependencies = [
 
 [[package]]
 name = "ser_nix"
-version = "0.1.2"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "779f231aae2ed9960f265bdbd187940b5f0ea4fd65dc7f35ed2c684bb95c35e0"
+checksum = "bdc498e93268b6c24439ab750a593108cc39c4b243d51df4f047bca1328e6d38"
 dependencies = [
  "serde",
 ]
