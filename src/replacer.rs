@@ -13,14 +13,14 @@ use std::collections::HashMap;
 pub struct ReplaceFmt {
     subs: HashMap<String, String>,
     delims: Delimiters,
-    strategy: UnknownToken,
+    strategy: InvalidTokenStrategy,
 }
 
 impl ReplaceFmt {
     pub fn new(
         subs: HashMap<String, String>,
         delims: (&str, &str),
-        fallback_strategy: UnknownToken,
+        fallback_strategy: InvalidTokenStrategy,
     ) -> Self {
         Self {
             subs,
@@ -63,14 +63,14 @@ impl ReplaceFmt {
                         Some(val) => resolver(val),
                         // Strategy-defined resolution for failed lookups.
                         None => match self.strategy {
-                            UnknownToken::PassThrough => Some(key),
-                            UnknownToken::Preserve => Some(format!(
+                            InvalidTokenStrategy::PassThrough => Some(key),
+                            InvalidTokenStrategy::Preserve => Some(format!(
                                 "{}{}{}",
                                 self.delims.open.iter().collect::<String>(),
                                 key,
                                 self.delims.close.iter().collect::<String>()
                             )),
-                            UnknownToken::Ignore => None,
+                            InvalidTokenStrategy::Ignore => None,
                         },
                     }
                 }
@@ -80,7 +80,12 @@ impl ReplaceFmt {
     }
 }
 
-/// A one-time use parser for a format string.
+/// A single-use parser for a format string.
+///
+/// Parses a `Vec<char>` into a `Vec<Segment>` for the `ReplaceFmt` struct to consume. The parser
+/// locates special "tokens" which are delimited by the provided delimiters. If an open delimiter
+/// is found with a leading backslash ('\'), it is ignored and treated as part of the current text
+/// segment.
 #[derive(Clone, Debug)]
 struct Parser {
     source: Vec<char>,
@@ -89,6 +94,7 @@ struct Parser {
 }
 
 impl Parser {
+    /// Parses out the the Tokens, consuming the parser.
     pub fn parse(mut self) -> Vec<Segment> {
         let mut out = vec![];
         while !self.at_end() {
@@ -97,6 +103,7 @@ impl Parser {
         out
     }
 
+    /// Yields the next contiguous segment from the source buffer.
     fn next_segment(&mut self) -> Segment {
         if self.has_open() {
             self.parse_token()
@@ -105,6 +112,7 @@ impl Parser {
         }
     }
 
+    /// Parses out a delimited token, returning the token name and consuming the delimiters.
     fn parse_token(&mut self) -> Segment {
         self.curr += self.delims.open.len();
         let mut buf = String::new();
@@ -130,6 +138,7 @@ impl Parser {
         }
     }
 
+    /// Parses out generic text until the first non-escaped open delimiter is found.
     fn parse_text(&mut self) -> Segment {
         let mut buf = String::new();
         while !self.has_open() && !self.at_end() {
@@ -149,16 +158,19 @@ impl Parser {
         Segment::Text(buf)
     }
 
+    /// Yields the character at the current place in the buffer and advances.
     fn advance(&mut self) -> char {
         let c = self.source[self.curr];
         self.curr += 1;
         c
     }
 
+    /// Returns `true` if the remainder of the buffer starts with an open delimiter.
     fn has_open(&self) -> bool {
         self.source[self.curr..].starts_with(&self.delims.open)
     }
 
+    /// Returns `true` if the remainder of the buffer starts with an escaped open delimiter.
     fn has_escaped_open(&self) -> bool {
         self.source[self.curr..].starts_with(&['\\'])
             && self
@@ -167,10 +179,15 @@ impl Parser {
                 .is_some_and(|s| s.starts_with(&self.delims.open))
     }
 
+    /// Returns `true` if the remainder of the buffer starts with a close delimiter.
     fn has_close(&self) -> bool {
         self.source[self.curr..].starts_with(&self.delims.close)
     }
 
+    /// Returns `true` if the buffer has been fully read.
+    ///
+    /// This is determined by checking if the buffer pointer has reached or exceeded the length of
+    /// the buffer.
     fn at_end(&self) -> bool {
         self.curr >= self.source.len()
     }
@@ -190,7 +207,7 @@ enum Segment {
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
-pub enum UnknownToken {
+pub enum InvalidTokenStrategy {
     /// Pass just the token name
     PassThrough,
     /// Pass the token name surrounded by its delimiters
@@ -201,10 +218,14 @@ pub enum UnknownToken {
 
 #[cfg(test)]
 mod tests {
-    use super::UnknownToken::*;
+    use super::InvalidTokenStrategy::*;
     use super::*;
 
-    fn make_fmt(subs: &[(&str, &str)], delims: (&str, &str), strat: UnknownToken) -> ReplaceFmt {
+    fn make_fmt(
+        subs: &[(&str, &str)],
+        delims: (&str, &str),
+        strat: InvalidTokenStrategy,
+    ) -> ReplaceFmt {
         ReplaceFmt::new(
             subs.iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))

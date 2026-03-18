@@ -6,14 +6,14 @@ pub use display_config::DisplayConfig;
 pub use tree::repr_tree;
 
 use crate::recipe::{Language, Recipe};
-use crate::replacer::{ReplaceFmt, UnknownToken};
+use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 
 use std::collections::HashMap;
 
 use colored::Colorize;
 
 const DELIMS: (&str, &str) = ("{", "}");
-const FALLBACK: UnknownToken = UnknownToken::Preserve;
+const FALLBACK: InvalidTokenStrategy = InvalidTokenStrategy::Preserve;
 
 /// Formats and displays a list of recipes according to a provided configuration.
 pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) -> String {

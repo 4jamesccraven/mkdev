@@ -12,7 +12,7 @@ use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
 };
-use crate::replacer::{ReplaceFmt, UnknownToken};
+use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
 
 use std::collections::HashMap;
@@ -71,7 +71,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         })
         .collect();
 
-    let re = ReplaceFmt::new(user_subs, ("{{", "}}"), UnknownToken::Preserve);
+    let re = ReplaceFmt::new(user_subs, ("{{", "}}"), InvalidTokenStrategy::Preserve);
 
     // --- Build ---
     let extra_args = args.clone();
