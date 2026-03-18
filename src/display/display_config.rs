@@ -8,6 +8,10 @@ pub struct DisplayConfig {
     /// Default: "\n"
     #[serde(default = "default_recipes_join")]
     pub recipes_join: String,
+    /// Extra text that should come after all the recipes are printed.
+    /// Default: "\n"
+    #[serde(default = "default_recipes_suffix")]
+    pub recipes_suffix: String,
     /// Whether the CLI flag `--no-description` is set by default.
     /// Default: None (determined by CLI only)
     pub show_descriptions: Option<bool>,
@@ -50,6 +54,7 @@ impl Default for DisplayConfig {
     fn default() -> Self {
         Self {
             recipes_join: default_recipes_join(),
+            recipes_suffix: default_recipes_suffix(),
             show_descriptions: None,
             recipe_fmt: default_recipe_fmt(),
             name_fmt: default_name_fmt(),
@@ -66,12 +71,13 @@ use config_defaults::*;
 #[rustfmt::skip]
 mod config_defaults {
     //! Source of truth for `DisplayConfig::default` implementation
-    pub fn default_recipes_join() -> String { "\n".to_string()                     }
-    pub fn default_recipe_fmt()   -> String { "{name} ({langs}){desc}".to_string() }
-    pub fn default_name_fmt()     -> String { "{name}".to_string()                 }
-    pub fn default_name_bold()    -> bool   { true                                 }
-    pub fn default_desc_fmt()     -> String { "\n  {desc}".to_string()             }
-    pub fn default_lang_fmt()     -> String { "{lang}".to_string()                 }
-    pub fn default_lang_colour()  -> bool   { true                                 }
-    pub fn default_langs_join()   -> String { " ".to_string()                      }
+    pub fn default_recipes_join()   -> String { "\n".to_string()                     }
+    pub fn default_recipes_suffix() -> String { "\n".to_string()                     }
+    pub fn default_recipe_fmt()     -> String { "{name} ({langs}){desc}".to_string() }
+    pub fn default_name_fmt()       -> String { "{name}".to_string()                 }
+    pub fn default_name_bold()      -> bool   { true                                 }
+    pub fn default_desc_fmt()       -> String { "\n  {desc}".to_string()             }
+    pub fn default_lang_fmt()       -> String { "{lang}".to_string()                 }
+    pub fn default_lang_colour()    -> bool   { true                                 }
+    pub fn default_langs_join()     -> String { " ".to_string()                      }
 }

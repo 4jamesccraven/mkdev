@@ -22,6 +22,7 @@ pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) 
         .map(|r| cfg_display_recipe(r, config))
         .collect::<Vec<String>>()
         .join(&config.recipes_join)
+        + config.recipes_suffix.as_str()
 }
 
 /// Formats a single recipe according to a provided configuration.
