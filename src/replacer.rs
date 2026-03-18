@@ -133,7 +133,18 @@ impl Parser {
     fn parse_text(&mut self) -> Segment {
         let mut buf = String::new();
         while !self.has_open() && !self.at_end() {
-            buf.push(self.advance());
+            // General case: pass characters through to buffer
+            if !self.has_escaped_open() {
+                buf.push(self.advance());
+                continue;
+            }
+
+            // Escaped delimiters: skip the \, pass the delimiters through
+            // untouched.
+            _ = self.advance();
+            for _ in 0..self.delims.open.len() {
+                buf.push(self.advance());
+            }
         }
         Segment::Text(buf)
     }
@@ -146,6 +157,14 @@ impl Parser {
 
     fn has_open(&self) -> bool {
         self.source[self.curr..].starts_with(&self.delims.open)
+    }
+
+    fn has_escaped_open(&self) -> bool {
+        self.source[self.curr..].starts_with(&['\\'])
+            && self
+                .source
+                .get(self.curr + 1..)
+                .is_some_and(|s| s.starts_with(&self.delims.open))
     }
 
     fn has_close(&self) -> bool {
@@ -254,5 +273,35 @@ mod tests {
     fn empty_token_treated_as_text() {
         let fmt = make_fmt(&[("", "oops")], ("{{", "}}"), Ignore);
         assert_eq!(fmt.replace("{{}}"), "{{}}");
+    }
+
+    #[test]
+    fn ignore_escaped_delimiter() {
+        let fmt = make_fmt(&[("a", "b")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("\\{{a}}"), "{{a}}");
+    }
+
+    #[test]
+    fn regular_escapes_ignored() {
+        let fmt = make_fmt(&[("a", "b")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("\\ {{a}}"), "\\ b");
+    }
+
+    #[test]
+    fn escaped_single_char_delimiter() {
+        let fmt = make_fmt(&[("a", "b")], ("{", "}"), Ignore);
+        assert_eq!(fmt.replace("\\{a}"), "{a}");
+    }
+
+    #[test]
+    fn trailing_backslash_does_not_panic() {
+        let fmt = make_fmt(&[("a", "b")], ("{{", "}}"), Ignore);
+        assert_eq!(fmt.replace("hello\\"), "hello\\");
+    }
+
+    #[test]
+    fn trailing_backslash_single_char_delimiter_does_not_panic() {
+        let fmt = make_fmt(&[("a", "b")], ("{", "}"), Ignore);
+        assert_eq!(fmt.replace("hello\\"), "hello\\");
     }
 }
