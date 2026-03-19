@@ -1,11 +1,5 @@
-```
-                                           _____  _____ 
-                                          |____ ||  _  |
- _______ _     _ ______  _______ _    _       / /| |/' |
- |  |  | |____/  |     \ |______  \  /        \ \|  /| |
- |  |  | |    \_ |_____/ |______   \/     .___/ /\ |_/ /
-                                          \____(_)\___/ 
-```
+![image](./mkdev-logo.svg)
+
 ![image](https://img.shields.io/badge/release-3.4.0-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
 [![image](https://img.shields.io/badge/documentation-🔗-orange)](https://github.com/4jamesccraven/mkdev/wiki)
