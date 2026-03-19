@@ -1,4 +1,4 @@
-![image](./mkdev-logo.svg)
+![image](./logo/mkdev-logo.svg)
 
 ![image](https://img.shields.io/badge/release-3.4.0-orange)
 ![image](https://img.shields.io/badge/license-MIT_License-orange)
