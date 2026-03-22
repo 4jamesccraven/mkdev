@@ -16,16 +16,30 @@ use serde::{Deserialize, Serialize};
 static CONFIG: OnceLock<Config> = OnceLock::new();
 static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
+// These doc comments are used to generate the `mkdev-config(5)` man page. They must remain
+// formatted this way as they are parsed directly.
+
 #[derive(Confique, Serialize, Deserialize, Debug)]
 pub struct Config {
-    /// Path to where recipes should be read from/saved to
-    /// Default: None (evaluates to ~/.local/share/mkdev on Linux)
+    /// Path to a directory which contains mkdev recipes. New recipes will be written here.
+    ///
+    /// Default:
+    /// Absent (evaluates to ~/.local/share/mkdev on Linux)
     pub recipe_dir: Option<PathBuf>,
-    /// User defined variables for recipe building
-    /// Default: See `Config::default`
+    /// A mapping of key-value pairs used when building a recipe that defines what a token should
+    /// evaluate to. For example, {{date}} => "date +%D".
+    ///
+    /// Default:
+    /// [subs]
+    /// user = "whoami"
+    /// name = "mk::name"
+    /// dir = "mk::dir"
+    /// year = "date +%Y"
+    /// month = "date +%m"
+    /// day = "date +%d"
     #[serde(default = "default_subs")]
     pub subs: HashMap<String, String>,
-    /// User defined formatting for recipes
+    /// User defined formatting for recipes.
     /// Default: See `DisplayConfig::default`
     #[serde(default)]
     #[config(nested)]

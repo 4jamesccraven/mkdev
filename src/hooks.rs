@@ -9,7 +9,10 @@ use std::io::BufWriter;
 use std::path::Path;
 
 use clap::CommandFactory;
+use clap::{crate_name, crate_version};
 use clap_mangen::Man;
+use clap_mangen::roff::{Roff, bold, roman};
+use confique::meta::Meta;
 
 /// Calls every mkdev hook sequentially.
 pub fn hooks(args: &Cli) -> Result<(), Error> {
@@ -78,6 +81,7 @@ fn print_default_config() {
 
 /// Generates all of mkdev's man pages and saves them to './mkdev-man'.
 fn man(args: &Cli) -> Result<(), Error> {
+    // if args.man_page {
     if args.man_page {
         let command = Cli::command();
 
@@ -85,12 +89,12 @@ fn man(args: &Cli) -> Result<(), Error> {
         std::fs::create_dir_all(out_dir).context("unable to make directory for man pages")?;
 
         // Get all commands as a Vec<Command>
-        let to_render: Vec<(clap::Command, Option<String>)> = vec![(command.clone(), None)]
+        let to_render: Vec<(clap::Command, Option<&str>)> = vec![(command.clone(), None)]
             .into_iter()
             .chain(
                 command
                     .get_subcommands()
-                    .map(|sc| (sc.to_owned(), Some("mk".to_string()))),
+                    .map(|sc| (sc.to_owned(), Some("mk"))),
             )
             .collect();
 
@@ -122,8 +126,115 @@ fn man(args: &Cli) -> Result<(), Error> {
                 Ok(())
             })?;
 
+        man5()?;
+
         std::process::exit(0);
     }
 
     Ok(())
+}
+
+// Generates the man page for mkdev's configuration file: `mkdev-config(5)`
+fn man5() -> Result<(), Error> {
+    let mut roff = Roff::new();
+
+    roff
+        // Title Header
+        .control(
+            "TH",
+            [
+                "mkdev-config",
+                "5",
+                // Footer middle
+                " ",
+                // Footer inside
+                concat!(crate_name!(), " ", crate_version!()),
+                // Header inside
+                "File Formats and Configuration",
+            ],
+        )
+        // Manpage Name
+        .control("SH", ["NAME"])
+        .text([roman("mkdev-config - Configuration file for mkdev")])
+        // Manpage Description
+        .control("SH", ["DESCRIPTION"])
+        .text([
+            bold("mkdev"),
+            roman(concat!(
+                " stores its configuration file at ~/.config/mkdev/config.toml by default.",
+                " This can be overridden with the --config flag or CONFIG environment variable;",
+                " see "
+            )),
+            bold("mk(1)"),
+        ])
+        // Options stub
+        .control("SH", ["CONFIGURATION OPTIONS"])
+        .control("SS", ["global options"]);
+
+    // Insert options parsed from metadata.
+    insert_opts(&mut roff, &<Config as confique::Config>::META);
+
+    // See also section
+    roff.control("SH", ["SEE ALSO"]).text([
+        bold("mk(1)"),
+        roman(", "),
+        bold("mk-evoke(1)"),
+        roman(", "),
+        bold("mk-list(1)"),
+    ]);
+
+    // Create the man page file.
+    let man5_file = File::create("mkdev-man/mkdev-config.5")
+        .context("unable to create mkdev-man/mkdev-config.5")?;
+
+    // Create a write buffer.
+    let mut w = BufWriter::new(man5_file);
+
+    // Render our manpage to it.
+    roff.to_writer(&mut w)
+        .context("unable to write to mkdev-man/mkdev-config.5")?;
+
+    Ok(())
+}
+
+/// Takes in an unrendered roff file and metadata about the config struct and inserts documentation
+/// about that metadata into the roff file. Recurses into metadata about nested structures.
+fn insert_opts(roff: &mut Roff, meta_root: &Meta) {
+    use confique::meta::FieldKind;
+    // Parse metadata out of the struct
+    meta_root.fields.iter().for_each(|field| match field.kind {
+        FieldKind::Leaf { .. } => {
+            let description = field
+                .doc
+                .iter()
+                .map(|s| s.trim())
+                .take_while(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            let defaults = field
+                .doc
+                .iter()
+                .map(|s| s.trim())
+                .skip_while(|s| !s.starts_with("Default:"))
+                .skip(1)
+                .collect::<Vec<_>>();
+
+            roff.control("TP", [])
+                .text([bold(field.name)])
+                .text([roman(description)])
+                .control("sp", [])
+                .text([bold("Default:")])
+                .control("br", []);
+
+            for default in defaults.into_iter() {
+                roff.control("br", []).text([roman(default)]);
+            }
+        }
+        FieldKind::Nested { meta, .. } => {
+            roff.control("SS", [field.name])
+                .text([roman(field.doc.get(0).map_or("", |s| (*s).trim()))]);
+            insert_opts(roff, meta);
+        }
+    });
 }
