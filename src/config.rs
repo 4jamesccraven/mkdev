@@ -8,6 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
 // There should only ever be one instance of the config to prevent
@@ -15,7 +16,7 @@ use serde::{Deserialize, Serialize};
 static CONFIG: OnceLock<Config> = OnceLock::new();
 static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Confique, Serialize, Deserialize, Debug)]
 pub struct Config {
     /// Path to where recipes should be read from/saved to
     /// Default: None (evaluates to ~/.local/share/mkdev on Linux)
@@ -27,6 +28,7 @@ pub struct Config {
     /// User defined formatting for recipes
     /// Default: See `DisplayConfig::default`
     #[serde(default)]
+    #[config(nested)]
     pub recipe_fmt: DisplayConfig,
 }
 

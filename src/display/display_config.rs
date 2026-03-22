@@ -1,7 +1,8 @@
 //! The configuration for displaying a single recipe.
+use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Confique, Serialize, Deserialize, Clone, Debug)]
 pub struct DisplayConfig {
     // --- Top Level ---
     /// Text that joins formatted recipes
