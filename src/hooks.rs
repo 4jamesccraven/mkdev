@@ -233,7 +233,7 @@ fn insert_opts(roff: &mut Roff, meta_root: &Meta) {
         }
         FieldKind::Nested { meta, .. } => {
             roff.control("SS", [field.name])
-                .text([roman(field.doc.get(0).map_or("", |s| (*s).trim()))]);
+                .text([roman(field.doc.first().map_or("", |s| (*s).trim()))]);
             insert_opts(roff, meta);
         }
     });
