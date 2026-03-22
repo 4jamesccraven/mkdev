@@ -1,51 +1,76 @@
 //! The configuration for displaying a single recipe.
+use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Confique, Serialize, Deserialize, Clone, Debug)]
 pub struct DisplayConfig {
     // --- Top Level ---
-    /// Text that joins formatted recipes
-    /// Default: "\n"
+    /// Text that joins (comes between) formatted recipes.
+    ///
+    /// Default:
+    /// "\n"
     #[serde(default = "default_recipes_join")]
     pub recipes_join: String,
-    /// Extra text that should come after all the recipes are printed.
-    /// Default: "\n"
+    /// Extra text that should come after all recipes are printed.
+    ///
+    /// Default:
+    /// "\n"
     #[serde(default = "default_recipes_suffix")]
     pub recipes_suffix: String,
     /// Whether the CLI flag `--no-description` is set by default.
-    /// Default: None (determined by CLI only)
+    ///
+    /// Default:
+    /// None (determined by CLI only)
     pub show_descriptions: Option<bool>,
-    /// How an individual recipe should be formatted.
-    /// Default: "{name} ({langs}){desc}"
+    /// How an individual recipe should be formatted. The variables available are "{name}", the
+    /// formatted name of the recipe; "{langs}", the formatted list of languages present in the
+    /// recipe; and "{desc}" the formatted description of the recipe.
+    ///
+    /// Default:
+    /// "{name} ({langs}){desc}"
     #[serde(default = "default_recipe_fmt")]
     pub recipe_fmt: String,
 
     // --- Name ---
-    /// How to format the name of the recipe.
-    /// Default: "{name}"
+    /// How to format the name of the recipe. (use "{name}" to reference the raw name).
+    ///
+    /// Default:
+    /// "{name}"
     #[serde(default = "default_name_fmt")]
     pub name_fmt: String,
     /// Whether the name should be bolded.
-    /// Default: true
+    ///
+    /// Default:
+    /// true
     #[serde(default = "default_name_bold")]
     pub name_bold: bool,
 
     // --- Description ---
-    /// How to format the description of the recipe.
-    /// Default: "\n  {desc}"
+    /// How to format the description of the recipe. (use "{name}" to reference the raw
+    /// description).
+    ///
+    /// Default:
+    /// "\n  {desc}"
     #[serde(default = "default_desc_fmt")]
     pub desc_fmt: String,
 
     // --- Languages ---
-    /// How each individual language should be formatted.
-    /// Default: "{lang}"
+    /// How each individual language should be formatted. (use "{lang}" to reference the raw
+    /// language name).
+    ///
+    /// Default:
+    /// "{lang}"
     #[serde(default = "default_lang_fmt")]
     pub lang_fmt: String,
     /// Whether a language should be colourised.
-    /// Default: true
+    ///
+    /// Default:
+    /// true
     pub lang_colour: bool,
     /// Text that joins formatted languages.
-    /// Default: " "
+    ///
+    /// Default:
+    /// " "
     #[serde(default = "default_langs_join")]
     pub langs_join: String,
 }
