@@ -109,7 +109,7 @@ macro_rules! ctx {
         concat!("[", file!(), ":", line!(), "] ", $msg)
     };
     ($res:expr, $msg:literal) => {{
-        use crate::mkdev_error::ResultExt;
+        use $crate::mkdev_error::ResultExt;
         ResultExt::context($res, ctx!($msg))
     }};
 }
