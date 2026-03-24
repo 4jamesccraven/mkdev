@@ -11,7 +11,6 @@ mod replacer;
 
 use cli::{Cli, Commands::*};
 use hooks::hooks;
-use mkdev_error::ResultExt;
 use recipe::Recipe;
 use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 
@@ -37,7 +36,7 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     // recipe logic.
     hooks(&args)?;
 
-    let user_recipes = Recipe::gather().context("unable to load recipes")?;
+    let user_recipes = ctx!(Recipe::gather(), "loading recipes")?;
 
     match args.command {
         Some(command) => match command {

@@ -5,7 +5,10 @@ use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
 use crate::display::{display_recipes_with_config, repr_tree};
-use crate::mkdev_error::Error::{self, *};
+use crate::mkdev_error::{
+    Error::{self, *},
+    Subject,
+};
 use crate::output_type::OutputType::{self, *};
 use crate::warning;
 
@@ -19,9 +22,10 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
 
     match args.recipe {
         Some(recipe) => {
-            let recipe = user_recipes
-                .get(recipe.as_str())
-                .ok_or_else(|| Invalid("recipe".into(), Some(vec![recipe])))?;
+            let recipe = user_recipes.get(recipe.as_str()).ok_or_else(|| Invalid {
+                subject: Subject::Recipe,
+                examples: Some(vec![recipe]),
+            })?;
 
             display_one(recipe, output_type);
         }
@@ -36,10 +40,14 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
     Ok(())
 }
 
+const SER_EXISTING_RECIPE: &str = //.
+    "Invalid recipes are filtered out by this point, \
+     and if they deserialised, they'll serialise back.";
+
 /// Displays all recipes.
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
     if let Toml = output_type {
-        warning!("option \"TOML\" invalid for displaying multiple recipes. ");
+        warning!("option \"TOML\" invalid for displaying multiple recipes.");
         return;
     }
 
@@ -58,13 +66,11 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         Json => println!(
             "{}",
-            serde_json::to_string_pretty(&recipes)
-                .expect("Recipes are instantiated with serde, and should unwrap")
+            serde_json::to_string_pretty(&recipes).expect(SER_EXISTING_RECIPE)
         ),
         Nix => println!(
             "{}",
-            ser_nix::to_string(&recipes)
-                .expect("Recipes are instantiated with serde, and should unwrap")
+            ser_nix::to_string(&recipes).expect(SER_EXISTING_RECIPE)
         ),
         _ => unreachable!(),
     }
@@ -77,18 +83,15 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
         Plain => print!("{}", recipe.display_contents_plain()),
         Json => println!(
             "{}",
-            serde_json::to_string_pretty(recipe)
-                .expect("Recipes are instantiated with serde, and should unwrap")
+            serde_json::to_string_pretty(recipe).expect(SER_EXISTING_RECIPE)
         ),
         Toml => println!(
             "{}",
-            toml::to_string_pretty(recipe)
-                .expect("Recipes are instantiated with serde, and should unwrap")
+            toml::to_string_pretty(recipe).expect(SER_EXISTING_RECIPE)
         ),
         Nix => println!(
             "{}",
-            ser_nix::to_string(&recipe)
-                .expect("Recipes are instantiated with serde, and should unwrap")
+            ser_nix::to_string(&recipe).expect(SER_EXISTING_RECIPE)
         ),
     }
 }

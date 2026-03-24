@@ -28,16 +28,15 @@ path = "src/main.rs"
 clap = { version = "4.5.23", features = ["cargo", "derive"] }
 clap_complete = { version = "4.5.47", features = ["unstable-dynamic"] }
 clap_mangen = "0.2.26"
+colored = "3.0.0"
+confique = { version = "0.4.0", features = ["toml"] }
 dirs = "5.0.1"
 hyperpolyglot = "0.1.7"
+ignore = "0.4.23"
+ser_nix = "0.2.2"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.140"
-ser_nix = "0.2.2"
 toml = "0.8.19"
-thiserror = "2.0.12"
-colored = "3.0.0"
-ignore = "0.4.23"
-confique = { version = "0.4.0", features = ["toml"] }
 
 [profile.release]
 codegen-units = 1

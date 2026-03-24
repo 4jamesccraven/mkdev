@@ -10,10 +10,10 @@ use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::mkdev_error::{
     Error::{self, *},
-    ResultExt,
+    Subject,
 };
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
-use crate::warning;
+use crate::{ctx, warning};
 
 use std::collections::HashMap;
 use std::env::current_dir;
@@ -27,7 +27,9 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // --- Error handling ---
     // There is an error if no recipes are provided
     if args.recipes.is_empty() {
-        return Err(NoneSpecified("recipes".into()));
+        return Err(NoneSpecified {
+            subject: Subject::Recipes,
+        });
     }
 
     let non_existant_recipes: Vec<String> = args
@@ -44,7 +46,15 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
 
     // There is an error if there are any non-existent recipes specified by the user
     if !non_existant_recipes.is_empty() {
-        return Err(Invalid("recipe(s)".into(), Some(non_existant_recipes)));
+        let subject = match non_existant_recipes.len() {
+            1 => Subject::Recipe,
+            2.. => Subject::Recipes,
+            _ => unreachable!(),
+        };
+        return Err(Invalid {
+            subject,
+            examples: Some(non_existant_recipes),
+        });
     }
 
     // --- Replacer setup ---
@@ -56,7 +66,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
-        None => current_dir().context("unable to get cwd")?,
+        None => ctx!(current_dir(), "getting cwd")?,
     };
 
     let user_subs: HashMap<_, _> = Config::get()?
@@ -81,8 +91,11 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
             .expect("Invalid recipes should have been filtered out.");
 
         // Context for failure, should building fail
-        let context = format!("unable to write `{}` to `{}`", recipe.name, dir.display());
-        build(&dir, &recipe.contents, &extra_args, &re).context(&context)
+        ctx!(
+            build(&dir, &recipe.contents, &extra_args, &re),
+            "evoking recipe(s)"
+        )
+        .inspect_err(|_| warning!("unable to evoke `{}` in '{}'", recipe.name, dir.display()))
     })
 }
 

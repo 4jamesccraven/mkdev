@@ -2,8 +2,8 @@
 use ignore::overrides::OverrideBuilder;
 
 use crate::cli::Imprint;
+use crate::ctx;
 use crate::mkdev_error;
-use crate::mkdev_error::ResultExt;
 
 use std::cmp::Ordering;
 use std::fs;
@@ -106,7 +106,7 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
 ///
 /// This function exists to allow users to override the walk behaviour.
 pub fn build_walk(args: &Imprint) -> Result<Walk, mkdev_error::Error> {
-    let cwd = std::env::current_dir().context("could not build walk object")?;
+    let cwd = ctx!(std::env::current_dir(), "getting cwd")?;
 
     let mut ob = OverrideBuilder::new(&cwd);
     for over in &args.exclude {
