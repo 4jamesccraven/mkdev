@@ -1,8 +1,8 @@
 //! Functions that are tangential to or mutually exclusive with recipe logic.
 use crate::cli::Cli;
 use crate::config::Config;
-use crate::mkdev_error::{Error, ResultExt};
-use crate::{die, warning};
+use crate::mkdev_error::Error;
+use crate::{ctx, die, warning};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -86,7 +86,7 @@ fn man(args: &Cli) -> Result<(), Error> {
         let command = Cli::command();
 
         let out_dir = Path::new("mkdev-man");
-        std::fs::create_dir_all(out_dir).context("unable to make directory for man pages")?;
+        ctx!(std::fs::create_dir_all(out_dir), "man-hook")?;
 
         // Get all commands as a Vec<Command>
         let to_render: Vec<(clap::Command, Option<&str>)> = vec![(command.clone(), None)]
@@ -115,13 +115,11 @@ fn man(args: &Cli) -> Result<(), Error> {
                 let path = out_dir.join(&filename);
 
                 // Create the file and open it for writing
-                let file =
-                    File::create(path).context(&format!("unable to create {}", &filename))?;
+                let file = ctx!(File::create(path), "man-hook")?;
                 let mut writer = BufWriter::new(file);
 
                 // Write the contents of the page into the file
-                man.render(&mut writer)
-                    .context(&format!("unable to write {}", &filename))?;
+                ctx!(man.render(&mut writer), "man-hook")?;
 
                 Ok(())
             })?;
@@ -184,15 +182,13 @@ fn man5() -> Result<(), Error> {
     ]);
 
     // Create the man page file.
-    let man5_file = File::create("mkdev-man/mkdev-config.5")
-        .context("unable to create mkdev-man/mkdev-config.5")?;
+    let man5_file = ctx!(File::create("mkdev-man/mkdev-config.5"), "man-hook")?;
 
     // Create a write buffer.
     let mut w = BufWriter::new(man5_file);
 
     // Render our manpage to it.
-    roff.to_writer(&mut w)
-        .context("unable to write to mkdev-man/mkdev-config.5")?;
+    ctx!(roff.to_writer(&mut w), "man-hook")?;
 
     Ok(())
 }

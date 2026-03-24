@@ -7,6 +7,7 @@
 use super::{Language, Recipe, recipe_dir};
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
+use crate::ctx;
 use crate::mkdev_error::{
     Error::{self, *},
     ResultExt,
@@ -23,13 +24,15 @@ use ignore::Walk;
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
 pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     let walker = build_walk(&args)?;
-    let new = Recipe::imprint(args.recipe, args.description, walker)
-        .context("unable to read current_working directory for the recipe")?;
+    let new = ctx!(
+        Recipe::imprint(args.recipe, args.description, walker),
+        "imprinting recipe"
+    )?;
 
     if let Some(path) = args.to_nix {
         let nix_expression = ser_nix::to_string(&new).context("recipe")?;
 
-        fs::write(path, nix_expression).context("unable to write to output file")?;
+        ctx!(fs::write(path, nix_expression), "writing nix file")?;
 
         return Ok(());
     }
@@ -37,10 +40,10 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
     let destructive = user_recipes.iter().any(|(recipe, _)| recipe == &new.name);
 
     if destructive && !args.suppress_warnings {
-        return Err(DestructionWarning(new.name));
+        return Err(DestructionWarning { name: new.name });
     }
 
-    let save_location = new.save().context("Unable to save instantiated recipe")?;
+    let save_location = ctx!(new.save(), "saving recipe file")?;
 
     println!("{}", &save_location.display());
 

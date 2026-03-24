@@ -3,9 +3,10 @@
 //! Used to delete recipes from their default location.
 use super::{Recipe, recipe_dir};
 use crate::cli::Delete;
+use crate::ctx;
 use crate::mkdev_error::{
     Error::{self, *},
-    ResultExt,
+    Subject,
 };
 
 use std::collections::HashMap;
@@ -19,15 +20,16 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 
     match to_delete {
         Some(recipe) => {
-            let deleted_file = recipe
-                .delete()
-                .context(&format!("unable to delete `{}`", recipe.name))?;
+            let deleted_file = ctx!(recipe.delete(), "deleting recipe")?;
 
             println!("Deleted recipe at {}.", &deleted_file.display());
 
             Ok(())
         }
-        None => Err(Invalid("recipe".into(), Some(vec![args.recipe]))),
+        None => Err(Invalid {
+            subject: Subject::Recipe,
+            examples: Some(vec![args.recipe]),
+        }),
     }
 }
 

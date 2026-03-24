@@ -1,4 +1,5 @@
 //! mkdev's user configuration file.
+use crate::ctx;
 use crate::display::DisplayConfig;
 use crate::mkdev_error::{Error, ResultExt};
 
@@ -88,7 +89,7 @@ impl Config {
         if let Some(dir) = config_file.parent()
             && !dir.is_dir()
         {
-            fs::create_dir_all(dir).context("unable to create mkdev configuration directory")?;
+            ctx!(fs::create_dir_all(dir), "creating config directory")?;
         }
 
         if !config_file.is_file() {
@@ -96,13 +97,11 @@ impl Config {
             let serialized_default = toml::to_string(&cfg)
                 .expect("Default configuration should always serialize correctly");
 
-            fs::write(config_file, serialized_default)
-                .context("unable to write default configuration file")?;
+            ctx!(fs::write(config_file, serialized_default), "writing config")?;
 
             Ok(cfg)
         } else {
-            let cfg_contents =
-                fs::read_to_string(config_file).context("unable to read configuration file")?;
+            let cfg_contents = ctx!(fs::read_to_string(config_file), "reading config")?;
 
             let cfg: Config = toml::from_str(&cfg_contents).context("configuration file")?;
 
