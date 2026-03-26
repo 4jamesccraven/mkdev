@@ -54,12 +54,10 @@ impl Config {
     pub fn get() -> Result<&'static Config, Error> {
         if CONFIG.get().is_none() {
             let config = Config::load()?;
-            CONFIG
-                .set(config)
-                .expect("This block only happens if it is not set.");
+            CONFIG.set(config).unwrap_or_else(|_| unreachable!());
         }
 
-        Ok(CONFIG.get().expect("Should be set"))
+        Ok(CONFIG.get().unwrap())
     }
 
     /// Override the default config path.
@@ -68,7 +66,7 @@ impl Config {
     pub fn override_path(path: PathBuf) {
         CONFIG_PATH_OVERRIDE
             .set(path)
-            .expect("Config override already set.");
+            .expect("double initiaisation of config path override");
     }
 
     /// Private api for loading the config if it is not already loaded.
@@ -80,7 +78,7 @@ impl Config {
         let config_file = match CONFIG_PATH_OVERRIDE.get() {
             Some(path) => path.clone(),
             None => dirs::config_dir()
-                .expect("This is generally infallible")
+                .expect("$HOME is not set; cannot determine config directory.")
                 .join("mkdev")
                 .join("config.toml"),
         };
@@ -94,8 +92,8 @@ impl Config {
 
         if !config_file.is_file() {
             let cfg = Config::default();
-            let serialized_default = toml::to_string(&cfg)
-                .expect("Default configuration should always serialize correctly");
+            let serialized_default =
+                toml::to_string(&cfg).expect("default `Config` is always serialisable.");
 
             ctx!(fs::write(config_file, serialized_default), "writing config")?;
 

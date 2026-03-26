@@ -51,7 +51,7 @@ fn print_config() {
 /// Can be used to reset user config to default.
 fn print_default_config() {
     let config_str = toml::to_string_pretty(&Config::default())
-        .expect("Default configuration should alway serialise.");
+        .expect("default `Config` is always serialisable.");
 
     print!("{config_str}");
 }

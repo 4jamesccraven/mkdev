@@ -4,22 +4,24 @@
 use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
+use crate::die;
 use crate::display::{display_recipes_with_config, repr_tree};
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
 };
 use crate::output_type::OutputType::{self, *};
-use crate::warning;
 
 use std::collections::HashMap;
 
 use colored::Colorize;
+use rust_i18n::t;
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
 pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
+    // TODO: allow displaying "all" recipes individually instead of a collection.
     match args.recipe {
         Some(recipe) => {
             let recipe = user_recipes.get(recipe.as_str()).ok_or_else(|| Invalid {
@@ -46,9 +48,9 @@ const SER_EXISTING_RECIPE: &str = //.
 
 /// Displays all recipes.
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
+    // TODO: allow displaying "all" recipes individually instead of a collection.
     if let Toml = output_type {
-        warning!("option \"TOML\" invalid for displaying multiple recipes.");
-        return;
+        die!("{}", t!("errors.toml_all"));
     }
 
     let mut config = Config::get()

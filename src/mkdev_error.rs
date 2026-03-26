@@ -1,7 +1,8 @@
 //! Implementats a unified error type, a unified logging interface, and conversions from common
 //! error types.
-use rust_i18n::t;
 use std::io;
+
+use rust_i18n::t;
 
 /// mkdev's error type.
 #[derive(Clone, Debug)]

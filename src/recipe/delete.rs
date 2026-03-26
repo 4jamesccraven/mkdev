@@ -14,6 +14,8 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
+use rust_i18n::t;
+
 /// Deletes a recipe based on command line arguments.
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     let to_delete = user_recipes.get(args.recipe.as_str());
@@ -22,7 +24,10 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
         Some(recipe) => {
             let deleted_file = ctx!(recipe.delete(), "deleting recipe")?;
 
-            println!("Deleted recipe at {}.", &deleted_file.display());
+            println!(
+                "{}",
+                t!("recipes.delete_msg", path => &deleted_file.display())
+            );
 
             Ok(())
         }
