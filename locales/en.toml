@@ -1,0 +1,12 @@
+_version = 1
+
+[errors]
+none_specified = "no %{subject} specified"
+invalid = "invalid %{subject}"
+destruction = "%{name} already exists; use -s to overwrite"
+serialise = "failed to serialize %{what}: %{cause}"
+deserialise = "failed to deserialize %{what}: %{cause}"
+
+[subject]
+recipe = "recipe"
+recipes = "recipes"
