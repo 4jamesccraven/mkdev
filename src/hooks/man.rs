@@ -1,8 +1,11 @@
-//! Functions that are tangential to or mutually exclusive with recipe logic.
+//! A hook that generates man pages for mkdev.
+//!
+//! Generates a page in section 1 for each subcommand as well as a page in section 5 that describes
+//! the config struct.
 use crate::cli::Cli;
 use crate::config::Config;
+use crate::ctx;
 use crate::mkdev_error::Error;
-use crate::{ctx, die, warning};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -14,73 +17,8 @@ use clap_mangen::Man;
 use clap_mangen::roff::{Roff, bold, roman};
 use confique::meta::Meta;
 
-/// Calls every mkdev hook sequentially.
-pub fn hooks(args: &Cli) -> Result<(), Error> {
-    config(args);
-    man(args)?;
-
-    Ok(())
-}
-
-// --- Config Hook ---
-
-/// Handles operations that modify or pertain to mkdev's config file.
-///
-/// The print operations cause the program to exit early.
-fn config(args: &Cli) {
-    let skip_main_logic = [args.gen_config, args.print_config].iter().any(|f| *f);
-    let commands_present = args.command.is_some();
-
-    if skip_main_logic && commands_present {
-        warning!("subcommand suppressed by one or more flags.");
-    }
-
-    if args.gen_config {
-        print_default_config();
-    }
-
-    if let Some(path) = args.config.clone() {
-        Config::override_path(path);
-    }
-
-    if args.print_config {
-        print_config();
-    }
-
-    if skip_main_logic {
-        std::process::exit(0);
-    }
-}
-
-/// Deserialises and prints the user's current config.
-fn print_config() {
-    let config = match Config::get() {
-        Ok(config) => config,
-        Err(why) => die!("could not get config: {}", why),
-    };
-
-    let config = match toml::to_string_pretty(&config) {
-        Ok(cfg) => cfg,
-        Err(_) => die!("improperly formatted configuration file."),
-    };
-
-    print!("{config}");
-}
-
-/// Prints the default config to stdout.
-///
-/// Can be used to reset user config to default.
-fn print_default_config() {
-    let config_str = toml::to_string_pretty(&Config::default())
-        .expect("Default configuration should alway serialise.");
-
-    print!("{config_str}");
-}
-
-// --- Manpage Hook ---
-
 /// Generates all of mkdev's man pages and saves them to './mkdev-man'.
-fn man(args: &Cli) -> Result<(), Error> {
+pub fn hook(args: &Cli) -> Result<(), Error> {
     // if args.man_page {
     if args.man_page {
         let command = Cli::command();
