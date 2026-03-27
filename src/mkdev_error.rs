@@ -2,6 +2,8 @@
 //! error types.
 use std::io;
 
+use rust_i18n::t;
+
 /// mkdev's error type.
 #[derive(Clone, Debug)]
 pub enum Error {
@@ -33,16 +35,20 @@ pub enum Error {
 impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: locale
         match self {
             Error::NoneSpecified { subject } => {
-                write!(f, "no {subject} specified.")
+                write!(f, "{}", t!("errors.none_specified", subject => subject))
             }
             Error::Invalid { subject, examples } => {
-                let base = format!("invalid {subject}");
+                let base = t!("errors.invalid", subject => subject);
                 match examples.as_deref() {
                     Some(eg) => {
-                        write!(f, "{base}:\n{}", eg.join("\n"))
+                        write!(
+                            f,
+                            "{base}:{}{}",
+                            if eg.len() > 1 { "\n" } else { " " },
+                            eg.join("\n")
+                        )
                     }
                     None => {
                         write!(f, "{base}")
@@ -50,16 +56,24 @@ impl std::fmt::Display for Error {
                 }
             }
             Error::DestructionWarning { name } => {
-                write!(f, "{name} already exists; use -s to overwrite")
+                write!(f, "{}", t!("errors.destruction", name => name))
             }
             Error::Io { context, cause } => {
                 write!(f, "{context}: {cause}")
             }
             Error::Serialisation { what, cause } => {
-                write!(f, "failed to serialise {what}: {cause}")
+                write!(
+                    f,
+                    "{}",
+                    t!("errors.serialise", what => what, cause => cause)
+                )
             }
             Error::Deserialisation { what, cause } => {
-                write!(f, "failed to serialise {what}: {cause}")
+                write!(
+                    f,
+                    "{}",
+                    t!("errors.deserialise", what => what, cause => cause)
+                )
             }
         }
     }
@@ -74,11 +88,14 @@ pub enum Subject {
 
 impl std::fmt::Display for Subject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: locale
-        f.write_str(match self {
-            Self::Recipe => "recipe",
-            Self::Recipes => "recipes",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Recipe => t!("subject.recipe"),
+                Self::Recipes => t!("subject.recipes"),
+            }
+        )
     }
 }
 
@@ -149,8 +166,7 @@ impl<T> ResultExt<T> for Result<T, toml::de::Error> {
 
 impl From<ignore::Error> for Error {
     fn from(e: ignore::Error) -> Self {
-        // TODO: locale
-        let context = "error with exclude flags";
+        let context = "exclude flags";
         Error::Io {
             context,
             cause: e.to_string(),

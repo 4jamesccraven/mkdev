@@ -22,6 +22,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use rust_i18n::t;
+
 /// Evokes a recipe according to arguments from the command line.
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     // --- Error handling ---
@@ -86,16 +88,19 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // --- Build ---
     let extra_args = args.clone();
     args.recipes.iter().try_for_each(|r| {
-        let recipe = user_recipes
-            .get(r)
-            .expect("Invalid recipes should have been filtered out.");
+        let recipe = user_recipes.get(r).expect("recipes were validated above.");
 
         // Context for failure, should building fail
         ctx!(
             build(&dir, &recipe.contents, &extra_args, &re),
             "evoking recipe(s)"
         )
-        .inspect_err(|_| warning!("unable to evoke `{}` in '{}'", recipe.name, dir.display()))
+        .inspect_err(|_| {
+            warning!(
+                "{}",
+                t!("errors.evoke", name => recipe.name, target => dir.display())
+            )
+        })
     })
 }
 
@@ -131,7 +136,7 @@ fn build(
                     use std::io::ErrorKind::*;
                     return Err(io::Error::new(
                         AlreadyExists,
-                        format!("'{}' already exists.", file.name.display()),
+                        format!("{}", t!("errors.extant", subject => file.name.display())),
                     ));
                 }
 
@@ -186,7 +191,7 @@ fn run_shell(cmd: &str) -> Option<String> {
             Some(stdout)
         }
         None => {
-            warning!("could not run command '{}'", cmd);
+            warning!("{}", t!("warnings.child_failed", child => cmd));
             None
         }
     }

@@ -1,0 +1,22 @@
+_version = 1
+
+[subject]
+recipe = "recipe"
+recipes = "recipes"
+
+[recipes]
+delete_msg = "Deleted recipe at %{path}."
+
+[errors]
+none_specified = "no %{subject} specified"
+invalid = "invalid %{subject}"
+destruction = "%{name} already exists; use -s to overwrite"
+serialise = "failed to serialize %{what}: %{cause}"
+deserialise = "failed to deserialize %{what}: %{cause}"
+evoke = "unable to evoke `%{recipe}` in '%{target}'"
+extant = "'%{subject}' already exists"
+toml_all = "displaying all recipes as TOML is unsupported."
+
+[warnings]
+child_failed = "could not run command '%{child}'"
+invalid_recipe = "the recipe located at %{path} is improperly formatted"

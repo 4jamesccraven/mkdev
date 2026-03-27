@@ -24,6 +24,7 @@ use std::io;
 use std::path::PathBuf;
 
 use dirs::data_dir;
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 
 /// A mkdev recipe (v2).
@@ -64,7 +65,7 @@ impl Recipe {
                         recipes.push(recipe);
                     }
                     None => {
-                        warning!("{} is not a valid recipe.", path.display());
+                        warning!("{}", t!("warnings.invalid_recipe", path => path.display()));
                     }
                 }
             }
@@ -89,11 +90,10 @@ pub fn recipe_dir() -> io::Result<PathBuf> {
         }
     };
 
-    let err = io::Error::other("Error getting data directory");
     let data_dir = match &cfg.recipe_dir {
         Some(dir) => dir.clone(),
         None => {
-            let mut temp = data_dir().ok_or(err)?;
+            let mut temp = data_dir().expect("$HOME is not set; cannot determine data directory.");
             temp.push("mkdev");
             temp
         }

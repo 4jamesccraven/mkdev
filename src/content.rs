@@ -73,14 +73,14 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
 
         let data = file
             .file_type()
-            .expect("This can only be `None` if this is stdin, which is not allowed");
+            .expect("only none for stdin, which is not allowed.");
 
         let mut path = file.into_path();
 
         if path.starts_with(&cwd) {
             path = path
                 .strip_prefix(&cwd)
-                .expect("This is checked with `starts_with`")
+                .expect("prefix is confirmed to exist")
                 .into();
         }
 

@@ -71,7 +71,7 @@ impl Recipe {
             // Discard the count, as we only needed it to sort
             .map(|(lang, _)| {
                 hyperpolyglot::Language::try_from(*lang)
-                    .expect("Languages from `get_language_breakdown` are guaranteed")
+                    .expect("detected language come pre-validated.")
             })
             .map(Language::from)
             .collect();

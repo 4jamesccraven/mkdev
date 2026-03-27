@@ -17,6 +17,8 @@ use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
 
+rust_i18n::i18n!("locales", fallback = "en");
+
 fn main() {
     // Produce completion scripts using clap_complete...
     // note: this cannot be included in hooks because it must happen before parsing the command
