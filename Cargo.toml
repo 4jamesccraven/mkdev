@@ -16,7 +16,6 @@ exclude = [
     ".gitignore",
     "flake.lock",
     "logo/",
-    "rustfmt.toml",
     "scripts/"
 ]
 
