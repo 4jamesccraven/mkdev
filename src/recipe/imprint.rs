@@ -9,10 +9,7 @@ use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
 use crate::fs_wrappers;
 use crate::mkdev_error::Context;
-use crate::mkdev_error::{
-    Error::{self, *},
-    ResultExt,
-};
+use crate::mkdev_error::Error::{self, *};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -26,7 +23,8 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
     let new = Recipe::imprint(args.recipe, args.description, walker)?;
 
     if let Some(path) = args.to_nix {
-        let nix_expression = ser_nix::to_string(&new).context("recipe")?;
+        let nix_expression = ser_nix::to_string(&new)
+            .expect("ser_nix's serialisation is infallible with non-path types.");
 
         fs_wrappers::write(path, nix_expression, Context::Imprint)?;
 

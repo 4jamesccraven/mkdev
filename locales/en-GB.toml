@@ -1,5 +1,5 @@
 _version = 1
 
 [errors]
-serialise = "failed to serialise %{what}"
-deserialise = "failed to deserialise %{what}"
+serialise = "serialisation error: could not serialise data to %{which} (while %{context})"
+deserialise = "deserialisation error: could not deserialise data from %{which} (while %{context})"

@@ -16,7 +16,7 @@ man = "generating man pages"
 delete_msg = "Deleted recipe at %{path}."
 
 [errors]
-deserialise = "failed to deserialize %{what}"
+deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
 destruction = "%{name} already exists; use -s to overwrite"
 evoke = "evoke: could not build `%{recipe}` in '%{target}'"
 exclude = "imprint: invalid value for flag `--exclude`"
@@ -25,7 +25,7 @@ invalid = "invalid %{subject}"
 no_cwd = "the current directory does not exist"
 none_specified = "no %{subject} specified"
 not_utf8 = "%{file} is not valid UTF-8"
-serialise = "failed to serialize %{what}"
+serialise = "serialization error: could not serialize data to %{which} (while %{context})"
 toml_all = "displaying all recipes as TOML is unsupported"
 
 [warnings]

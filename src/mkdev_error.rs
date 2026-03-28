@@ -31,10 +31,19 @@ pub enum Error {
     NotUTF8 { which: PathBuf },
 
     /// Indicates that a value failed to serialise.
-    Serialisation { what: &'static str, cause: String },
+    #[allow(unused)]
+    Serialisation {
+        which: PathBuf,
+        cause: String,
+        context: Context,
+    },
 
     /// Indicates that a value failed to deserialise.
-    Deserialisation { what: &'static str, cause: String },
+    Deserialisation {
+        which: PathBuf,
+        cause: String,
+        context: Context,
+    },
 }
 
 impl std::error::Error for Error {}
@@ -76,11 +85,27 @@ impl std::fmt::Display for Error {
             Error::DestructionWarning { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
-            Error::Serialisation { what, cause } => {
-                write!(f, "{}: {cause}", t!("errors.serialise", what => what))
+            Error::Serialisation {
+                which,
+                cause,
+                context,
+            } => {
+                write!(
+                    f,
+                    "{}\n{cause}",
+                    t!("errors.serialise", which => which.to_string_lossy(), context => context)
+                )
             }
-            Error::Deserialisation { what, cause } => {
-                write!(f, "{}: {cause}", t!("errors.deserialise", what => what))
+            Error::Deserialisation {
+                which,
+                cause,
+                context,
+            } => {
+                write!(
+                    f,
+                    "{}\n{cause}",
+                    t!("errors.deserialise", which => which.to_string_lossy(), context => context)
+                )
             }
         }
     }
@@ -168,34 +193,6 @@ macro_rules! ctx {
     ($msg:literal) => {
         concat!("[", file!(), ":", line!(), "] ", $msg)
     };
-    ($res:expr, $msg:literal) => {{
-        use $crate::mkdev_error::ResultExt;
-        ResultExt::context($res, ctx!($msg))
-    }};
-}
-
-/// Convert the error type of a result to `mkdev_error::Error`
-pub trait ResultExt<T> {
-    /// Converts the `Result` using a context message.
-    fn context(self, context: &'static str) -> Result<T, Error>;
-}
-
-impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
-    fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|e| Error::Serialisation {
-            what: context,
-            cause: e.to_string(),
-        })
-    }
-}
-
-impl<T> ResultExt<T> for Result<T, toml::de::Error> {
-    fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|e| Error::Deserialisation {
-            what: context,
-            cause: e.message().to_string(),
-        })
-    }
 }
 
 impl From<ignore::Error> for Error {

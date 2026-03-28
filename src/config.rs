@@ -1,7 +1,7 @@
 //! mkdev's user configuration file.
 use crate::display::DisplayConfig;
 use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error, ResultExt};
+use crate::mkdev_error::{Context, Error};
 
 use std::collections::HashMap;
 use std::default::Default;
@@ -98,9 +98,14 @@ impl Config {
 
             Ok(cfg)
         } else {
-            let cfg_contents = fs_wrappers::read_to_string(config_file, Context::Config)?;
+            let cfg_contents = fs_wrappers::read_to_string(&config_file, Context::Config)?;
 
-            let cfg: Config = toml::from_str(&cfg_contents).context("configuration file")?;
+            let cfg: Config =
+                toml::from_str(&cfg_contents).map_err(|e| Error::Deserialisation {
+                    which: config_file,
+                    cause: e.to_string(),
+                    context: Context::Config,
+                })?;
 
             Ok(cfg)
         }
