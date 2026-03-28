@@ -93,7 +93,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         build(&dir, &recipe.contents, &extra_args, &re).inspect_err(|_| {
             warning!(
                 "{}",
-                t!("errors.evoke", name => recipe.name, target => dir.display())
+                t!("errors.evoke", recipe => recipe.name, target => dir.display())
             )
         })
     })
@@ -110,14 +110,10 @@ fn build(
         let dest = dir.join(content.name());
         ensure_parent(&dest)?;
 
-        if extra_args.verbose {
-            eprintln!("{}", &dest.display());
-        }
-
         match content {
             RecipeItem::File(file) => {
                 // perform substitutions on the name and contents
-                let name = re.replace_with(&dest.to_string_lossy(), run_shell);
+                let dest = PathBuf::from(re.replace_with(&dest.to_string_lossy(), run_shell));
                 let content = re.replace_with(&file.content, run_shell);
 
                 // Stop if a file would be overwritten unless the user has explicitly suppressed
@@ -128,12 +124,20 @@ fn build(
                     });
                 }
 
-                fs_wrappers::write(&name, content, Context::Evoke)?;
+                if extra_args.verbose {
+                    eprintln!("{}", &dest.display());
+                }
+
+                fs_wrappers::write(&dest, content, Context::Evoke)?;
             }
             RecipeItem::Directory(dir_name) => {
                 // Perform substitutions on the dirname
                 let name = re.replace_with(&dir_name.to_string_lossy(), run_shell);
                 let dest = dir.join(name);
+
+                if extra_args.verbose {
+                    eprintln!("{}", &dest.display());
+                }
 
                 fs_wrappers::create_dir_all(&dest, Context::Evoke)?;
             }

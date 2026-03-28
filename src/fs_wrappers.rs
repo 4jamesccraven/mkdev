@@ -36,6 +36,10 @@ where
     Ok(())
 }
 
+/// See std::fs::File::create.
+///
+/// Treats all errors as permission errors (because it is the only kind that should be able to
+/// arise).
 pub fn file_create<P>(path: P, ctx: Context) -> Result<fs::File, Error>
 where
     P: AsRef<Path> + Into<PathBuf>,

@@ -164,7 +164,7 @@ impl std::fmt::Display for Subject {
 macro_rules! warning {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        eprintln!("{}: {}", "[mkdev warning]".yellow(), format_args!($($arg)*));
+        eprintln!("{} {}", "[ warning ]".yellow(), format_args!($($arg)*));
     }};
 }
 
@@ -173,7 +173,7 @@ macro_rules! warning {
 macro_rules! die {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        eprintln!("{}: {}", "[mkdev error]".red(), format_args!($($arg)*));
+        eprintln!("{} {}", "[  error  ]".red(), format_args!($($arg)*));
         std::process::exit(1);
     }};
 }
