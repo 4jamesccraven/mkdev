@@ -71,7 +71,7 @@ impl std::fmt::Display for Error {
             Error::NotUTF8 { which } => write!(
                 f,
                 "{}",
-                t!("errors.not_utf8", which => which.to_string_lossy())
+                t!("errors.not_utf8", file => which.to_string_lossy())
             ),
             Error::DestructionWarning { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
@@ -157,7 +157,7 @@ macro_rules! die {
 #[macro_export]
 macro_rules! borked {
     ($err:expr) => {{
-        $crate::die!("{} unexpected error - please make an issue at https://github.com/4jamesccraven/mkdev!:\n{}", $crate::ctx!(""), $err);
+        $crate::die!("{} unexpected error: please make an issue at https://github.com/4jamesccraven/mkdev !!\n{}", $crate::ctx!(""), $err);
     }};
 }
 

@@ -35,7 +35,7 @@ pub fn hook(args: &Cli) {
 fn print_config() {
     let config = match Config::get() {
         Ok(config) => config,
-        Err(why) => die!("could not get config: {}", why),
+        Err(why) => die!("{}", why),
     };
 
     let config = match toml::to_string_pretty(&config) {
