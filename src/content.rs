@@ -2,12 +2,11 @@
 use ignore::overrides::OverrideBuilder;
 
 use crate::cli::Imprint;
-use crate::ctx;
-use crate::mkdev_error;
+use crate::fs_wrappers;
+use crate::mkdev_error::Context;
+use crate::mkdev_error::Error;
 
 use std::cmp::Ordering;
-use std::fs;
-use std::io;
 use std::path::PathBuf;
 
 use ignore::{Walk, WalkBuilder};
@@ -33,7 +32,7 @@ impl RecipeItem {
     }
 
     /// Constructs a new `RecipeItem::File` variant
-    fn file(name: PathBuf) -> io::Result<Self> {
+    fn file(name: PathBuf) -> Result<Self, Error> {
         let f = File::new(name)?;
         Ok(Self::File(f))
     }
@@ -52,8 +51,8 @@ pub struct File {
 }
 
 impl File {
-    pub fn new(name: PathBuf) -> io::Result<Self> {
-        let content = fs::read_to_string(&name)?;
+    pub fn new(name: PathBuf) -> Result<Self, Error> {
+        let content = fs_wrappers::read_to_string(&name, Context::Imprint)?;
 
         Ok(Self { name, content })
     }
@@ -62,8 +61,10 @@ impl File {
 /// Recursively detects and saves every file and subdirectory in the current working directory.
 ///
 /// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
-pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
-    let cwd = std::env::current_dir()?;
+///
+/// Panics if an improperly constructed walk is made such that the current directory is invalid.
+pub fn make_contents(walk: Walk) -> Result<Vec<RecipeItem>, Error> {
+    let cwd = fs_wrappers::current_dir().expect("cwd should be checked in Walk constructor.");
     let mut out = vec![];
 
     for file in walk.flatten() {
@@ -105,8 +106,8 @@ pub fn make_contents(walk: Walk) -> io::Result<Vec<RecipeItem>> {
 /// Constructs a recursive walk.
 ///
 /// This function exists to allow users to override the walk behaviour.
-pub fn build_walk(args: &Imprint) -> Result<Walk, mkdev_error::Error> {
-    let cwd = ctx!(std::env::current_dir(), "getting cwd")?;
+pub fn build_walk(args: &Imprint) -> Result<Walk, Error> {
+    let cwd = fs_wrappers::current_dir()?;
 
     let mut ob = OverrideBuilder::new(&cwd);
     for over in &args.exclude {

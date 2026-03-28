@@ -4,19 +4,31 @@ _version = 1
 recipe = "recipe"
 recipes = "recipes"
 
+[contexts]
+config = "loading config"
+delete = "deleting recipe"
+evocation = "evoking recipe"
+gather = "gathering recipes"
+imprinting = "imprinting recipe"
+man = "generating man"
+
 [recipes]
 delete_msg = "Deleted recipe at %{path}."
 
 [errors]
-none_specified = "no %{subject} specified"
-invalid = "invalid %{subject}"
+deserialise = "failed to deserialize %{what}"
 destruction = "%{name} already exists; use -s to overwrite"
-serialise = "failed to serialize %{what}: %{cause}"
-deserialise = "failed to deserialize %{what}: %{cause}"
 evoke = "unable to evoke `%{recipe}` in '%{target}'"
-extant = "'%{subject}' already exists"
-toml_all = "displaying all recipes as TOML is unsupported."
+exclude = "invalid value for flag `--exclude`"
+fs_denied = "could not read %{which} while %{context}; permission denied"
+invalid = "invalid %{subject}"
+no_cwd = "the current directory does not exist"
+none_specified = "no %{subject} specified"
+not_utf8 = "%{which} is not a valid UTF-8 file"
+serialise = "failed to serialize %{what}"
+toml_all = "displaying all recipes as TOML is unsupported"
 
 [warnings]
 child_failed = "could not run command '%{child}'"
 invalid_recipe = "the recipe located at %{path} is improperly formatted"
+storage_full = "could not write %{what}: storage full"

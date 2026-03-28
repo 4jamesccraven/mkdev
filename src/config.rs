@@ -1,11 +1,10 @@
 //! mkdev's user configuration file.
-use crate::ctx;
 use crate::display::DisplayConfig;
-use crate::mkdev_error::{Error, ResultExt};
+use crate::fs_wrappers;
+use crate::mkdev_error::{Context, Error, ResultExt};
 
 use std::collections::HashMap;
 use std::default::Default;
-use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -87,7 +86,7 @@ impl Config {
         if let Some(dir) = config_file.parent()
             && !dir.is_dir()
         {
-            ctx!(fs::create_dir_all(dir), "creating config directory")?;
+            fs_wrappers::create_dir_all(dir, Context::Config)?;
         }
 
         if !config_file.is_file() {
@@ -95,11 +94,11 @@ impl Config {
             let serialized_default =
                 toml::to_string(&cfg).expect("default `Config` is always serialisable.");
 
-            ctx!(fs::write(config_file, serialized_default), "writing config")?;
+            fs_wrappers::write(config_file, serialized_default, Context::Config)?;
 
             Ok(cfg)
         } else {
-            let cfg_contents = ctx!(fs::read_to_string(config_file), "reading config")?;
+            let cfg_contents = fs_wrappers::read_to_string(config_file, Context::Config)?;
 
             let cfg: Config = toml::from_str(&cfg_contents).context("configuration file")?;
 

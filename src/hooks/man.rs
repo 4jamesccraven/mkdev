@@ -4,18 +4,19 @@
 //! the config struct.
 use crate::cli::Cli;
 use crate::config::Config;
-use crate::ctx;
+use crate::fs_wrappers;
+use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
 
-use std::fs::File;
-use std::io::BufWriter;
-use std::path::Path;
+use std::io::{BufWriter, ErrorKind};
+use std::path::{Path, PathBuf};
 
 use clap::CommandFactory;
 use clap::{crate_name, crate_version};
 use clap_mangen::Man;
 use clap_mangen::roff::{Roff, bold, roman};
 use confique::meta::Meta;
+use rust_i18n::t;
 
 /// Generates all of mkdev's man pages and saves them to './mkdev-man'.
 pub fn hook(args: &Cli) -> Result<(), Error> {
@@ -24,7 +25,7 @@ pub fn hook(args: &Cli) -> Result<(), Error> {
         let command = Cli::command();
 
         let out_dir = Path::new("mkdev-man");
-        ctx!(std::fs::create_dir_all(out_dir), "man-hook")?;
+        fs_wrappers::create_dir_all(out_dir, Context::Man)?;
 
         // Get all commands as a Vec<Command>
         let to_render: Vec<(clap::Command, Option<&str>)> = vec![(command.clone(), None)]
@@ -53,11 +54,24 @@ pub fn hook(args: &Cli) -> Result<(), Error> {
                 let path = out_dir.join(&filename);
 
                 // Create the file and open it for writing
-                let file = ctx!(File::create(path), "man-hook")?;
+                let file = fs_wrappers::file_create(&path, Context::Man)?;
                 let mut writer = BufWriter::new(file);
 
                 // Write the contents of the page into the file
-                ctx!(man.render(&mut writer), "man-hook")?;
+                man.render(&mut writer).map_err(|e| match e.kind() {
+                    ErrorKind::PermissionDenied => Error::FsDenied {
+                        which: path.clone(),
+                        context: Context::Man,
+                    },
+                    ErrorKind::StorageFull => {
+                        let what: PathBuf = path.clone();
+                        crate::die!(
+                            "{}",
+                            t!("warnings.storage_full", what => what.to_string_lossy())
+                        )
+                    }
+                    _ => crate::borked!(e),
+                })?;
 
                 Ok(())
             })?;
@@ -119,14 +133,29 @@ fn man5() -> Result<(), Error> {
         bold("mk-list(1)"),
     ]);
 
+    let path = "mkdev-man/mkdev-config.5";
+
     // Create the man page file.
-    let man5_file = ctx!(File::create("mkdev-man/mkdev-config.5"), "man-hook")?;
+    let man5_file = fs_wrappers::file_create(path, Context::Man)?;
 
     // Create a write buffer.
     let mut w = BufWriter::new(man5_file);
 
     // Render our manpage to it.
-    ctx!(roff.to_writer(&mut w), "man-hook")?;
+    roff.to_writer(&mut w).map_err(|e| match e.kind() {
+        ErrorKind::PermissionDenied => Error::FsDenied {
+            which: path.into(),
+            context: Context::Man,
+        },
+        ErrorKind::StorageFull => {
+            let what: PathBuf = path.into();
+            crate::die!(
+                "{}",
+                t!("warnings.storage_full", what => what.to_string_lossy())
+            )
+        }
+        _ => crate::borked!(e),
+    })?;
 
     Ok(())
 }

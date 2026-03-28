@@ -3,7 +3,7 @@
 //! Used to delete recipes from their default location.
 use super::{Recipe, recipe_dir};
 use crate::cli::Delete;
-use crate::ctx;
+use crate::mkdev_error::Context;
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
@@ -11,7 +11,7 @@ use crate::mkdev_error::{
 
 use std::collections::HashMap;
 use std::fs;
-use std::io;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use rust_i18n::t;
@@ -22,7 +22,7 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 
     match to_delete {
         Some(recipe) => {
-            let deleted_file = ctx!(recipe.delete(), "deleting recipe")?;
+            let deleted_file = recipe.delete()?;
 
             println!(
                 "{}",
@@ -40,12 +40,18 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 
 impl Recipe {
     /// Delete the recipe by deleting its serialised self
-    pub fn delete(&self) -> io::Result<PathBuf> {
+    pub fn delete(&self) -> Result<PathBuf, Error> {
         let mut data_dir = recipe_dir()?;
 
         data_dir.push(format!("{}.toml", self.name));
 
-        fs::remove_file(&data_dir)?;
+        fs::remove_file(&data_dir).map_err(|e| match e.kind() {
+            ErrorKind::PermissionDenied => Error::FsDenied {
+                which: data_dir.clone(),
+                context: Context::Delete,
+            },
+            _ => crate::borked!(e),
+        })?;
 
         Ok(data_dir)
     }
