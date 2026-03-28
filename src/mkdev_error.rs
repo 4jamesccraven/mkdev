@@ -1,6 +1,6 @@
 //! Implementats a unified error type, a unified logging interface, and conversions from common
 //! error types.
-use std::io;
+use std::path::PathBuf;
 
 use rust_i18n::t;
 
@@ -19,17 +19,31 @@ pub enum Error {
     /// Indicates that an action would be destructive.
     DestructionWarning { name: String },
 
-    /// Wraps `std::io::Error`.
-    Io {
-        context: &'static str,
-        cause: String,
-    },
+    /// An error arising from building user-provided exclusions during imprinting.
+    ///
+    /// Note: this is effectively an ignore error, which is itself effectively an IO error.
+    Exclude { cause: String },
+
+    /// Tried to create a directory without valid permissions to do so.
+    FsDenied { which: PathBuf, context: Context },
+
+    /// An error arising from trying to read a non-UTF-8 file.
+    NotUTF8 { which: PathBuf },
 
     /// Indicates that a value failed to serialise.
-    Serialisation { what: &'static str, cause: String },
+    #[allow(unused)]
+    Serialisation {
+        which: PathBuf,
+        cause: String,
+        context: Context,
+    },
 
     /// Indicates that a value failed to deserialise.
-    Deserialisation { what: &'static str, cause: String },
+    Deserialisation {
+        which: PathBuf,
+        cause: String,
+        context: Context,
+    },
 }
 
 impl std::error::Error for Error {}
@@ -55,32 +69,78 @@ impl std::fmt::Display for Error {
                     }
                 }
             }
+            Error::Exclude { cause } => {
+                write!(f, "{}: {cause}", t!("errors.exclude"))
+            }
+            Error::FsDenied { which, context } => write!(
+                f,
+                "{}",
+                t!("errors.fs_denied", which => which.to_string_lossy(), context => context),
+            ),
+            Error::NotUTF8 { which } => write!(
+                f,
+                "{}",
+                t!("errors.not_utf8", file => which.to_string_lossy())
+            ),
             Error::DestructionWarning { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
-            Error::Io { context, cause } => {
-                write!(f, "{context}: {cause}")
-            }
-            Error::Serialisation { what, cause } => {
+            Error::Serialisation {
+                which,
+                cause,
+                context,
+            } => {
                 write!(
                     f,
-                    "{}",
-                    t!("errors.serialise", what => what, cause => cause)
+                    "{}\n{cause}",
+                    t!("errors.serialise", which => which.to_string_lossy(), context => context)
                 )
             }
-            Error::Deserialisation { what, cause } => {
+            Error::Deserialisation {
+                which,
+                cause,
+                context,
+            } => {
                 write!(
                     f,
-                    "{}",
-                    t!("errors.deserialise", what => what, cause => cause)
+                    "{}\n{cause}",
+                    t!("errors.deserialise", which => which.to_string_lossy(), context => context)
                 )
             }
         }
     }
 }
 
+/// A context for more generic error types.
+#[derive(Clone, Copy, Debug)]
+pub enum Context {
+    Config,
+    Delete,
+    Evoke,
+    Gather,
+    Imprint,
+    Man,
+}
+
+impl std::fmt::Display for Context {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Context::Config => t!("contexts.config"),
+                Context::Delete => t!("contexts.delete"),
+                Context::Evoke => t!("contexts.evocation"),
+                Context::Gather => t!("context.gather"),
+                Context::Imprint => t!("contexts.imprint"),
+                Context::Man => t!("contexts.man"),
+            }
+        )
+    }
+}
+
 /// A subject for the Invalid and NoneSpecified error types.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Subject {
     Recipe,
     Recipes,
@@ -104,7 +164,7 @@ impl std::fmt::Display for Subject {
 macro_rules! warning {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        eprintln!("{}: {}", "[mkdev warning]".yellow(), format_args!($($arg)*));
+        eprintln!("{} {}", "[ warning ]".yellow(), format_args!($($arg)*));
     }};
 }
 
@@ -113,8 +173,16 @@ macro_rules! warning {
 macro_rules! die {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        eprintln!("{}: {}", "[mkdev error]".red(), format_args!($($arg)*));
+        eprintln!("{} {}", "[  error  ]".red(), format_args!($($arg)*));
         std::process::exit(1);
+    }};
+}
+
+/// For use when an unresolvable, unexpected error occurs.
+#[macro_export]
+macro_rules! borked {
+    ($err:expr) => {{
+        $crate::die!("{} unexpected error: please make an issue at https://github.com/4jamesccraven/mkdev !!\n{}", $crate::ctx!(""), $err);
     }};
 }
 
@@ -125,50 +193,11 @@ macro_rules! ctx {
     ($msg:literal) => {
         concat!("[", file!(), ":", line!(), "] ", $msg)
     };
-    ($res:expr, $msg:literal) => {{
-        use $crate::mkdev_error::ResultExt;
-        ResultExt::context($res, ctx!($msg))
-    }};
-}
-
-/// Convert the error type of a result to `mkdev_error::Error`
-pub trait ResultExt<T> {
-    /// Converts the `Result` using a context message.
-    fn context(self, context: &'static str) -> Result<T, Error>;
-}
-
-impl<T> ResultExt<T> for Result<T, io::Error> {
-    fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|e| Error::Io {
-            context,
-            cause: e.to_string(),
-        })
-    }
-}
-
-impl<T> ResultExt<T> for Result<T, ser_nix::Error> {
-    fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|e| Error::Serialisation {
-            what: context,
-            cause: e.to_string(),
-        })
-    }
-}
-
-impl<T> ResultExt<T> for Result<T, toml::de::Error> {
-    fn context(self, context: &'static str) -> Result<T, Error> {
-        self.map_err(|e| Error::Deserialisation {
-            what: context,
-            cause: e.message().to_string(),
-        })
-    }
 }
 
 impl From<ignore::Error> for Error {
     fn from(e: ignore::Error) -> Self {
-        let context = "exclude flags";
-        Error::Io {
-            context,
+        Error::Exclude {
             cause: e.to_string(),
         }
     }

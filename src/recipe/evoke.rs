@@ -8,17 +8,16 @@ use super::Recipe;
 use crate::cli::Evoke;
 use crate::config::Config;
 use crate::content::RecipeItem;
+use crate::fs_wrappers;
+use crate::mkdev_error::Context;
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
 };
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
-use crate::{ctx, warning};
+use crate::warning;
 
 use std::collections::HashMap;
-use std::env::current_dir;
-use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -68,7 +67,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
-        None => ctx!(current_dir(), "getting cwd")?,
+        None => fs_wrappers::current_dir()?,
     };
 
     let user_subs: HashMap<_, _> = Config::get()?
@@ -91,14 +90,10 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         let recipe = user_recipes.get(r).expect("recipes were validated above.");
 
         // Context for failure, should building fail
-        ctx!(
-            build(&dir, &recipe.contents, &extra_args, &re),
-            "evoking recipe(s)"
-        )
-        .inspect_err(|_| {
+        build(&dir, &recipe.contents, &extra_args, &re).inspect_err(|_| {
             warning!(
                 "{}",
-                t!("errors.evoke", name => recipe.name, target => dir.display())
+                t!("errors.evoke", recipe => recipe.name, target => dir.display())
             )
         })
     })
@@ -110,44 +105,41 @@ fn build(
     contents: &Vec<RecipeItem>,
     extra_args: &Evoke,
     re: &ReplaceFmt,
-) -> io::Result<()> {
-    // If the intended destination does not exist, make it.
-    if !dir.is_dir() {
-        fs::create_dir_all(dir)?;
-    }
-
+) -> Result<(), Error> {
     for content in contents {
         let dest = dir.join(content.name());
         ensure_parent(&dest)?;
 
-        if extra_args.verbose {
-            eprintln!("{}", &dest.display());
-        }
-
         match content {
             RecipeItem::File(file) => {
                 // perform substitutions on the name and contents
-                let name = re.replace_with(&dest.to_string_lossy(), run_shell);
+                let dest = PathBuf::from(re.replace_with(&dest.to_string_lossy(), run_shell));
                 let content = re.replace_with(&file.content, run_shell);
 
                 // Stop if a file would be overwritten unless the user has explicitly suppressed
                 // it.
                 if dest.is_file() && !extra_args.suppress_warnings {
-                    use std::io::ErrorKind::*;
-                    return Err(io::Error::new(
-                        AlreadyExists,
-                        format!("{}", t!("errors.extant", subject => file.name.display())),
-                    ));
+                    return Err(Error::DestructionWarning {
+                        name: dest.to_string_lossy().into(),
+                    });
                 }
 
-                fs::write(&name, content)?;
+                if extra_args.verbose {
+                    eprintln!("{}", &dest.display());
+                }
+
+                fs_wrappers::write(&dest, content, Context::Evoke)?;
             }
             RecipeItem::Directory(dir_name) => {
                 // Perform substitutions on the dirname
                 let name = re.replace_with(&dir_name.to_string_lossy(), run_shell);
                 let dest = dir.join(name);
 
-                fs::create_dir_all(&dest)?;
+                if extra_args.verbose {
+                    eprintln!("{}", &dest.display());
+                }
+
+                fs_wrappers::create_dir_all(&dest, Context::Evoke)?;
             }
         }
     }
@@ -156,14 +148,14 @@ fn build(
 }
 
 /// Ensures that all parent directories of a file exist.
-fn ensure_parent(path: &Path) -> io::Result<()> {
+fn ensure_parent(path: &Path) -> Result<(), Error> {
     let parent = match path.parent() {
         Some(p) => p,
         None => return Ok(()),
     };
 
     if !parent.is_dir() {
-        fs::create_dir_all(parent)?;
+        fs_wrappers::create_dir_all(parent, Context::Evoke)?;
     }
 
     Ok(())

@@ -8,15 +8,15 @@ use crate::mkdev_error::Error;
 
 /// Calls every mkdev hook sequentially.
 pub fn hooks(args: &Cli) -> Result<(), Error> {
+    // locale selection
+    i18n::hook();
+
     // mkdev configuration overrides
     cfg::hook(args);
 
     // man generation
     // note: always exits program.
     man::hook(args)?;
-
-    // locale selection
-    i18n::hook();
 
     Ok(())
 }

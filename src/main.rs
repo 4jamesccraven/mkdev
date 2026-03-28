@@ -2,6 +2,7 @@ mod cli;
 mod config;
 mod content;
 mod display;
+mod fs_wrappers;
 mod hooks;
 mod mkdev_error;
 mod output_type;
@@ -38,7 +39,7 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     // recipe logic.
     hooks(&args)?;
 
-    let user_recipes = ctx!(Recipe::gather(), "loading recipes")?;
+    let user_recipes = Recipe::gather()?;
 
     match args.command {
         Some(command) => match command {
