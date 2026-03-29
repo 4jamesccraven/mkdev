@@ -1,0 +1,37 @@
+_version = 1
+
+[subject]
+recipe = "receta"
+recipes = "recetas"
+
+[contexts]
+config = "cargar configuración"
+delete = "eliminar receta"
+evocation = "evocar receta"
+gather = "recoger recetas"
+imprinting = "improntar receta"
+man = "generar páginas de manual"
+
+[recipes]
+delete_msg = "Se eliminó la receta en %{path}."
+
+# WARN: this requires that subject.* and errors.invalid and
+# errors.none_specified agree. Currently they do, but nothing guarantees this
+# for future changes.
+[errors]
+deserialise = "error de deserialización: no se pudo deserializar datos desde %{which} (%{context})"
+destruction = "%{name} ya existe; proporciona -s para sobrescribirlo"
+evoke = "no se pudo construir `%{recipe}` en '%{target}'"
+exclude = "improntar: se proporcionó un valor inválido al argumento `--exclude`"
+fs_denied = "permiso denegado: no se pudo acceder a %{which} (%{context})"
+invalid = "%{subject} inválida(s)"
+no_cwd = "el directorio de trabajo actual no existe"
+none_specified = "no se especificó ninguna(s) %{subject}"
+not_utf8 = "%{file} no contiene datos UTF-8 válidos"
+serialise = "error de serialización: no se pudo serializar datos a %{which} (%{context})"
+toml_all = "no es posible mostrar todas las recetas a la vez con el formato toml"
+
+[warnings]
+child_failed = "no se pudo ejecutar el comando '%{child}'"
+invalid_recipe = "%{path} no contiene una receta válida"
+storage_full = "almacenamiento lleno: no se pudo escribir %{what}"
