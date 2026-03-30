@@ -70,7 +70,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
             "{}",
             recipes
                 .iter()
-                .map(|r| format!("{}", r.name))
+                .map(|r| r.name.to_string())
                 .collect::<Vec<_>>()
                 .join("\0")
         ),
