@@ -66,6 +66,14 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
         Default => print!("{}", display_recipes_with_config(&recipes, &config)),
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
+        Print0 => print!(
+            "{}",
+            recipes
+                .iter()
+                .map(|r| format!("{}", r.name))
+                .collect::<Vec<_>>()
+                .join("\0")
+        ),
         Json => println!(
             "{}",
             serde_json::to_string_pretty(&recipes).expect(SER_EXISTING_RECIPE)
@@ -82,7 +90,8 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
         Default => print!("{}", recipe.display_contents()),
         Debug => println!("{:#?}", recipe),
-        Plain => print!("{}", recipe.display_contents_plain()),
+        Plain => print!("{}", recipe.display_contents_plain("\n")),
+        Print0 => print!("{}", recipe.display_contents_plain("\0")),
         Json => println!(
             "{}",
             serde_json::to_string_pretty(recipe).expect(SER_EXISTING_RECIPE)
@@ -109,10 +118,10 @@ impl Recipe {
     }
 
     /// Display the name of all the recipe's contents.
-    pub fn display_contents_plain(&self) -> String {
+    pub fn display_contents_plain(&self, sep: &str) -> String {
         let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
         names.sort();
 
-        names.join("\n")
+        names.join(sep)
     }
 }
