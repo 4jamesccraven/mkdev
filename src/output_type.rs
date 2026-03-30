@@ -11,4 +11,5 @@ pub enum OutputType {
     Json,
     Toml,
     Nix,
+    Print0,
 }
