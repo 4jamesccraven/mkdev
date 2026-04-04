@@ -12,6 +12,7 @@ pub use imprint::*;
 pub use lang::Language;
 pub use list::*;
 
+use tempfile::TempDir;
 use version::*;
 
 use crate::config::Config;
@@ -21,14 +22,14 @@ use crate::mkdev_error::{Context, Error};
 use crate::warning;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dirs::data_dir;
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 
 /// A mkdev recipe (v2).
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Recipe {
     /// A unique identifier for the recipe.
     ///
@@ -78,6 +79,111 @@ impl Recipe {
 
         Ok(recipes)
     }
+
+    pub fn languages<P>(dir: P) -> Vec<Language>
+    where
+        P: AsRef<Path>,
+    {
+        let mut breakdown: Vec<_> = hyperpolyglot::get_language_breakdown(dir)
+            .iter()
+            .map(|(lang, files)| (*lang, files.len()))
+            .collect();
+
+        // Sort languages by number of matching files
+        breakdown.sort_by(|a, b| b.1.cmp(&a.1));
+
+        breakdown
+            .iter()
+            // Discard the count, as we only needed it to sort
+            .map(|(lang, _)| {
+                hyperpolyglot::Language::try_from(*lang)
+                    .expect("detected language come pre-validated.")
+            })
+            .map(Language::from)
+            .collect()
+    }
+
+    /// Creates a temporary directory with all the files in the recipe instantiated on disk.
+    ///
+    /// Variable substitution does not occur. This is esentially an out-of-memory representation of
+    /// the recipe's `contents` field.
+    pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {
+        let maybe_temp = match maybe_dir {
+            Some(ref dir) => tempfile::tempdir_in(dir),
+            None => tempfile::tempdir(),
+        };
+
+        let temp_dir = maybe_temp.map_err(|_| Error::FsDenied {
+            which: maybe_dir
+                .map(|p| p.into())
+                .unwrap_or_else(std::env::temp_dir),
+            context: Context::Tempfile,
+        })?;
+
+        instantiate_contents(
+            temp_dir.path(),
+            &self.contents,
+            OnConflict::Overwrite,
+            false,
+        )?;
+
+        Ok(temp_dir)
+    }
+}
+
+/// Builds a single recipe by taking in its contents and writing them to disk.
+///
+/// If a file in the target directory already exists and the conflict resolution strategy is not
+/// `Overwrite`, a Destruction error is returned.
+pub fn instantiate_contents(
+    dir: &Path,
+    contents: &[RecipeItem],
+    on_conflict: OnConflict,
+    verbose: bool,
+) -> Result<(), Error> {
+    contents.iter().try_for_each(|content| {
+        let dest = dir.join(content.name());
+        ensure_parent(&dest)?;
+
+        if verbose {
+            eprintln!("{}", &dest.display());
+        }
+
+        match content {
+            RecipeItem::File(file) => {
+                // Stop if a file would be overwritten unless the user has explicitly suppressed
+                // it.
+                match on_conflict {
+                    OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
+                        name: dest.to_string_lossy().into(),
+                    }),
+                    _ => fs_wrappers::write(&dest, &file.content, Context::Evoke),
+                }
+            }
+            RecipeItem::Directory(_) => fs_wrappers::create_dir_all(&dest, Context::Evoke),
+        }
+    })
+}
+
+/// What should happen if a file already exists in the target directory during evocation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OnConflict {
+    Overwrite,
+    Guard,
+}
+
+/// Ensures that all parent directories of a file exist.
+fn ensure_parent(path: &Path) -> Result<(), Error> {
+    let parent = match path.parent() {
+        Some(p) => p,
+        None => return Ok(()),
+    };
+
+    if !parent.is_dir() {
+        fs_wrappers::create_dir_all(parent, Context::Evoke)?;
+    }
+
+    Ok(())
 }
 
 /// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.

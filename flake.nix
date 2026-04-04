@@ -30,9 +30,9 @@
       );
 
       overlays.default = prev: final: {
-          mkdev = prev.callPackage ./nix/mkdev.nix { };
-          mkf = prev.callPackage ./nix/mkf.nix { };
-        };
+        mkdev = prev.callPackage ./nix/mkdev.nix { };
+        mkf = prev.callPackage ./nix/mkf.nix { };
+      };
 
       homeManagerModules.default = import ./nix/home-manager.nix;
       homeManagerModule = # .
@@ -48,6 +48,7 @@
             clippy
             libgcc
             rustc
+            rustfmt
 
             # Nix
             statix

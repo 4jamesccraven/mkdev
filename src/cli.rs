@@ -87,7 +87,12 @@ pub struct Evoke {
 #[derive(Parser, Debug)]
 pub struct Imprint {
     /// The name of the recipe to imprint.
+    #[arg(default_value = "", required_unless_present = "interactive")]
     pub recipe: String,
+
+    /// Create the recipe in interactive mode.
+    #[arg(short, long)]
+    pub interactive: bool,
 
     /// Description to be associated with recipe
     #[arg(short, long)]

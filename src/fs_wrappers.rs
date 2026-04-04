@@ -1,3 +1,4 @@
+//! std::fs functions wrapped to return mkdev Errors instead of IO Errors.
 use crate::mkdev_error::{Context, Error};
 
 use std::fs;

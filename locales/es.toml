@@ -1,5 +1,11 @@
 _version = 1
 
+[general]
+yes = "Sí"
+no = "No"
+yes_simple = "si"
+no_simple = "no"
+
 [subject]
 recipe = "receta"
 recipes = "recetas"
@@ -11,9 +17,17 @@ evocation = "evocar receta"
 gather = "recoger recetas"
 imprinting = "improntar receta"
 man = "generar páginas de manual"
+tempfile = "crear directorio o archivo temporal"
 
 [recipes]
 delete_msg = "Se eliminó la receta en %{path}."
+
+[menus]
+filter_rec = "Selecciona archivos para incluir. Presiona Enter para confirmar."
+get_desc = "Descripción de la Receta:"
+get_name = "Nombre de la Receta:"
+invalid_yn = "Respuesta inválida, intenta escribir 's' para sí o 'n' para no"
+recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. Estás seguro/a?"
 
 # WARN: this requires that subject.* and errors.invalid and
 # errors.none_specified agree. Currently they do, but nothing guarantees this
@@ -27,9 +41,11 @@ fs_denied = "permiso denegado: no se pudo acceder a %{which} (%{context})"
 invalid = "%{subject} inválida(s)"
 no_cwd = "el directorio de trabajo actual no existe"
 none_specified = "no se especificó ninguna(s) %{subject}"
+not_tty = "el dispositivo de entrada no es un teletipo"
 not_utf8 = "%{file} no contiene datos UTF-8 válidos"
 serialise = "error de serialización: no se pudo serializar datos a %{which} (%{context})"
 toml_all = "no es posible mostrar todas las recetas a la vez con el formato toml"
+interrupted = "la acción fue interrumpida"
 
 [warnings]
 child_failed = "no se pudo ejecutar el comando '%{child}'"

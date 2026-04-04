@@ -4,6 +4,7 @@ mod content;
 mod display;
 mod fs_wrappers;
 mod hooks;
+mod menus;
 mod mkdev_error;
 mod output_type;
 mod recipe;

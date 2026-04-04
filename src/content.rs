@@ -121,6 +121,12 @@ pub fn build_walk(args: &Imprint) -> Result<Walk, Error> {
         .build())
 }
 
+impl std::fmt::Display for RecipeItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
 impl PartialEq for RecipeItem {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal

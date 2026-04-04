@@ -26,6 +26,13 @@ pub struct Config {
     /// Default:
     /// Absent (evaluates to ~/.local/share/mkdev on Linux)
     pub recipe_dir: Option<PathBuf>,
+    /// Whether multiselect prompts in interactive mode should allow for vim keybindings. Note that
+    /// this can make filtering more difficult (because h, j, k, and l will be reserved).
+    ///
+    /// Default:
+    /// false
+    #[serde(default = "default_vim")]
+    pub vim: bool,
     /// A mapping of key-value pairs used when building a recipe that defines what a token should
     /// evaluate to. For example, {{date}} => "date +%D".
     ///
@@ -132,14 +139,20 @@ fn default_subs() -> HashMap<String, String> {
     )
 }
 
+fn default_vim() -> bool {
+    false
+}
+
 impl Default for Config {
     fn default() -> Self {
         let recipe_dir = None;
+        let vim = default_vim();
         let subs = default_subs();
         let recipe_fmt = DisplayConfig::default();
 
         Self {
             recipe_dir,
+            vim,
             subs,
             recipe_fmt,
         }

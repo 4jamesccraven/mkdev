@@ -4,23 +4,28 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::{Language, Recipe, recipe_dir};
+use super::{Recipe, recipe_dir};
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
 use crate::fs_wrappers;
+use crate::menus;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use hyperpolyglot::get_language_breakdown;
 use ignore::Walk;
+use rust_i18n::t;
 
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
 pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let walker = build_walk(&args)?;
-    let new = Recipe::imprint(args.recipe, args.description, walker)?;
+    let new = if args.interactive {
+        menus::imprint()?
+    } else {
+        let walker = build_walk(&args)?;
+        Recipe::imprint(args.recipe, args.description, walker)?
+    };
 
     if let Some(path) = args.to_nix {
         let nix_expression = ser_nix::to_string(&new)
@@ -31,9 +36,23 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
         return Ok(());
     }
 
+    // Is the action going to overwrite an existing recipe?
     let destructive = user_recipes.iter().any(|(recipe, _)| recipe == &new.name);
 
-    if destructive && !args.suppress_warnings {
+    // If not, proceed, otherwise we defer to the user.
+    // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
+    let can_proceed = !destructive
+        || if args.interactive {
+            menus::confirm_recipe_overwrite(
+                &t!("menus.recipe_overwrite", recipe => &new.name),
+                false,
+            )
+            .unwrap()
+        } else {
+            args.suppress_warnings
+        };
+
+    if !can_proceed {
         return Err(DestructionWarning { name: new.name });
     }
 
@@ -52,23 +71,7 @@ impl Recipe {
         let description = description.unwrap_or("".into());
 
         // Converts HashMap<&name, detected_info> -> Vec<(name, num_matching_files)>
-        let mut breakdown: Vec<_> = get_language_breakdown(".")
-            .iter()
-            .map(|(lang, files)| (*lang, files.len()))
-            .collect();
-
-        // Sort languages by number of matching files
-        breakdown.sort_by(|a, b| b.1.cmp(&a.1));
-
-        let languages: Vec<_> = breakdown
-            .iter()
-            // Discard the count, as we only needed it to sort
-            .map(|(lang, _)| {
-                hyperpolyglot::Language::try_from(*lang)
-                    .expect("detected language come pre-validated.")
-            })
-            .map(Language::from)
-            .collect();
+        let languages = Recipe::languages(".");
 
         Ok(Self {
             name,

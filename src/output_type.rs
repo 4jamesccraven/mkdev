@@ -1,3 +1,4 @@
+//! Display formats for `mk list`
 use clap::ValueEnum;
 
 #[derive(Debug, Clone, ValueEnum, Default)]
