@@ -1,9 +1,27 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! A simple parser and formatter for format-string-like behaviour.
 //!
 //! This module is used to implement mkdev's recipe substitutions during `mk evoke` as well as
 //! formatting recipes for the default `mk list` behaviour.
 #![allow(dead_code)]
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 /// The primary interface for the formatter.
 ///
@@ -34,11 +52,20 @@ impl ReplaceFmt {
 
     /// Replaces all variables in `src` according to the formatter's internal mapping.
     pub fn replace(&self, src: &str) -> String {
-        self.replace_with(src, |val| Some(val.to_string()))
+        self.replace_with(|val| Some(val.to_string()), src)
+    }
+
+    /// Replaces all variables in a `Path` by applying `resolver` to them.
+    pub fn replace_path_with<F>(&self, resolver: F, path: &Path) -> PathBuf
+    where
+        F: Fn(&str) -> Option<String>,
+    {
+        let input_str = path.to_string_lossy();
+        PathBuf::from(self.replace_with(resolver, &input_str))
     }
 
     /// Replaces all variables by applying `resolver` to the value in the internal mapping.
-    pub fn replace_with<F>(&self, src: &str, resolver: F) -> String
+    pub fn replace_with<F>(&self, resolver: F, src: &str) -> String
     where
         F: Fn(&str) -> Option<String>,
     {

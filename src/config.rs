@@ -1,3 +1,18 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's user configuration file.
 use crate::display::DisplayConfig;
 use crate::fs_wrappers;
@@ -26,11 +41,18 @@ pub struct Config {
     /// Default:
     /// Absent (evaluates to ~/.local/share/mkdev on Linux)
     pub recipe_dir: Option<PathBuf>,
+    /// Whether multiselect prompts in interactive mode should allow for vim keybindings. Note that
+    /// this can make filtering more difficult (because h, j, k, and l will be reserved).
+    ///
+    /// Default:
+    /// false
+    #[serde(default = "default_vim")]
+    pub vim: bool,
     /// A mapping of key-value pairs used when building a recipe that defines what a token should
     /// evaluate to. For example, {{date}} => "date +%D".
     ///
     /// Default:
-    /// [subs]
+    /// \[subs\]
     /// user = "whoami"
     /// name = "mk::name"
     /// dir = "mk::dir"
@@ -132,14 +154,20 @@ fn default_subs() -> HashMap<String, String> {
     )
 }
 
+fn default_vim() -> bool {
+    false
+}
+
 impl Default for Config {
     fn default() -> Self {
         let recipe_dir = None;
+        let vim = default_vim();
         let subs = default_subs();
         let recipe_fmt = DisplayConfig::default();
 
         Self {
             recipe_dir,
+            vim,
             subs,
             recipe_fmt,
         }

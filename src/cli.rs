@@ -1,3 +1,18 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The command line interface for mkdev.
 #![deny(missing_docs)]
 use crate::output_type::OutputType;
@@ -15,7 +30,9 @@ use clap_complete::engine::ArgValueCompleter;
     long_version = concat!(
         crate_version!(), " — ", crate_description!(),
         "\n© 2026 ", crate_authors!(),
-        ".\nLicensed under the MIT License — see https://github.com/4jamesccraven/mkdev/blob/main/LICENSE for details.",
+        ".\nThis program is free software and comes with ABSOLUTELY NO WARRANTY.",
+        "\nYou are welcome to redistribute this software under certain conditions.",
+        "\nSee <https://github.com/4jamesccraven/mkdev/blob/main/LICENSE> for more details."
     ),
     author = crate_authors!(),
     about = crate_description!(),
@@ -26,6 +43,10 @@ pub struct Cli {
     /// Command to be passed
     #[command(subcommand)]
     pub command: Option<Commands>,
+
+    /// Alias for `mk imprint --interactive`
+    #[arg(short, long)]
+    pub interactive: bool,
 
     /// Specify configuration file to load.
     #[arg(short, long, env = "CONFIG")]
@@ -84,10 +105,15 @@ pub struct Evoke {
     pub suppress_warnings: bool,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 pub struct Imprint {
     /// The name of the recipe to imprint.
+    #[arg(default_value = "", required_unless_present = "interactive")]
     pub recipe: String,
+
+    /// Create the recipe in interactive mode.
+    #[arg(short, long)]
+    pub interactive: bool,
 
     /// Description to be associated with recipe
     #[arg(short, long)]

@@ -1,3 +1,18 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The implementation of `mk evoke`.
 //!
 //! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
@@ -7,13 +22,13 @@ use super::Recipe;
 
 use crate::cli::Evoke;
 use crate::config::Config;
-use crate::content::RecipeItem;
+use crate::content::{File, RecipeItem};
 use crate::fs_wrappers;
-use crate::mkdev_error::Context;
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
 };
+use crate::recipe::{OnConflict, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
 
@@ -25,7 +40,83 @@ use rust_i18n::t;
 
 /// Evokes a recipe according to arguments from the command line.
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    // --- Error handling ---
+    // Make sure that the recipes past are valid.
+    validate_args(&args, &user_recipes)?;
+
+    // Build to the cwd, or a directory specified by the user
+    let dir = match &args.dir_name {
+        Some(dir) => PathBuf::from(dir),
+        None => fs_wrappers::current_dir()?,
+    };
+
+    let re = evocation_resolver(&args, &dir)?;
+
+    args.recipes.iter().try_for_each(|r| {
+        let recipe = user_recipes.get(r).expect("recipes were validated above.");
+        let contents = resolve_items(&recipe.contents, &re);
+        let on_conflict = if args.suppress_warnings {
+            OnConflict::Overwrite
+        } else {
+            OnConflict::Guard
+        };
+
+        // Context for failure, should building fail
+        instantiate_contents(&dir, &contents, on_conflict, args.verbose).inspect_err(|_| {
+            warning!(
+                "{}",
+                t!("errors.evoke", recipe => recipe.name, target => dir.display())
+            )
+        })
+    })
+}
+
+/// Applies a replacer to all the names and contents of a collection of RecipeItems, returning a
+/// new owned collection of them.
+fn resolve_items(contents: &[RecipeItem], re: &ReplaceFmt) -> Vec<RecipeItem> {
+    contents
+        .iter()
+        .map(|item| match item {
+            RecipeItem::File(file) => RecipeItem::File(File {
+                name: re.replace_path_with(run_shell, &file.name),
+                content: re.replace_with(run_shell, &file.content),
+            }),
+            RecipeItem::Directory(dir) => {
+                RecipeItem::Directory(re.replace_path_with(run_shell, dir))
+            }
+        })
+        .collect()
+}
+
+/// Runs the provided command.
+///
+/// Calculated reserved values (prefixed with 'mk::') are immediately dumped instead.
+fn run_shell(cmd: &str) -> Option<String> {
+    // Handle reserved names.
+    if cmd.starts_with("mk::") {
+        let out = cmd.strip_prefix("mk::").unwrap().to_string();
+        return Some(out);
+    }
+
+    let output = Command::new("sh").arg("-c").arg(cmd).output().ok();
+
+    match output {
+        Some(output) => {
+            // Convert to utf-8 text and strip the trailing newline (if there is one).
+            let mut stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+            if stdout.ends_with('\n') {
+                stdout.pop();
+            }
+            Some(stdout)
+        }
+        None => {
+            warning!("{}", t!("warnings.child_failed", child => cmd));
+            None
+        }
+    }
+}
+
+/// Verifies that at least one valid recipes was passed at the command line.
+fn validate_args(args: &Evoke, user_recipes: &HashMap<String, Recipe>) -> Result<(), Error> {
     // There is an error if no recipes are provided
     if args.recipes.is_empty() {
         return Err(NoneSpecified {
@@ -58,16 +149,15 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         });
     }
 
-    // --- Replacer setup ---
+    Ok(())
+}
+
+/// Sets up the replacefmt used during evocation.
+fn evocation_resolver(args: &Evoke, dir: &Path) -> Result<ReplaceFmt, Error> {
     // Ensure project name is set to something
     let name = match args.name {
         Some(ref name) => name.clone(),
         None => "NAME".to_string(),
-    };
-    // Build to the cwd, or a directory specified by the user
-    let dir = match &args.dir_name {
-        Some(dir) => PathBuf::from(dir),
-        None => fs_wrappers::current_dir()?,
     };
 
     let user_subs: HashMap<_, _> = Config::get()?
@@ -82,109 +172,9 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
         })
         .collect();
 
-    let re = ReplaceFmt::new(user_subs, ("{{", "}}"), InvalidTokenStrategy::Preserve);
-
-    // --- Build ---
-    let extra_args = args.clone();
-    args.recipes.iter().try_for_each(|r| {
-        let recipe = user_recipes.get(r).expect("recipes were validated above.");
-
-        // Context for failure, should building fail
-        build(&dir, &recipe.contents, &extra_args, &re).inspect_err(|_| {
-            warning!(
-                "{}",
-                t!("errors.evoke", recipe => recipe.name, target => dir.display())
-            )
-        })
-    })
-}
-
-/// Builds a single recipe by taking in its contents and instantiating it recursively
-fn build(
-    dir: &Path,
-    contents: &Vec<RecipeItem>,
-    extra_args: &Evoke,
-    re: &ReplaceFmt,
-) -> Result<(), Error> {
-    for content in contents {
-        let dest = dir.join(content.name());
-        ensure_parent(&dest)?;
-
-        match content {
-            RecipeItem::File(file) => {
-                // perform substitutions on the name and contents
-                let dest = PathBuf::from(re.replace_with(&dest.to_string_lossy(), run_shell));
-                let content = re.replace_with(&file.content, run_shell);
-
-                // Stop if a file would be overwritten unless the user has explicitly suppressed
-                // it.
-                if dest.is_file() && !extra_args.suppress_warnings {
-                    return Err(Error::DestructionWarning {
-                        name: dest.to_string_lossy().into(),
-                    });
-                }
-
-                if extra_args.verbose {
-                    eprintln!("{}", &dest.display());
-                }
-
-                fs_wrappers::write(&dest, content, Context::Evoke)?;
-            }
-            RecipeItem::Directory(dir_name) => {
-                // Perform substitutions on the dirname
-                let name = re.replace_with(&dir_name.to_string_lossy(), run_shell);
-                let dest = dir.join(name);
-
-                if extra_args.verbose {
-                    eprintln!("{}", &dest.display());
-                }
-
-                fs_wrappers::create_dir_all(&dest, Context::Evoke)?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Ensures that all parent directories of a file exist.
-fn ensure_parent(path: &Path) -> Result<(), Error> {
-    let parent = match path.parent() {
-        Some(p) => p,
-        None => return Ok(()),
-    };
-
-    if !parent.is_dir() {
-        fs_wrappers::create_dir_all(parent, Context::Evoke)?;
-    }
-
-    Ok(())
-}
-
-/// Runs the provided command.
-///
-/// Calculated reserved values (prefixed with 'mk::') are immediately dumped instead.
-fn run_shell(cmd: &str) -> Option<String> {
-    // Handle reserved names.
-    if cmd.starts_with("mk::") {
-        let out = cmd.strip_prefix("mk::").unwrap().to_string();
-        return Some(out);
-    }
-
-    let output = Command::new("sh").arg("-c").arg(cmd).output().ok();
-
-    match output {
-        Some(output) => {
-            // Convert to utf-8 text and strip the trailing newline (if there is one).
-            let mut stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-            if stdout.ends_with('\n') {
-                stdout.pop();
-            }
-            Some(stdout)
-        }
-        None => {
-            warning!("{}", t!("warnings.child_failed", child => cmd));
-            None
-        }
-    }
+    Ok(ReplaceFmt::new(
+        user_subs,
+        ("{{", "}}"),
+        InvalidTokenStrategy::Preserve,
+    ))
 }

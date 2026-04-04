@@ -1,10 +1,10 @@
 [package]
 name = "mkdev"
-version = "3.4.2"
+version = "3.5.0"
 edition = "2024"
 authors = ["James Craven <4jamesccraven@gmail.com>"]
 description = "Save your boilerplate instead of writing it."
-license = "MIT"
+license = "GPL-3.0-or-later"
 documentation = "https://github.com/4jamesccraven/mkdev/wiki"
 homepage = "https://github.com/4jamesccraven/mkdev"
 repository = "https://github.com/4jamesccraven/mkdev"
@@ -33,11 +33,13 @@ confique = { version = "0.4.0", features = ["toml"] }
 dirs = "5.0.1"
 hyperpolyglot = "0.1.7"
 ignore = "0.4.23"
+inquire = { version = "0.9.4", features = ["editor"] }
 rust-i18n = "3.1.5"
 ser_nix = "0.2.2"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.140"
 sys-locale = "0.3.2"
+tempfile = "3.27.0"
 toml = "0.8.19"
 
 [profile.release]

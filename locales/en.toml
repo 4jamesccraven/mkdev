@@ -1,5 +1,13 @@
 _version = 1
 
+[general]
+# The word for yes and no, capitalised.
+yes = "Yes"
+no = "No"
+# The word for yes and no, lowercase and ASCII-only.
+yes_simple = "yes"
+no_simple  = "no"
+
 [subject]
 recipe = "recipe"
 recipes = "recipes"
@@ -11,9 +19,20 @@ evocation = "evoking recipe"
 gather = "gathering recipes"
 imprinting = "imprinting recipe"
 man = "generating man pages"
+tempfile = "creating temporary directory or file"
 
 [recipes]
 delete_msg = "Deleted recipe at %{path}."
+
+[menus]
+filter_rec = "Select which files to include. Press enter to confirm."
+get_desc = "Recipe Description:"
+get_name = "Recipe Name:"
+invalid_yn = "Invalid answer, try typing 'y' for yes or 'n' for no"
+recipe_overwrite = "This will overwrite the existing recipe '%{recipe}'. Are you sure?"
+name_required = "A name for the recipe is required"
+selected_count = "%{count} files selected"
+multiselect_help = "↑↓ to move, space to select one, → to all, ← to none, type to filter"
 
 [errors]
 deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
@@ -24,9 +43,11 @@ fs_denied = "permission denied: could not access %{which} (while %{context})"
 invalid = "invalid %{subject}"
 no_cwd = "the current directory does not exist"
 none_specified = "no %{subject} specified"
+not_tty = "the input device is not a TTY"
 not_utf8 = "%{file} is not valid UTF-8"
 serialise = "serialization error: could not serialize data to %{which} (while %{context})"
 toml_all = "displaying all recipes as TOML simultaneously is unsupported"
+interrupted = "operation was interrupted"
 
 [warnings]
 child_failed = "could not run command '%{child}'"

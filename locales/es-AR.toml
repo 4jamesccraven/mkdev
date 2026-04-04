@@ -1,0 +1,2 @@
+[menus]
+recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. ¿Seguro que querés sobrescribirla?"

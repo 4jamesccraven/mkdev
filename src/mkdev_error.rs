@@ -1,3 +1,18 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! Implementats a unified error type, a unified logging interface, and conversions from common
 //! error types.
 use std::path::PathBuf;
@@ -29,6 +44,12 @@ pub enum Error {
 
     /// An error arising from trying to read a non-UTF-8 file.
     NotUTF8 { which: PathBuf },
+
+    /// Arises when the input device is not a TTY during interactive mode.
+    NotTTY,
+
+    /// Arises when the user cancels an interactive process.
+    InteractiveCancelled,
 
     /// Indicates that a value failed to serialise.
     #[allow(unused)]
@@ -82,6 +103,8 @@ impl std::fmt::Display for Error {
                 "{}",
                 t!("errors.not_utf8", file => which.to_string_lossy())
             ),
+            Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
+            Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
             Error::DestructionWarning { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
@@ -120,6 +143,7 @@ pub enum Context {
     Gather,
     Imprint,
     Man,
+    Tempfile,
 }
 
 impl std::fmt::Display for Context {
@@ -134,6 +158,7 @@ impl std::fmt::Display for Context {
                 Context::Gather => t!("context.gather"),
                 Context::Imprint => t!("contexts.imprint"),
                 Context::Man => t!("contexts.man"),
+                Context::Tempfile => t!("contexts.tempfile"),
             }
         )
     }
@@ -199,6 +224,17 @@ impl From<ignore::Error> for Error {
     fn from(e: ignore::Error) -> Self {
         Error::Exclude {
             cause: e.to_string(),
+        }
+    }
+}
+
+impl From<inquire::error::InquireError> for Error {
+    fn from(value: inquire::error::InquireError) -> Self {
+        match value {
+            inquire::InquireError::NotTTY => Error::NotTTY,
+            inquire::InquireError::OperationCanceled => Error::InteractiveCancelled,
+            inquire::InquireError::OperationInterrupted => Error::InteractiveCancelled,
+            _ => borked!(value),
         }
     }
 }
