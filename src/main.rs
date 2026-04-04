@@ -49,6 +49,14 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
             Delete(sub_args) => delete_recipe(sub_args, user_recipes),
             List(sub_args) => list_recipe(sub_args, user_recipes),
         },
+        None if args.interactive => {
+            let fake_args = cli::Imprint {
+                interactive: true,
+                ..Default::default()
+            };
+
+            imprint_recipe(fake_args, user_recipes)
+        }
         None => {
             // Print help and exit if no action is provided
             Cli::command().print_help().unwrap();

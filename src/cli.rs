@@ -27,6 +27,10 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,
 
+    /// Alias for `mk imprint --interactive`
+    #[arg(short, long)]
+    pub interactive: bool,
+
     /// Specify configuration file to load.
     #[arg(short, long, env = "CONFIG")]
     pub config: Option<PathBuf>,
@@ -84,7 +88,7 @@ pub struct Evoke {
     pub suppress_warnings: bool,
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 pub struct Imprint {
     /// The name of the recipe to imprint.
     #[arg(default_value = "", required_unless_present = "interactive")]
