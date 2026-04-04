@@ -27,7 +27,10 @@ filter_rec = "Selecciona archivos para incluir. Presiona Enter para confirmar."
 get_desc = "Descripción de la Receta:"
 get_name = "Nombre de la Receta:"
 invalid_yn = "Respuesta inválida, intenta escribir 's' para sí o 'n' para no"
-recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. Estás seguro/a?"
+recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. ¿Seguro que quieres sobrescribirla?"
+name_required = "El nombre de la receta es obligatorio"
+selected_count = "%{count} archivos seleccionados"
+multiselect_help = "↑↓ para moverse, espacio para seleccionar uno, → para todos, ← para ninguno, escribe para filtrar"
 
 # WARN: this requires that subject.* and errors.invalid and
 # errors.none_specified agree. Currently they do, but nothing guarantees this

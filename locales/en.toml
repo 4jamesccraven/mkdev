@@ -30,6 +30,9 @@ get_desc = "Recipe Description:"
 get_name = "Recipe Name:"
 invalid_yn = "Invalid answer, try typing 'y' for yes or 'n' for no"
 recipe_overwrite = "This will overwrite the existing recipe '%{recipe}'. Are you sure?"
+name_required = "A name for the recipe is required"
+selected_count = "%{count} files selected"
+multiselect_help = "↑↓ to move, space to select one, → to all, ← to none, type to filter"
 
 [errors]
 deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
