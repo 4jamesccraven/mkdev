@@ -124,30 +124,8 @@ fn validate_args(args: &Evoke, user_recipes: &HashMap<String, Recipe>) -> Result
         });
     }
 
-    let non_existant_recipes: Vec<String> = args
-        .recipes
-        .iter()
-        .filter_map(|r| match user_recipes.contains_key(r) {
-            false => {
-                let r = r.to_string();
-                Some(r)
-            }
-            true => None,
-        })
-        .collect();
-
-    // There is an error if there are any non-existent recipes specified by the user
-    if !non_existant_recipes.is_empty() {
-        let subject = match non_existant_recipes.len() {
-            1 => Subject::Recipe,
-            2.. => Subject::Recipes,
-            _ => unreachable!(),
-        };
-        return Err(Invalid {
-            subject,
-            examples: Some(non_existant_recipes),
-        });
-    }
+    // Validate existence of all recipes
+    _ = Recipe::pick_many(user_recipes, &args.recipes)?;
 
     Ok(())
 }

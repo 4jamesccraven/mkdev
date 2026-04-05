@@ -19,10 +19,7 @@
 use super::{Recipe, recipe_dir};
 use crate::cli::Delete;
 use crate::mkdev_error::Context;
-use crate::mkdev_error::{
-    Error::{self, *},
-    Subject,
-};
+use crate::mkdev_error::Error;
 
 use std::collections::HashMap;
 use std::fs;
@@ -33,24 +30,15 @@ use rust_i18n::t;
 
 /// Deletes a recipe based on command line arguments.
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let to_delete = user_recipes.get(args.recipe.as_str());
+    let to_delete = Recipe::pick(&user_recipes, &args.recipe)?;
+    let deleted_file = to_delete.delete()?;
 
-    match to_delete {
-        Some(recipe) => {
-            let deleted_file = recipe.delete()?;
+    println!(
+        "{}",
+        t!("recipes.delete_msg", path => &deleted_file.display())
+    );
 
-            println!(
-                "{}",
-                t!("recipes.delete_msg", path => &deleted_file.display())
-            );
-
-            Ok(())
-        }
-        None => Err(Invalid {
-            subject: Subject::Recipe,
-            examples: Some(vec![args.recipe]),
-        }),
-    }
+    Ok(())
 }
 
 impl Recipe {

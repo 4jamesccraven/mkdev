@@ -33,7 +33,7 @@ use version::*;
 use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error};
+use crate::mkdev_error::{Context, Error, Subject};
 use crate::warning;
 
 use std::collections::HashMap;
@@ -95,6 +95,56 @@ impl Recipe {
         Ok(recipes)
     }
 
+    /// Validates and returns a reference to one recipe in a map of many.
+    ///
+    /// Returns `Error::Invalid` if there is no such recipe.
+    pub fn pick<'recipes>(
+        map: &'recipes HashMap<String, Recipe>,
+        name: &str,
+    ) -> Result<&'recipes Recipe, Error> {
+        map.get(name).ok_or_else(|| Error::Invalid {
+            subject: Subject::Recipe,
+            examples: Some(vec![name.into()]),
+        })
+    }
+
+    /// Validates and returns a list of reference to several recipes from a map of them.
+    ///
+    /// Returns `Error::Invalid` if there are no such recipe(s).
+    pub fn pick_many<'recipes, S>(
+        map: &'recipes HashMap<String, Recipe>,
+        names: &[S],
+    ) -> Result<Vec<&'recipes Recipe>, Error>
+    where
+        S: AsRef<str>,
+    {
+        let fake_recipes: Vec<&str> = names
+            .iter()
+            .map(|s| s.as_ref())
+            .filter(|n| !map.contains_key(*n))
+            .collect();
+
+        if !fake_recipes.is_empty() {
+            let count = fake_recipes.len();
+            return Err(Error::Invalid {
+                subject: Subject::from_count(count),
+                examples: Some(
+                    fake_recipes
+                        .into_iter()
+                        .map(|name| name.to_string())
+                        .collect(),
+                ),
+            });
+        }
+
+        Ok(names
+            .iter()
+            .map(|s| s.as_ref())
+            .map(|name| map.get(name).unwrap())
+            .collect())
+    }
+
+    /// TODO: missing docs
     pub fn languages<P>(dir: P) -> Vec<Language>
     where
         P: AsRef<Path>,
