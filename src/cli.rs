@@ -79,6 +79,8 @@ pub enum Commands {
     /// List recipes, or the contents of a specific one [Alias: show]
     #[command(aliases = ["show"])]
     List(List),
+    /// Edit a recipe in-place.
+    Edit(Edit),
 }
 
 #[derive(Parser, Clone, Debug)]
@@ -156,4 +158,10 @@ pub struct List {
     /// Hide description (note: only only applies default style)
     #[arg(long)]
     pub no_description: bool,
+}
+
+#[derive(Parser, Debug)]
+pub struct Edit {
+    /// The recipe to edit
+    pub recipe: String,
 }

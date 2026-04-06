@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! Interactive menus for mkdev.
+mod editor;
 mod locale;
 
 use std::fmt::Display;
 
-use inquire::list_option::ListOption;
+pub use editor::editor;
 use locale::*;
 
 use crate::config::Config;
@@ -28,11 +29,12 @@ use crate::mkdev_error::Error;
 use crate::recipe::Recipe;
 
 use ignore::Walk;
+use inquire::error::InquireResult;
 use inquire::formatter::{BoolFormatter, MultiOptionFormatter};
+use inquire::list_option::ListOption;
 use inquire::parser::BoolParser;
-use inquire::{
-    Confirm, MultiSelect, Text, error::InquireResult, validator::ValueRequiredValidator,
-};
+use inquire::validator::ValueRequiredValidator;
+use inquire::{Confirm, MultiSelect, Text};
 use rust_i18n::t;
 
 /// Interactively imprint a recipe from the current working directory.
@@ -48,8 +50,8 @@ pub fn imprint() -> Result<Recipe, Error> {
     let description = get_recipe_description()?;
     recipe.description = description;
 
-    let walk = Walk::new(cwd);
-    let default_contents = make_contents(walk)?;
+    let walk = Walk::new(&cwd);
+    let default_contents = make_contents(walk, &cwd)?;
     recipe.contents = select_contents(default_contents)?;
 
     let stage = recipe.materialise(None)?;
@@ -59,7 +61,7 @@ pub fn imprint() -> Result<Recipe, Error> {
 }
 
 /// Find out if the user really wants to delete it for real.
-pub fn confirm_recipe_overwrite(message: &str, default: bool) -> InquireResult<bool> {
+pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
     let parser: BoolParser = &locale_bool_parser;
     let formatter: BoolFormatter = &locale_bool_formatter;
     let default_formatter: BoolFormatter = &locale_bool_default_formatter;
@@ -68,19 +70,21 @@ pub fn confirm_recipe_overwrite(message: &str, default: bool) -> InquireResult<b
         .with_default(default)
         .with_parser(parser)
         .with_formatter(formatter)
-        .with_error_message(&t!("menus.invalid_yn"))
+        .with_error_message(&t!("menus.imprint.invalid_yn"))
         .with_default_value_formatter(default_formatter)
         .prompt()
 }
 
 fn get_recipe_name() -> InquireResult<String> {
-    Text::new(&t!("menus.get_name"))
-        .with_validator(ValueRequiredValidator::new(t!("menus.name_required")))
+    Text::new(&t!("menus.imprint.get_name"))
+        .with_validator(ValueRequiredValidator::new(t!(
+            "menus.imprint.name_required"
+        )))
         .prompt()
 }
 
 fn get_recipe_description() -> InquireResult<String> {
-    Text::new(&t!("menus.get_desc")).prompt()
+    Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
 fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {
@@ -89,7 +93,7 @@ fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> 
         .expect("The config should be loaded at the top of a menu")
         .vim;
 
-    MultiSelect::new(&t!("menus.filter_rec"), contents)
+    MultiSelect::new(&t!("menus.imprint.filter_rec"), contents)
         .with_all_selected_by_default()
         .with_formatter(formatter)
         .with_help_message(&t!("menus.multiselect_help"))
@@ -106,15 +110,15 @@ where
     let example_string = examples.join(", ");
 
     match len {
-        0 => format!("{}", t!("menus.selected_count", count => 0)),
+        0 => format!("{}", t!("menus.imprint.selected_count", count => 0)),
         1..=3 => format!(
             "{}: {}",
-            t!("menus.selected_count", count => len),
+            t!("menus.imprint.selected_count", count => len),
             example_string
         ),
         4.. => format!(
             "{}: {}, ...",
-            t!("menus.selected_count", count => len),
+            t!("menus.imprint.selected_count", count => len),
             example_string
         ),
     }
