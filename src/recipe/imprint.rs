@@ -22,7 +22,7 @@
 use super::{Recipe, recipe_dir};
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
-use crate::fs_wrappers;
+use crate::fs_wrappers::{self, current_dir};
 use crate::menus;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
@@ -58,11 +58,8 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
     // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
     let can_proceed = !destructive
         || if args.interactive {
-            menus::confirm_recipe_overwrite(
-                &t!("menus.recipe_overwrite", recipe => &new.name),
-                false,
-            )
-            .unwrap()
+            menus::confirm_action(&t!("menus.recipe_overwrite", recipe => &new.name), false)
+                .unwrap()
         } else {
             args.suppress_warnings
         };
@@ -81,7 +78,7 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 impl Recipe {
     /// Create a `Recipe` by imprinting/cloning the contents of the cwd
     pub fn imprint(name: String, description: Option<String>, walker: Walk) -> Result<Self, Error> {
-        let contents = make_contents(walker)?;
+        let contents = make_contents(walker, &current_dir()?)?;
 
         let description = description.unwrap_or("".into());
 
@@ -98,16 +95,22 @@ impl Recipe {
 
     /// Save the recipe object by serialising self into the data directory
     pub fn save(&self) -> Result<PathBuf, Error> {
-        let mut data_dir = recipe_dir()?;
+        let temp_dir = self.materialise(None)?;
+        let true_contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
 
-        data_dir.push(format!("{}.toml", self.name));
+        let canonical_recipe = Self {
+            contents: true_contents,
+            ..self.clone()
+        };
+
+        let recipe_file = recipe_dir()?.join(format!("{}.toml", self.name));
 
         fs_wrappers::write(
-            &data_dir,
-            toml::to_string_pretty(&self).unwrap(),
+            &recipe_file,
+            toml::to_string_pretty(&canonical_recipe).unwrap(),
             Context::Imprint,
         )?;
 
-        Ok(data_dir)
+        Ok(recipe_file)
     }
 }

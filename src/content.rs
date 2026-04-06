@@ -22,6 +22,7 @@ use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
 
 use std::cmp::Ordering;
+use std::path::Path;
 use std::path::PathBuf;
 
 use ignore::{Walk, WalkBuilder};
@@ -46,12 +47,6 @@ impl RecipeItem {
         name.into()
     }
 
-    /// Constructs a new `RecipeItem::File` variant
-    fn file(name: PathBuf) -> Result<Self, Error> {
-        let f = File::new(name)?;
-        Ok(Self::File(f))
-    }
-
     /// Constructs a new `RecipeItem::Directory` variant
     fn dir(name: PathBuf) -> Self {
         Self::Directory(name)
@@ -59,18 +54,10 @@ impl RecipeItem {
 }
 
 /// A file.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct File {
     pub name: PathBuf,
     pub content: String,
-}
-
-impl File {
-    pub fn new(name: PathBuf) -> Result<Self, Error> {
-        let content = fs_wrappers::read_to_string(&name, Context::Imprint)?;
-
-        Ok(Self { name, content })
-    }
 }
 
 /// Recursively detects and saves every file and subdirectory in the current working directory.
@@ -78,12 +65,11 @@ impl File {
 /// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
 ///
 /// Panics if an improperly constructed walk is made such that the current directory is invalid.
-pub fn make_contents(walk: Walk) -> Result<Vec<RecipeItem>, Error> {
-    let cwd = fs_wrappers::current_dir().expect("cwd should be checked in Walk constructor.");
+pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> {
     let mut out = vec![];
 
     for file in walk.flatten() {
-        if file.path() == cwd {
+        if file.path() == root {
             continue;
         }
 
@@ -93,9 +79,9 @@ pub fn make_contents(walk: Walk) -> Result<Vec<RecipeItem>, Error> {
 
         let mut path = file.into_path();
 
-        if path.starts_with(&cwd) {
+        if path.starts_with(root) {
             path = path
-                .strip_prefix(&cwd)
+                .strip_prefix(root)
                 .expect("prefix is confirmed to exist")
                 .into();
         }
@@ -104,7 +90,10 @@ pub fn make_contents(walk: Walk) -> Result<Vec<RecipeItem>, Error> {
 
         // Make File or Directory variant as necessary
         match (is_file, is_dir, is_symlink) {
-            (true, false, false) => out.push(RecipeItem::file(path)?),
+            (true, false, false) => out.push(RecipeItem::File(File {
+                name: path.clone(),
+                content: fs_wrappers::read_to_string(root.join(path), Context::Imprint)?,
+            })),
             (false, true, false) => out.push(RecipeItem::dir(path)),
             // ignore symlinks (TODO: allow customisation with CLI)
             (false, false, true) => continue,
@@ -164,6 +153,21 @@ impl Ord for RecipeItem {
             (File(_), Directory(_)) => Ordering::Greater,
             (File(a), File(b)) => a.name.cmp(&b.name),
             (Directory(a), Directory(b)) => a.cmp(b),
+        }
+    }
+}
+
+impl std::hash::Hash for RecipeItem {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            RecipeItem::File(f) => {
+                0u8.hash(state);
+                f.name.hash(state);
+            }
+            RecipeItem::Directory(d) => {
+                1u8.hash(state);
+                d.hash(state);
+            }
         }
     }
 }
