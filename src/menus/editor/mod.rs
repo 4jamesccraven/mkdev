@@ -17,8 +17,6 @@
 mod actions;
 mod file_editor;
 
-use actions::try_prompt;
-
 use crate::cli::Edit;
 use crate::config::Config;
 use crate::content::RecipeItem;
@@ -50,11 +48,14 @@ pub fn editor(args: Edit, user_recipes: HashMap<String, Recipe>) -> Result<(), E
         let action = EditorAction::select_action()?;
 
         // Handle quitting.
-        if let EditorAction::Quit = action {
-            if EditorAction::quit_menu(recipe_altered, &recipe)? {
-                break;
-            } else {
-                continue;
+        if matches!(action, EditorAction::Quit) {
+            match EditorAction::quit_menu(recipe_altered)? {
+                ExitAction::Save => {
+                    recipe.save()?;
+                    break;
+                }
+                ExitAction::Exit => break,
+                ExitAction::Cancel => continue,
             }
         }
 
@@ -96,22 +97,17 @@ impl EditorAction {
     /// If the editor should close, `Ok(true)` is returned. `altered` informs whether or not a recipe has
     /// been altered. If it hasn't the editor simply closes. If the recipe has been altered, the user
     /// is presented with the choice to save and exit, exit without saving, or cancel (not exit).
-    fn quit_menu(altered: bool, recipe: &Recipe) -> Result<bool, Error> {
+    fn quit_menu(altered: bool) -> Result<ExitAction, Error> {
         if !altered {
-            Ok(true)
+            Ok(ExitAction::Exit)
         } else {
             let opts = ExitAction::iter().collect();
-            let choice =
-                try_prompt!(Select::new(&t!("menus.editor.save"), opts).prompt_skippable());
+            let choice = Select::new(&t!("menus.editor.save"), opts).prompt_skippable()?;
 
-            match choice {
-                ExitAction::Save => {
-                    recipe.save()?;
-                    Ok(true)
-                }
-                ExitAction::Exit => Ok(true),
-                ExitAction::Cancel => Ok(false),
-            }
+            Ok(match choice {
+                Some(act) => act,
+                None => ExitAction::Cancel,
+            })
         }
     }
 
@@ -159,6 +155,23 @@ impl EditorAction {
     }
 }
 
+impl std::fmt::Display for EditorAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::AddContent => t!("editor.actions.add_content"),
+                Self::Description => t!("editor.actions.description"),
+                Self::EditContent => t!("editor.actions.edit_content"),
+                Self::Name => t!("editor.actions.name"),
+                Self::Quit => t!("general.quit"),
+                Self::RemoveContents => t!("editor.actions.remove_contents"),
+            }
+        )
+    }
+}
+
 /// Prompts a name for new content item.
 fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Option<String>> {
     let msg = &t!("menus.editor.get_content_name");
@@ -177,23 +190,6 @@ fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Opti
         })
         .with_initial_value(current)
         .prompt_skippable()
-}
-
-impl std::fmt::Display for EditorAction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::AddContent => t!("editor.actions.add_content"),
-                Self::Description => t!("editor.actions.description"),
-                Self::EditContent => t!("editor.actions.edit_content"),
-                Self::Name => t!("editor.actions.name"),
-                Self::Quit => t!("general.quit"),
-                Self::RemoveContents => t!("editor.actions.remove_contents"),
-            }
-        )
-    }
 }
 
 /// Strategy enum that dictates what happens when a user tries to exit with unsaved changes.
@@ -219,12 +215,12 @@ impl std::fmt::Display for ExitAction {
 }
 
 #[derive(Clone, Copy, Debug, strum::EnumIter)]
-enum ContentType {
+enum ContentKind {
     File,
     Directory,
 }
 
-impl std::fmt::Display for ContentType {
+impl std::fmt::Display for ContentKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

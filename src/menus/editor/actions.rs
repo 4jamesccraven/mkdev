@@ -20,7 +20,7 @@ use crate::menus::multiselect_truncate_formatter;
 use crate::recipe::Recipe;
 
 use super::file_editor::FileEditor;
-use super::{ContentType, EditorAction, prompt_new_name};
+use super::{ContentKind, EditorAction, prompt_new_name};
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -41,7 +41,6 @@ macro_rules! try_prompt {
         }
     };
 }
-pub(crate) use try_prompt;
 
 /// Assigns a value with a new one if that new value is different.
 ///
@@ -106,11 +105,11 @@ impl EditorAction {
         let path = PathBuf::from(name);
 
         // Get the type of content being added.
-        let typ =
-            try_prompt!(Select::new(&t!(""), ContentType::iter().collect()).prompt_skippable());
+        let content_kind =
+            try_prompt!(Select::new(&t!(""), ContentKind::iter().collect()).prompt_skippable());
 
-        match typ {
-            ContentType::File => {
+        match content_kind {
+            ContentKind::File => {
                 // Determine the extension so that $EDITOR can see the filetype for highlighting +
                 // LSP.
                 let extension = path
@@ -129,7 +128,7 @@ impl EditorAction {
 
                 Ok(true)
             }
-            ContentType::Directory => {
+            ContentKind::Directory => {
                 // Add the recipe into the directory.
                 recipe.contents.push(RecipeItem::Directory(path));
                 Ok(true)

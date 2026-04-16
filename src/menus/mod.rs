@@ -57,7 +57,7 @@ pub fn imprint() -> Result<Recipe, Error> {
     Ok(recipe)
 }
 
-/// Find out if the user really wants to delete it for real.
+/// Prompt the user to confirm something.
 pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
     let parser: BoolParser = &locale_bool_parser;
     let formatter: BoolFormatter = &locale_bool_formatter;

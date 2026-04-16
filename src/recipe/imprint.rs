@@ -98,7 +98,7 @@ impl Recipe {
     /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
     /// preserving the metadata associated with the potentially non-canonical self. This ensures
     /// that all directories are explicitly modeled, for example.
-    pub fn canonicalise(&self) -> Result<Self, Error> {
+    pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
         let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
         let languages = Recipe::languages(temp_dir.path());
@@ -130,9 +130,12 @@ impl Recipe {
         Ok(metadata.is_symlink())
     }
 
-    /// Save the recipe object by serialising `self` into the data directory.
-    pub fn save(&self) -> Result<PathBuf, Error> {
-        let canonical_recipe = self.canonicalise()?;
+    /// Save the recipe object by serialising a canonicalised `self` into the data directory.
+    ///
+    /// This consumes the recipe, as the previous representation may not be valid after
+    /// canonicalisation.
+    pub fn save(self) -> Result<PathBuf, Error> {
+        let canonical_recipe = self.to_canonical()?;
         let recipe_file = self.dwelling()?;
 
         if self.is_external()? {
