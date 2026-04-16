@@ -17,10 +17,13 @@
 mod actions;
 mod file_editor;
 
+use super::confirm_action;
+
 use crate::cli::Edit;
 use crate::config::Config;
 use crate::content::RecipeItem;
-use crate::mkdev_error::Error;
+use crate::fs_wrappers;
+use crate::mkdev_error::{Context, Error};
 use crate::recipe::Recipe;
 
 use std::collections::HashMap;
@@ -40,8 +43,17 @@ use strum::IntoEnumIterator;
 pub fn editor(args: Edit, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     let _config = Config::get()?;
+
     let mut recipe = Recipe::pick(&user_recipes, &args.recipe)?.clone();
     let mut recipe_altered = false;
+
+    let original_path = recipe.dwelling()?;
+    let was_external = recipe.is_external()?;
+    let external_msg = format!(
+        "{} – {}?",
+        t!("recipes.external", name => &recipe.name),
+        t!("general.proceed")
+    );
 
     loop {
         // Target field/action,
@@ -51,7 +63,22 @@ pub fn editor(args: Edit, user_recipes: HashMap<String, Recipe>) -> Result<(), E
         if matches!(action, EditorAction::Quit) {
             match EditorAction::quit_menu(recipe_altered)? {
                 ExitAction::Save => {
+                    // Give the user the opportunity to quit if the recipe is or was externally
+                    // managed.
+                    if (recipe.is_external()? || was_external)
+                        && !confirm_action(&external_msg, true)?
+                    {
+                        continue;
+                    }
+
+                    // Store the recipe's new path.
+                    let new_path = recipe.dwelling()?;
                     recipe.save()?;
+
+                    // If the recipe's path changed, delete the old file/link.
+                    if new_path != original_path {
+                        fs_wrappers::remove_file(original_path, Context::Imprint)?;
+                    }
                     break;
                 }
                 ExitAction::Exit => break,

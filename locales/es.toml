@@ -8,9 +8,13 @@ no_simple = "no"
 quit = "Salir"
 file = "Archivo"
 directory = "Directorio"
+proceed = "Continuar"
 
 [recipes]
 delete_msg = "Se eliminó la receta en %{path}."
+external = """Esta receta está gestionada externamente (p. ej., por home-manager o GNU stow).
+Es seguro cambiarla: solo se cambiará el enlace simbólico, y no se modificará el archivo original.
+Es posible que necesites hacer los cambios manualmente en la configuración original."""
 
 # === Interactive Menus ===
 [menus]

@@ -107,6 +107,20 @@ where
     })
 }
 
+/// See std::fs::remove_file.
+pub fn remove_file<P>(path: P, ctx: Context) -> Result<(), Error>
+where
+    P: AsRef<Path> + Into<PathBuf>,
+{
+    fs::remove_file(&path).map_err(|e| match e.kind() {
+        ErrorKind::PermissionDenied => Error::FsDenied {
+            which: path.into(),
+            context: ctx,
+        },
+        _ => crate::borked!(e),
+    })
+}
+
 /// See std::env::current_dir.
 ///
 /// Returns handles permission errors. Immediately exits the program if the cwd is not found.

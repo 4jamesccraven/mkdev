@@ -180,7 +180,7 @@ impl Recipe {
             .collect();
 
         // Sort languages by number of matching files
-        breakdown.sort_by(|a, b| b.1.cmp(&a.1));
+        breakdown.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         breakdown
             .iter()

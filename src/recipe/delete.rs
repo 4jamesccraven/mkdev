@@ -18,12 +18,12 @@
 //! Used to delete recipes from their default location.
 use super::Recipe;
 use crate::cli::Delete;
+use crate::fs_wrappers;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
+use crate::warning;
 
 use std::collections::HashMap;
-use std::fs;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use rust_i18n::t;
@@ -46,13 +46,10 @@ impl Recipe {
     pub fn delete(&self) -> Result<PathBuf, Error> {
         let recipe_file = self.dwelling()?;
 
-        fs::remove_file(&recipe_file).map_err(|e| match e.kind() {
-            ErrorKind::PermissionDenied => Error::FsDenied {
-                which: recipe_file.clone(),
-                context: Context::Delete,
-            },
-            _ => crate::borked!(e),
-        })?;
+        if self.is_external()? {
+            warning!("{}", t!("recipes.external"));
+        }
+        fs_wrappers::remove_file(&recipe_file, Context::Delete)?;
 
         Ok(recipe_file)
     }

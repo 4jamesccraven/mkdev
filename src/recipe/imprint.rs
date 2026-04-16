@@ -23,9 +23,9 @@ use super::Recipe;
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
 use crate::fs_wrappers::{self, current_dir};
-use crate::menus;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
+use crate::{menus, warning};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -63,6 +63,10 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
         } else {
             args.suppress_warnings
         };
+
+    if destructive && new.is_external()? {
+        warning!("{}", t!("recipes.external"));
+    }
 
     if !can_proceed {
         return Err(DestructionWarning { name: new.name });
@@ -139,10 +143,7 @@ impl Recipe {
         let recipe_file = self.dwelling()?;
 
         if self.is_external()? {
-            std::fs::remove_file(&recipe_file).map_err(|_| FsDenied {
-                which: recipe_file.clone(),
-                context: Context::Imprint,
-            })?;
+            fs_wrappers::remove_file(&recipe_file, Context::Imprint)?;
         }
 
         fs_wrappers::write(
