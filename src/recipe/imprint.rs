@@ -19,13 +19,13 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::{Recipe, recipe_dir};
+use super::Recipe;
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
-use crate::fs_wrappers;
-use crate::menus;
+use crate::fs_wrappers::{self, current_dir};
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
+use crate::{menus, warning};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -58,14 +58,15 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
     // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
     let can_proceed = !destructive
         || if args.interactive {
-            menus::confirm_recipe_overwrite(
-                &t!("menus.recipe_overwrite", recipe => &new.name),
-                false,
-            )
-            .unwrap()
+            menus::confirm_action(&t!("menus.recipe_overwrite", recipe => &new.name), false)
+                .unwrap()
         } else {
             args.suppress_warnings
         };
+
+    if destructive && new.is_external()? {
+        warning!("{}", t!("recipes.external"));
+    }
 
     if !can_proceed {
         return Err(DestructionWarning { name: new.name });
@@ -81,7 +82,7 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 impl Recipe {
     /// Create a `Recipe` by imprinting/cloning the contents of the cwd
     pub fn imprint(name: String, description: Option<String>, walker: Walk) -> Result<Self, Error> {
-        let contents = make_contents(walker)?;
+        let contents = make_contents(walker, &current_dir()?)?;
 
         let description = description.unwrap_or("".into());
 
@@ -96,18 +97,61 @@ impl Recipe {
         })
     }
 
-    /// Save the recipe object by serialising self into the data directory
-    pub fn save(&self) -> Result<PathBuf, Error> {
-        let mut data_dir = recipe_dir()?;
+    /// Ensures that a recipe's data is canonical.
+    ///
+    /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
+    /// preserving the metadata associated with the potentially non-canonical self. This ensures
+    /// that all directories are explicitly modeled, for example.
+    pub fn to_canonical(&self) -> Result<Self, Error> {
+        let temp_dir = self.materialise(None)?;
+        let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
+        let languages = Recipe::languages(temp_dir.path());
 
-        data_dir.push(format!("{}.toml", self.name));
+        Ok(Self {
+            contents,
+            languages,
+            ..self.clone()
+        })
+    }
+
+    /// Determines if the recipe is externally managed.
+    ///
+    /// A recipe is considered to be externally managed if it already exists and is a symlink.
+    /// If the recipe is a symlink, that implies that the source of truth for the recipe is not the
+    /// file in the recipe_dir itself, and can thus be safely deleted before the recipe saves
+    /// itself.
+    pub fn is_external(&self) -> Result<bool, Error> {
+        let recipe_file = self.dwelling()?;
+
+        if !recipe_file.exists() {
+            return Ok(false);
+        }
+
+        let metadata = std::fs::symlink_metadata(&recipe_file).map_err(|_| Error::FsDenied {
+            which: recipe_file,
+            context: Context::Imprint,
+        })?;
+        Ok(metadata.is_symlink())
+    }
+
+    /// Save the recipe object by serialising a canonicalised `self` into the data directory.
+    ///
+    /// This consumes the recipe, as the previous representation may not be valid after
+    /// canonicalisation.
+    pub fn save(self) -> Result<PathBuf, Error> {
+        let canonical_recipe = self.to_canonical()?;
+        let recipe_file = self.dwelling()?;
+
+        if self.is_external()? {
+            fs_wrappers::remove_file(&recipe_file, Context::Imprint)?;
+        }
 
         fs_wrappers::write(
-            &data_dir,
-            toml::to_string_pretty(&self).unwrap(),
+            &recipe_file,
+            toml::to_string_pretty(&canonical_recipe).unwrap(),
             Context::Imprint,
         )?;
 
-        Ok(data_dir)
+        Ok(recipe_file)
     }
 }

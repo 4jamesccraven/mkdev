@@ -7,12 +7,57 @@ no = "No"
 # The word for yes and no, lowercase and ASCII-only.
 yes_simple = "yes"
 no_simple  = "no"
+# The word for quitting a process
+quit = "Quit"
+# The words for files and directories
+file = "File"
+directory = "Directory"
+# The word proceed (lemma form)
+proceed = "Proceed"
 
-[subject]
-recipe = "recipe"
-recipes = "recipes"
+[recipes]
+delete_msg = "Deleted recipe at %{path}."
+external = """This recipe is managed externally (e.g. by home-manager or GNU stow).
+It is safe to change: only the symlink will be updated, and the source will not be modified.
+You may need to make the same change in the source configuration manually."""
 
-[contexts]
+# === Interactive Menus ===
+[menus] # Shared menu elements
+multiselect_help = "↑↓ to move, space to select one, → to all, ← to none, type to filter"
+recipe_overwrite = "This will overwrite the existing recipe '%{recipe}'. Are you sure?"
+select_help = "↑↓ to move, enter to select, type to filter"
+
+[menus.imprint] # Unique to the imprint menu
+filter_rec = "Select which files to include. Press enter to confirm."
+get_desc = "Recipe Description:"
+get_name = "Recipe Name:"
+invalid_yn = "Invalid answer, try typing 'y' for yes or 'n' for no"
+name_required = "A name for the recipe is required"
+selected_count = "%{count} files selected"
+
+[menus.editor] # Unique to the editor menu
+what_next = "Select the option to inspect/edit"
+curr_val = "Current Value"
+save = "You have unsaved changes."
+get_content_name = "Path for the new content:"
+select_content = "Select the file/directory to edit:"
+content_name_required = "A name is required"
+invalid_content_name = "Content with that name already exists, remove it first"
+
+[editor.actions] # Things that are selected in the top-level menu
+add_content = "Add a file or directory"
+edit_content = "Edit a file or directory"
+remove_contents = "Remove files or directories"
+description = "Edit recipe description"
+name = "Edit recipe name"
+
+[editor.exit] # Exit menu
+save = "Save changes and exit"
+exit = "Exit without saving"
+cancel = "Cancel"
+
+# === Error Handling ===
+[contexts] # What was happening when the error happened?
 config = "loading config"
 delete = "deleting recipe"
 evocation = "evoking recipe"
@@ -21,20 +66,7 @@ imprinting = "imprinting recipe"
 man = "generating man pages"
 tempfile = "creating temporary directory or file"
 
-[recipes]
-delete_msg = "Deleted recipe at %{path}."
-
-[menus]
-filter_rec = "Select which files to include. Press enter to confirm."
-get_desc = "Recipe Description:"
-get_name = "Recipe Name:"
-invalid_yn = "Invalid answer, try typing 'y' for yes or 'n' for no"
-recipe_overwrite = "This will overwrite the existing recipe '%{recipe}'. Are you sure?"
-name_required = "A name for the recipe is required"
-selected_count = "%{count} files selected"
-multiselect_help = "↑↓ to move, space to select one, → to all, ← to none, type to filter"
-
-[errors]
+[errors] # What went wrong?
 deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
 destruction = "%{name} already exists; use -s to overwrite"
 evoke = "could not build `%{recipe}` in '%{target}'"
@@ -53,3 +85,7 @@ interrupted = "operation was interrupted"
 child_failed = "could not run command '%{child}'"
 invalid_recipe = "%{path} is not a valid recipe"
 storage_full = "storage full: could not write %{what}"
+
+[subject] # See errors.invalid
+recipe = "recipe"
+recipes = "recipes"

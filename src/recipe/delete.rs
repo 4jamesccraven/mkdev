@@ -16,58 +16,41 @@
 //! Implementation of `mk delete`.
 //!
 //! Used to delete recipes from their default location.
-use super::{Recipe, recipe_dir};
+use super::Recipe;
 use crate::cli::Delete;
+use crate::fs_wrappers;
 use crate::mkdev_error::Context;
-use crate::mkdev_error::{
-    Error::{self, *},
-    Subject,
-};
+use crate::mkdev_error::Error;
+use crate::warning;
 
 use std::collections::HashMap;
-use std::fs;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use rust_i18n::t;
 
 /// Deletes a recipe based on command line arguments.
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    let to_delete = user_recipes.get(args.recipe.as_str());
+    let to_delete = Recipe::pick(&user_recipes, &args.recipe)?;
+    let deleted_file = to_delete.delete()?;
 
-    match to_delete {
-        Some(recipe) => {
-            let deleted_file = recipe.delete()?;
+    println!(
+        "{}",
+        t!("recipes.delete_msg", path => &deleted_file.display())
+    );
 
-            println!(
-                "{}",
-                t!("recipes.delete_msg", path => &deleted_file.display())
-            );
-
-            Ok(())
-        }
-        None => Err(Invalid {
-            subject: Subject::Recipe,
-            examples: Some(vec![args.recipe]),
-        }),
-    }
+    Ok(())
 }
 
 impl Recipe {
-    /// Delete the recipe by deleting its serialised self
+    /// Delete the recipe by deleting its serialised self.
     pub fn delete(&self) -> Result<PathBuf, Error> {
-        let mut data_dir = recipe_dir()?;
+        let recipe_file = self.dwelling()?;
 
-        data_dir.push(format!("{}.toml", self.name));
+        if self.is_external()? {
+            warning!("{}", t!("recipes.external"));
+        }
+        fs_wrappers::remove_file(&recipe_file, Context::Delete)?;
 
-        fs::remove_file(&data_dir).map_err(|e| match e.kind() {
-            ErrorKind::PermissionDenied => Error::FsDenied {
-                which: data_dir.clone(),
-                context: Context::Delete,
-            },
-            _ => crate::borked!(e),
-        })?;
-
-        Ok(data_dir)
+        Ok(recipe_file)
     }
 }

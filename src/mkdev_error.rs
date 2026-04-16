@@ -171,6 +171,19 @@ pub enum Subject {
     Recipes,
 }
 
+impl Subject {
+    /// Gets the correct plurality from a count.
+    ///
+    /// Panics if 0 is passed.
+    pub fn from_count(count: usize) -> Self {
+        match count {
+            1 => Self::Recipe,
+            2.. => Self::Recipes,
+            0 => crate::borked!(count),
+        }
+    }
+}
+
 impl std::fmt::Display for Subject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

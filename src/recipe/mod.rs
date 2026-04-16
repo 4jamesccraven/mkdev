@@ -33,7 +33,7 @@ use version::*;
 use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error};
+use crate::mkdev_error::{Context, Error, Subject};
 use crate::warning;
 
 use std::collections::HashMap;
@@ -95,6 +95,81 @@ impl Recipe {
         Ok(recipes)
     }
 
+    /// Validates and returns a reference to one recipe in a map of many.
+    ///
+    /// Returns `Error::Invalid` if there is no such recipe.
+    pub fn pick<'recipes>(
+        map: &'recipes HashMap<String, Recipe>,
+        name: &str,
+    ) -> Result<&'recipes Recipe, Error> {
+        map.get(name).ok_or_else(|| Error::Invalid {
+            subject: Subject::Recipe,
+            examples: Some(vec![name.into()]),
+        })
+    }
+
+    /// Validates and returns a list of reference to several recipes from a map of them.
+    ///
+    /// Returns `Error::Invalid` if there are no such recipe(s).
+    pub fn pick_many<'recipes, S>(
+        map: &'recipes HashMap<String, Recipe>,
+        names: &[S],
+    ) -> Result<Vec<&'recipes Recipe>, Error>
+    where
+        S: AsRef<str>,
+    {
+        let fake_recipes: Vec<&str> = names
+            .iter()
+            .map(|s| s.as_ref())
+            .filter(|n| !map.contains_key(*n))
+            .collect();
+
+        if !fake_recipes.is_empty() {
+            let count = fake_recipes.len();
+            return Err(Error::Invalid {
+                subject: Subject::from_count(count),
+                examples: Some(
+                    fake_recipes
+                        .into_iter()
+                        .map(|name| name.to_string())
+                        .collect(),
+                ),
+            });
+        }
+
+        Ok(names
+            .iter()
+            .map(|s| s.as_ref())
+            .map(|name| map.get(name).unwrap())
+            .collect())
+    }
+
+    /// Replaces a specific item in a recipe with a new one.
+    ///
+    /// Returns `true` if the value was successfully found and replaced. Returns `false` if no matching
+    /// item was found or if the item was a different type (i.e., setting a File to a Directory and vice
+    /// versa)
+    pub fn replace_content(&mut self, old_name: &Path, new_item: RecipeItem) -> bool {
+        use crate::set_if_changed;
+        match self
+            .contents
+            .iter_mut()
+            .find(|item| &item.name() == old_name)
+        {
+            Some(item) => match (item, new_item) {
+                (RecipeItem::File(f), RecipeItem::File(other)) => {
+                    set_if_changed!(f.name, other.name) || set_if_changed!(f.content, other.content)
+                }
+                (RecipeItem::Directory(d), RecipeItem::Directory(other)) => {
+                    set_if_changed!(*d, other)
+                }
+                _ => false,
+            },
+            None => false,
+        }
+    }
+
+    /// Generate a breakdown of the languages in a directory.
     pub fn languages<P>(dir: P) -> Vec<Language>
     where
         P: AsRef<Path>,
@@ -105,7 +180,7 @@ impl Recipe {
             .collect();
 
         // Sort languages by number of matching files
-        breakdown.sort_by(|a, b| b.1.cmp(&a.1));
+        breakdown.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         breakdown
             .iter()
@@ -122,6 +197,7 @@ impl Recipe {
     ///
     /// Variable substitution does not occur. This is esentially an out-of-memory representation of
     /// the recipe's `contents` field.
+    // TODO: refactor to avoid `Option` parameter.
     pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {
         let maybe_temp = match maybe_dir {
             Some(ref dir) => tempfile::tempdir_in(dir),
@@ -143,6 +219,13 @@ impl Recipe {
         )?;
 
         Ok(temp_dir)
+    }
+
+    /// The location on disk where a recipe should live.
+    ///
+    /// Returns `Err` if the user's data directory cannot be determined.
+    pub fn dwelling(&self) -> Result<PathBuf, Error> {
+        Ok(recipe_dir()?.join(format!("{}.toml", self.name)))
     }
 }
 
@@ -202,7 +285,7 @@ fn ensure_parent(path: &Path) -> Result<(), Error> {
 }
 
 /// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
-pub fn recipe_dir() -> Result<PathBuf, Error> {
+fn recipe_dir() -> Result<PathBuf, Error> {
     let cfg = Config::get()?;
 
     let data_dir = match &cfg.recipe_dir {

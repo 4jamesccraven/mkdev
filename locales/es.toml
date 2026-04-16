@@ -5,11 +5,53 @@ yes = "Sí"
 no = "No"
 yes_simple = "si"
 no_simple = "no"
+quit = "Salir"
+file = "Archivo"
+directory = "Directorio"
+proceed = "Continuar"
 
-[subject]
-recipe = "receta"
-recipes = "recetas"
+[recipes]
+delete_msg = "Se eliminó la receta en %{path}."
+external = """Esta receta está gestionada externamente (p. ej., por home-manager o GNU stow).
+Es seguro cambiarla: solo se cambiará el enlace simbólico, y no se modificará el archivo original.
+Es posible que necesites hacer los cambios manualmente en la configuración original."""
 
+# === Interactive Menus ===
+[menus]
+multiselect_help = "↑↓ para moverse, espacio para seleccionar uno, → para todos, ← para ninguno, escribe para filtrar"
+recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. ¿Seguro que quieres sobrescribirla?"
+select_help = "↑↓ para moverse, enter para seleccionar, escribe para filter"
+
+[menus.imprint]
+filter_rec = "Selecciona archivos para incluir. Presiona Enter para confirmar."
+get_desc = "Descripción de la Receta:"
+get_name = "Nombre de la Receta:"
+invalid_yn = "Respuesta inválida, intenta escribir 's' para sí o 'n' para no"
+name_required = "El nombre de la receta es obligatorio"
+selected_count = "%{count} archivos seleccionados"
+
+[menus.editor]
+what_next = "Selecciona el elemento para inspeccionar/editar"
+curr_val = "Valor Actual"
+save = "Tienes cambios sin guardar."
+get_content_name = "Ruta para el contenido nuevo"
+select_content = "Selecciona el archivo/directorio para editar:"
+content_name_required = "El nombre es obligatorio"
+invalid_content_name = "Ya existe un cotenido con ese nombre, elimínalo primero"
+
+[editor.actions]
+add_content = "Añadir un archivo o directorio"
+edit_content = "Editar un archivo o directorio"
+remove_contents = "Eliminar un archivo o directorio"
+description = "Editar la descripción de la receta"
+name = "Editar el nombre de la receta"
+
+[editor.exit]
+save = "Guardar cambios y salir"
+exit = "Salir sin guardar los cambios"
+cancel = "Cancelar"
+
+# === Error Handling ===
 [contexts]
 config = "cargar configuración"
 delete = "eliminar receta"
@@ -19,22 +61,6 @@ imprinting = "improntar receta"
 man = "generar páginas de manual"
 tempfile = "crear directorio o archivo temporal"
 
-[recipes]
-delete_msg = "Se eliminó la receta en %{path}."
-
-[menus]
-filter_rec = "Selecciona archivos para incluir. Presiona Enter para confirmar."
-get_desc = "Descripción de la Receta:"
-get_name = "Nombre de la Receta:"
-invalid_yn = "Respuesta inválida, intenta escribir 's' para sí o 'n' para no"
-recipe_overwrite = "La receta existente '%{recipe}' será sobrescrita. ¿Seguro que quieres sobrescribirla?"
-name_required = "El nombre de la receta es obligatorio"
-selected_count = "%{count} archivos seleccionados"
-multiselect_help = "↑↓ para moverse, espacio para seleccionar uno, → para todos, ← para ninguno, escribe para filtrar"
-
-# WARN: this requires that subject.* and errors.invalid and
-# errors.none_specified agree. Currently they do, but nothing guarantees this
-# for future changes.
 [errors]
 deserialise = "error de deserialización: no se pudo deserializar datos desde %{which} (%{context})"
 destruction = "%{name} ya existe; proporciona -s para sobrescribirlo"
@@ -54,3 +80,7 @@ interrupted = "la acción fue interrumpida"
 child_failed = "no se pudo ejecutar el comando '%{child}'"
 invalid_recipe = "%{path} no contiene una receta válida"
 storage_full = "almacenamiento lleno: no se pudo escribir %{what}"
+
+[subject]
+recipe = "receta"
+recipes = "recetas"

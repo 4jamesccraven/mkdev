@@ -28,6 +28,7 @@ mod replacer;
 
 use cli::{Cli, Commands::*};
 use hooks::hooks;
+use menus::editor;
 use recipe::Recipe;
 use recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
 
@@ -58,11 +59,13 @@ fn try_get_status(args: Cli) -> Result<(), mkdev_error::Error> {
     let user_recipes = Recipe::gather()?;
 
     match args.command {
+        // TODO: can probably be simplified with a trait or smth.
         Some(command) => match command {
             Evoke(sub_args) => build_recipes(sub_args, user_recipes),
             Imprint(sub_args) => imprint_recipe(sub_args, user_recipes),
             Delete(sub_args) => delete_recipe(sub_args, user_recipes),
             List(sub_args) => list_recipe(sub_args, user_recipes),
+            Edit(sub_args) => editor(sub_args, user_recipes),
         },
         None if args.interactive => {
             let fake_args = cli::Imprint {
