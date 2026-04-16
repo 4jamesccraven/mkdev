@@ -19,7 +19,7 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::{Recipe, recipe_dir};
+use super::Recipe;
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
 use crate::fs_wrappers::{self, current_dir};
@@ -93,17 +93,54 @@ impl Recipe {
         })
     }
 
-    /// Save the recipe object by serialising self into the data directory
-    pub fn save(&self) -> Result<PathBuf, Error> {
+    /// Ensures that a recipe's data is canonical.
+    ///
+    /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
+    /// preserving the metadata associated with the potentially non-canonical self. This ensures
+    /// that all directories are explicitly modeled, for example.
+    pub fn canonicalise(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
-        let true_contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
+        let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
+        let languages = Recipe::languages(temp_dir.path());
 
-        let canonical_recipe = Self {
-            contents: true_contents,
+        Ok(Self {
+            contents,
+            languages,
             ..self.clone()
-        };
+        })
+    }
 
-        let recipe_file = recipe_dir()?.join(format!("{}.toml", self.name));
+    /// Determines if the recipe is externally managed.
+    ///
+    /// A recipe is considered to be externally managed if it already exists and is a symlink.
+    /// If the recipe is a symlink, that implies that the source of truth for the recipe is not the
+    /// file in the recipe_dir itself, and can thus be safely deleted before the recipe saves
+    /// itself.
+    pub fn is_external(&self) -> Result<bool, Error> {
+        let recipe_file = self.dwelling()?;
+
+        if !recipe_file.exists() {
+            return Ok(false);
+        }
+
+        let metadata = std::fs::symlink_metadata(&recipe_file).map_err(|_| Error::FsDenied {
+            which: recipe_file,
+            context: Context::Imprint,
+        })?;
+        Ok(metadata.is_symlink())
+    }
+
+    /// Save the recipe object by serialising `self` into the data directory.
+    pub fn save(&self) -> Result<PathBuf, Error> {
+        let canonical_recipe = self.canonicalise()?;
+        let recipe_file = self.dwelling()?;
+
+        if self.is_external()? {
+            std::fs::remove_file(&recipe_file).map_err(|_| FsDenied {
+                which: recipe_file.clone(),
+                context: Context::Imprint,
+            })?;
+        }
 
         fs_wrappers::write(
             &recipe_file,

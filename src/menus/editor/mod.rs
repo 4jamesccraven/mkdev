@@ -23,7 +23,6 @@ use crate::mkdev_error::Error;
 use crate::recipe::Recipe;
 
 use std::collections::HashMap;
-use std::path::Path;
 
 use colored::Colorize;
 use inquire::error::InquireResult;
@@ -129,10 +128,10 @@ impl EditorAction {
     /// Returns `Ok(true)` if an edit has been made.
     fn edit(&self, recipe: &mut Recipe) -> InquireResult<bool> {
         match self {
-            Self::AddContent => self.add_content(recipe),
-            Self::Description => self.edit_description(recipe),
-            Self::EditContent => self.edit_content(recipe),
             Self::Name => self.edit_name(recipe),
+            Self::Description => self.edit_description(recipe),
+            Self::AddContent => self.add_content(recipe),
+            Self::EditContent => self.edit_content(recipe),
             Self::RemoveContents => self.remove_contents(recipe),
             Self::Quit => unreachable!(),
         }
@@ -178,23 +177,6 @@ fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Opti
         })
         .with_initial_value(current)
         .prompt_skippable()
-}
-
-/// Replaces a specific item in a recipe with a new one.
-///
-/// Returns `true` if the value was successfully found a replaced.
-fn replace_content(recipe: &mut Recipe, old_name: &Path, new_item: RecipeItem) -> bool {
-    match recipe
-        .contents
-        .iter_mut()
-        .find(|item| &item.name() == old_name)
-    {
-        Some(item) => {
-            *item = new_item;
-            true
-        }
-        None => false,
-    }
 }
 
 impl std::fmt::Display for EditorAction {

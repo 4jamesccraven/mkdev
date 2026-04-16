@@ -19,7 +19,7 @@ use crate::content::RecipeItem;
 use crate::menus::multiselect_truncate_formatter;
 use crate::recipe::Recipe;
 
-use super::{ContentType, EditorAction, prompt_new_name, replace_content};
+use super::{ContentType, EditorAction, prompt_new_name};
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -31,11 +31,28 @@ use inquire::{Editor, MultiSelect, Select, Text};
 use rust_i18n::t;
 use strum::IntoEnumIterator;
 
+/// Tries a skippable prompt, returning `Ok(false)` if the user skips the prompt.
 macro_rules! try_prompt {
     ($expr:expr) => {
         match $expr? {
             Some(val) => val,
             None => return Ok(false),
+        }
+    };
+}
+pub(crate) use try_prompt;
+
+/// Assigns a value with a new one if that new value is different.
+///
+/// Returns `true` if the value was changed.
+#[macro_export]
+macro_rules! set_if_changed {
+    ($l_val:expr, $r_val:expr) => {
+        if $l_val != $r_val {
+            $l_val = $r_val;
+            true
+        } else {
+            false
         }
     };
 }
@@ -52,12 +69,7 @@ impl EditorAction {
                 .prompt_skippable()
         );
 
-        if recipe.name != name {
-            recipe.name = name;
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        Ok(set_if_changed!(recipe.name, name))
     }
 
     /// Change the description of the recipe.
@@ -68,12 +80,7 @@ impl EditorAction {
                 .prompt_skippable()
         );
 
-        if recipe.description != desc {
-            recipe.description = desc;
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+        Ok(set_if_changed!(recipe.description, desc))
     }
 
     /// Add a new file or directory.
@@ -102,11 +109,9 @@ impl EditorAction {
             try_prompt!(Select::new(&t!(""), ContentType::iter().collect()).prompt_skippable());
 
         match typ {
-            ContentType::Directory => {
-                recipe.contents.push(RecipeItem::Directory(path));
-                Ok(true)
-            }
             ContentType::File => {
+                // Determine the extension so that $EDITOR can see the filetype for highlighting +
+                // LSP.
                 let extension = path
                     .extension()
                     .unwrap_or_default()
@@ -126,35 +131,25 @@ impl EditorAction {
 
                 Ok(true)
             }
+            ContentType::Directory => {
+                recipe.contents.push(RecipeItem::Directory(path));
+                Ok(true)
+            }
         }
     }
 
     /// Change a file or directory.
     pub fn edit_content(&self, recipe: &mut Recipe) -> InquireResult<bool> {
-        let vim = Config::get()
-            .expect("The config should be loaded at the top of a menu")
-            .vim;
+        let vim = Config::get().unwrap().vim;
 
         let content_item = try_prompt!(
-            Select::new(&t!("menus.imprint.filter_rec"), recipe.contents.clone())
+            Select::new(&t!("menus.editor.select_content"), recipe.contents.clone())
                 .with_help_message(&t!("menus.select_help"))
                 .with_vim_mode(vim)
                 .prompt_skippable()
         );
 
         match content_item {
-            RecipeItem::Directory(ref p) => {
-                let name = try_prompt!(prompt_new_name(
-                    p.to_str().unwrap_or_default(),
-                    &recipe.contents
-                ));
-
-                Ok(replace_content(
-                    recipe,
-                    p,
-                    RecipeItem::Directory(PathBuf::from(name)),
-                ))
-            }
             RecipeItem::File(ref f) => {
                 let name = try_prompt!(prompt_new_name(
                     f.name.to_str().unwrap_or_default(),
@@ -175,8 +170,8 @@ impl EditorAction {
                         .prompt_skippable()
                 );
 
-                Ok(replace_content(
-                    recipe,
+                dbg!((&f.content, &content));
+                Ok(recipe.replace_content(
                     &f.name,
                     RecipeItem::File(crate::content::File {
                         name: path,
@@ -184,15 +179,21 @@ impl EditorAction {
                     }),
                 ))
             }
+            RecipeItem::Directory(ref p) => {
+                let name = try_prompt!(prompt_new_name(
+                    p.to_str().unwrap_or_default(),
+                    &recipe.contents
+                ));
+
+                Ok(recipe.replace_content(p, RecipeItem::Directory(PathBuf::from(name))))
+            }
         }
     }
 
     /// Select files and directories to remove from the recipe.
     pub fn remove_contents(&self, recipe: &mut Recipe) -> InquireResult<bool> {
         let formatter: MultiOptionFormatter<RecipeItem> = &multiselect_truncate_formatter;
-        let vim = Config::get()
-            .expect("The config should be loaded at the top of a menu")
-            .vim;
+        let vim = Config::get().unwrap().vim;
 
         let contents = try_prompt!(
             MultiSelect::new(&t!("menus.imprint.filter_rec"), recipe.contents.clone())

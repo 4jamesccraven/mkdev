@@ -54,9 +54,6 @@ pub fn imprint() -> Result<Recipe, Error> {
     let default_contents = make_contents(walk, &cwd)?;
     recipe.contents = select_contents(default_contents)?;
 
-    let stage = recipe.materialise(None)?;
-    recipe.languages = Recipe::languages(stage.path());
-
     Ok(recipe)
 }
 

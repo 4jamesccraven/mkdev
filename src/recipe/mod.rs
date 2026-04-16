@@ -144,7 +144,32 @@ impl Recipe {
             .collect())
     }
 
-    /// TODO: missing docs
+    /// Replaces a specific item in a recipe with a new one.
+    ///
+    /// Returns `true` if the value was successfully found and replaced. Returns `false` if no matching
+    /// item was found or if the item was a different type (i.e., setting a File to a Directory and vice
+    /// versa)
+    pub fn replace_content(&mut self, old_name: &Path, new_item: RecipeItem) -> bool {
+        use crate::set_if_changed;
+        match self
+            .contents
+            .iter_mut()
+            .find(|item| &item.name() == old_name)
+        {
+            Some(item) => match (item, new_item) {
+                (RecipeItem::File(f), RecipeItem::File(other)) => {
+                    set_if_changed!(f.name, other.name) || set_if_changed!(f.content, other.content)
+                }
+                (RecipeItem::Directory(d), RecipeItem::Directory(other)) => {
+                    set_if_changed!(*d, other)
+                }
+                _ => false,
+            },
+            None => false,
+        }
+    }
+
+    /// Generate a breakdown of the languages in a directory.
     pub fn languages<P>(dir: P) -> Vec<Language>
     where
         P: AsRef<Path>,
@@ -172,6 +197,7 @@ impl Recipe {
     ///
     /// Variable substitution does not occur. This is esentially an out-of-memory representation of
     /// the recipe's `contents` field.
+    // TODO: refactor to avoid `Option` parameter.
     pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {
         let maybe_temp = match maybe_dir {
             Some(ref dir) => tempfile::tempdir_in(dir),
@@ -193,6 +219,13 @@ impl Recipe {
         )?;
 
         Ok(temp_dir)
+    }
+
+    /// The location on disk where a recipe should live.
+    ///
+    /// Returns `Err` if the user's data directory cannot be determined.
+    pub fn dwelling(&self) -> Result<PathBuf, Error> {
+        Ok(recipe_dir()?.join(format!("{}.toml", self.name)))
     }
 }
 
@@ -252,7 +285,7 @@ fn ensure_parent(path: &Path) -> Result<(), Error> {
 }
 
 /// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
-pub fn recipe_dir() -> Result<PathBuf, Error> {
+fn recipe_dir() -> Result<PathBuf, Error> {
     let cfg = Config::get()?;
 
     let data_dir = match &cfg.recipe_dir {
