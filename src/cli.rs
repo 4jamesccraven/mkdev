@@ -17,10 +17,13 @@
 #![deny(missing_docs)]
 use crate::output_type::OutputType;
 use crate::recipe_completer::recipe_completer;
+use crate::{mkdev_error::Error, recipe::Recipe};
 
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
-use clap::{ArgAction, Parser, Subcommand, crate_authors, crate_description, crate_version};
+use clap::{
+    ArgAction, CommandFactory, Parser, Subcommand, crate_authors, crate_description, crate_version,
+};
 use clap_complete::engine::ArgValueCompleter;
 
 #[derive(Parser, Debug)]
@@ -63,6 +66,37 @@ pub struct Cli {
     /// Displays the manpage
     #[arg(long, hide = true, env = "MANPAGE")]
     pub man_page: bool,
+}
+
+impl Cli {
+    /// Determine main logic based on the given arguments.
+    pub fn dispatch(self, recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+        use crate::menus::editor;
+        use crate::recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
+
+        match self.command {
+            Some(command) => match command {
+                Commands::Evoke(sub_args) => build_recipes(sub_args, recipes),
+                Commands::Imprint(sub_args) => imprint_recipe(sub_args, recipes),
+                Commands::Delete(sub_args) => delete_recipe(sub_args, recipes),
+                Commands::List(sub_args) => list_recipe(sub_args, recipes),
+                Commands::Edit(sub_args) => editor(sub_args, recipes),
+            },
+            None if self.interactive => {
+                let fake_args = Imprint {
+                    interactive: true,
+                    ..Default::default()
+                };
+
+                imprint_recipe(fake_args, recipes)
+            }
+            None => {
+                // Print help and exit if no action is provided
+                Cli::command().print_help().unwrap();
+                Ok(())
+            }
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
