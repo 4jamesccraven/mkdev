@@ -25,7 +25,7 @@ rustPlatform.buildRustPackage {
   '';
 
   meta = {
-    license = lib.licenses.mit;
+    license = lib.licenses.gpl3Plus;
     mainProgram = "mk";
   };
 }
