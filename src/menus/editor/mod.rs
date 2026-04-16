@@ -15,6 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! An editor to modify an existing recipe.
 mod actions;
+mod file_editor;
+
+use actions::try_prompt;
 
 use crate::cli::Edit;
 use crate::config::Config;
@@ -98,11 +101,8 @@ impl EditorAction {
             Ok(true)
         } else {
             let opts = ExitAction::iter().collect();
-            let prompt = Select::new(&t!("menus.editor.save"), opts).prompt_skippable()?;
-
-            let Some(choice) = prompt else {
-                return Ok(false);
-            };
+            let choice =
+                try_prompt!(Select::new(&t!("menus.editor.save"), opts).prompt_skippable());
 
             match choice {
                 ExitAction::Save => {

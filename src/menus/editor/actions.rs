@@ -19,6 +19,7 @@ use crate::content::RecipeItem;
 use crate::menus::multiselect_truncate_formatter;
 use crate::recipe::Recipe;
 
+use super::file_editor::FileEditor;
 use super::{ContentType, EditorAction, prompt_new_name};
 
 use std::collections::HashSet;
@@ -27,7 +28,7 @@ use std::path::PathBuf;
 use inquire::error::InquireResult;
 use inquire::formatter::MultiOptionFormatter;
 use inquire::validator::{Validation, ValueRequiredValidator};
-use inquire::{Editor, MultiSelect, Select, Text};
+use inquire::{MultiSelect, Select, Text};
 use rust_i18n::t;
 use strum::IntoEnumIterator;
 
@@ -118,12 +119,9 @@ impl EditorAction {
                     .to_str()
                     .unwrap_or_default();
 
-                let contents = try_prompt!(
-                    Editor::new(&t!("menus.editor.get_item_contents"))
-                        .with_file_extension(&format!(".{extension}"))
-                        .prompt_skippable()
-                );
+                let contents = FileEditor::new("", extension).run()?;
 
+                // Add the file into the recipe.
                 recipe.contents.push(RecipeItem::File(crate::content::File {
                     name: path,
                     content: contents,
@@ -132,6 +130,7 @@ impl EditorAction {
                 Ok(true)
             }
             ContentType::Directory => {
+                // Add the recipe into the directory.
                 recipe.contents.push(RecipeItem::Directory(path));
                 Ok(true)
             }
@@ -140,37 +139,36 @@ impl EditorAction {
 
     /// Change a file or directory.
     pub fn edit_content(&self, recipe: &mut Recipe) -> InquireResult<bool> {
-        let vim = Config::get().unwrap().vim;
+        let use_vim_mode: bool = Config::get().unwrap().vim;
 
+        // Select the content to edit
         let content_item = try_prompt!(
             Select::new(&t!("menus.editor.select_content"), recipe.contents.clone())
                 .with_help_message(&t!("menus.select_help"))
-                .with_vim_mode(vim)
+                .with_vim_mode(use_vim_mode)
                 .prompt_skippable()
         );
 
         match content_item {
             RecipeItem::File(ref f) => {
+                // Determine the relative path the new file.
                 let name = try_prompt!(prompt_new_name(
                     f.name.to_str().unwrap_or_default(),
                     &recipe.contents
                 ));
-
                 let path = PathBuf::from(name);
+
+                // Get the extension for LSP support.
                 let extension = path
                     .extension()
                     .unwrap_or_default()
                     .to_str()
                     .unwrap_or_default();
 
-                let content = try_prompt!(
-                    Editor::new(&t!("menus.editor.get_item_contents"))
-                        .with_file_extension(&format!(".{extension}"))
-                        .with_predefined_text(&f.content)
-                        .prompt_skippable()
-                );
+                // Launch the editor.
+                let content = FileEditor::new(&f.content, extension).run()?;
 
-                dbg!((&f.content, &content));
+                // Make the changes if necessary.
                 Ok(recipe.replace_content(
                     &f.name,
                     RecipeItem::File(crate::content::File {
@@ -180,11 +178,13 @@ impl EditorAction {
                 ))
             }
             RecipeItem::Directory(ref p) => {
+                // Determine the relative path to the new directory.
                 let name = try_prompt!(prompt_new_name(
                     p.to_str().unwrap_or_default(),
                     &recipe.contents
                 ));
 
+                // Make the changes if necessary.
                 Ok(recipe.replace_content(p, RecipeItem::Directory(PathBuf::from(name))))
             }
         }
@@ -193,18 +193,25 @@ impl EditorAction {
     /// Select files and directories to remove from the recipe.
     pub fn remove_contents(&self, recipe: &mut Recipe) -> InquireResult<bool> {
         let formatter: MultiOptionFormatter<RecipeItem> = &multiselect_truncate_formatter;
-        let vim = Config::get().unwrap().vim;
+        let use_vim_mode = Config::get().unwrap().vim;
 
+        // Select contents to remove.
         let contents = try_prompt!(
             MultiSelect::new(&t!("menus.imprint.filter_rec"), recipe.contents.clone())
                 .with_formatter(formatter)
                 .with_help_message(&t!("menus.multiselect_help"))
-                .with_vim_mode(vim)
+                .with_vim_mode(use_vim_mode)
                 .prompt_skippable()
         );
 
-        let lookup: HashSet<_> = contents.into_iter().collect();
-        recipe.contents.retain(|r| !lookup.contains(r));
+        // Bail if there's nothing to delete.
+        if contents.is_empty() {
+            return Ok(false);
+        }
+
+        // Remove the specified paths.
+        let paths_to_remove: HashSet<_> = contents.into_iter().collect();
+        recipe.contents.retain(|r| !paths_to_remove.contains(r));
         Ok(true)
     }
 }
