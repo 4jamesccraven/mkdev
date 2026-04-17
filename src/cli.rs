@@ -80,7 +80,7 @@ impl Cli {
                 Commands::Imprint(sub_args) => imprint_recipe(sub_args, recipes),
                 Commands::Delete(sub_args) => delete_recipe(sub_args, recipes),
                 Commands::List(sub_args) => list_recipe(sub_args, recipes),
-                Commands::Edit(sub_args) => editor(sub_args, recipes),
+                Commands::Alter(sub_args) => editor(sub_args, recipes),
             },
             None if self.interactive => {
                 let fake_args = Imprint {
@@ -109,12 +109,14 @@ pub enum Commands {
     #[command(aliases = ["clone"])]
     Imprint(Imprint),
     /// Delete a recipe
+    #[command(aliases = ["remove", "rm"])]
     Delete(Delete),
     /// List recipes, or the contents of a specific one [Alias: show]
     #[command(aliases = ["show"])]
     List(List),
-    /// Edit a recipe in-place.
-    Edit(Edit),
+    /// Edit a recipe in-place. [Alias: edit]
+    #[command(aliases = ["edit"])]
+    Alter(Alter),
 }
 
 #[derive(Parser, Clone, Debug)]
@@ -199,7 +201,7 @@ pub struct List {
 }
 
 #[derive(Parser, Debug)]
-pub struct Edit {
+pub struct Alter {
     /// The recipe to edit
     pub recipe: String,
 }

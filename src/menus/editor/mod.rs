@@ -19,7 +19,7 @@ mod file_editor;
 
 use super::confirm_action;
 
-use crate::cli::Edit;
+use crate::cli::Alter;
 use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
@@ -40,7 +40,7 @@ use strum::IntoEnumIterator;
 ///
 /// On exit, the user may choose to save the recipe, at which point it is canonicalised and then
 /// saved to the recipe directory.
-pub fn editor(args: Edit, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn editor(args: Alter, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     let _config = Config::get()?;
 
