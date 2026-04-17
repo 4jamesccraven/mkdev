@@ -23,7 +23,6 @@ use super::Recipe;
 use crate::cli::Evoke;
 use crate::config::Config;
 use crate::content::{File, RecipeItem};
-use crate::fs_wrappers;
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
@@ -31,6 +30,7 @@ use crate::mkdev_error::{
 use crate::recipe::{OnConflict, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
+use crate::{fs_wrappers, menus};
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -43,6 +43,16 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
     // Make sure that the recipes past are valid.
     validate_args(&args, &user_recipes)?;
 
+    let recipes = if !args.interactive {
+        Vec::from_iter(
+            args.recipes
+                .iter()
+                .map(|r| user_recipes.get(r).expect("validated above")),
+        )
+    } else {
+        menus::evoke(&user_recipes)?
+    };
+
     // Build to the cwd, or a directory specified by the user
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
@@ -51,8 +61,7 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
 
     let re = evocation_resolver(&args, &dir)?;
 
-    args.recipes.iter().try_for_each(|r| {
-        let recipe = user_recipes.get(r).expect("recipes were validated above.");
+    recipes.iter().try_for_each(|&recipe| {
         let contents = resolve_items(&recipe.contents, &re);
         let on_conflict = if args.suppress_warnings {
             OnConflict::Overwrite
@@ -118,7 +127,7 @@ fn run_shell(cmd: &str) -> Option<String> {
 /// Verifies that at least one valid recipes was passed at the command line.
 fn validate_args(args: &Evoke, user_recipes: &HashMap<String, Recipe>) -> Result<(), Error> {
     // There is an error if no recipes are provided
-    if args.recipes.is_empty() {
+    if !args.interactive && args.recipes.is_empty() {
         return Err(NoneSpecified {
             subject: Subject::Recipes,
         });

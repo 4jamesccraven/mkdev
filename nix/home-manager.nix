@@ -30,7 +30,7 @@ in
       type = types.listOf types.package;
       default = [ ];
       description = ''
-        Additional scripts to install, e.g., mkf
+        Additional packages to install.
       '';
     };
 

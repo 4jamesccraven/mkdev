@@ -25,13 +25,11 @@
         {
           default = self.packages.${system}.mkdev;
           mkdev = pkgs.callPackage ./nix/mkdev.nix { };
-          mkf = pkgs.callPackage ./nix/mkf.nix { };
         }
       );
 
       overlays.default = prev: final: {
         mkdev = prev.callPackage ./nix/mkdev.nix { };
-        mkf = prev.callPackage ./nix/mkf.nix { };
       };
 
       homeManagerModules.default = import ./nix/home-manager.nix;
@@ -52,9 +50,6 @@
 
             # Nix
             statix
-
-            # Bash
-            argbash
 
             # Misc.
             gh
