@@ -39,6 +39,9 @@ select_content = "Selecciona el archivo/directorio para editar:"
 content_name_required = "El nombre es obligatorio"
 invalid_content_name = "Ya existe un cotenido con ese nombre, elimínalo primero"
 
+[menus.evoke]
+pick = "Selecciona una receta para evocar:"
+
 [editor.actions]
 add_content = "Añadir un archivo o directorio"
 edit_content = "Editar un archivo o directorio"

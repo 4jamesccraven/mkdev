@@ -44,6 +44,9 @@ select_content = "Select the file/directory to edit:"
 content_name_required = "A name is required"
 invalid_content_name = "Content with that name already exists, remove it first"
 
+[menus.evoke] # Unique to the evocation menu
+pick = "Select a recipe to evoke:"
+
 [editor.actions] # Things that are selected in the top-level menu
 add_content = "Add a file or directory"
 edit_content = "Edit a file or directory"
