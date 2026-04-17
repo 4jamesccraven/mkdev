@@ -1,6 +1,6 @@
 ![image](./logo/mkdev-logo.svg)
 
-![image](https://img.shields.io/badge/release-3.4.2-orange)
+![image](https://img.shields.io/badge/release-3.5.0-orange)
 ![image](https://img.shields.io/badge/license-GPLv3_or_later-orange)
 [![image](https://img.shields.io/badge/documentation-🔗-orange)](https://github.com/4jamesccraven/mkdev/wiki)
 [![Packaging status](https://repology.org/badge/tiny-repos/mkdev.svg)](https://github.com/4jamesccraven/mkdev/wiki/Installing)
