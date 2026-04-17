@@ -123,6 +123,10 @@ pub struct Evoke {
     #[arg(add = ArgValueCompleter::new(recipe_completer))]
     pub recipes: Vec<String>,
 
+    /// Evoke recipes in interactive mode
+    #[arg(short, long)]
+    pub interactive: bool,
+
     /// Target directory for recipe output
     #[arg(last = true)]
     pub dir_name: Option<String>,

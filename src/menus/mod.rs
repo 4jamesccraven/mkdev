@@ -17,6 +17,7 @@
 mod editor;
 mod locale;
 
+use std::collections::HashMap;
 use std::fmt::Display;
 
 pub use editor::editor;
@@ -57,6 +58,17 @@ pub fn imprint() -> Result<Recipe, Error> {
     Ok(recipe)
 }
 
+/// Interactively select recipes to evoke.
+pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<&Recipe>, Error> {
+    let _config = Config::get()?;
+    let selection = select_recipes(recipes.keys().collect())?;
+
+    Ok(selection
+        .into_iter()
+        .map(|k| recipes.get(&k).unwrap())
+        .collect())
+}
+
 /// Prompt the user to confirm something.
 pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
     let parser: BoolParser = &locale_bool_parser;
@@ -84,11 +96,19 @@ fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
+fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
+    let vim = Config::get().unwrap().vim;
+
+    MultiSelect::new(&t!("menus.evoke.pick"), recipes)
+        .with_help_message(&t!("menus.multiselect_help"))
+        .with_vim_mode(vim)
+        .prompt()
+        .map(|xs| xs.iter().map(|x| x.to_string()).collect())
+}
+
 fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {
     let formatter: MultiOptionFormatter<RecipeItem> = &multiselect_truncate_formatter;
-    let vim = Config::get()
-        .expect("The config should be loaded at the top of a menu")
-        .vim;
+    let vim = Config::get().unwrap().vim;
 
     MultiSelect::new(&t!("menus.imprint.filter_rec"), contents)
         .with_all_selected_by_default()
