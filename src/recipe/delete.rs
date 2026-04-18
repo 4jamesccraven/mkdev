@@ -30,6 +30,9 @@ use rust_i18n::t;
 
 /// Deletes a recipe based on command line arguments.
 pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+    if args.namespace {
+        return delete_namespace(&user_recipes, &args.recipe);
+    }
     let to_delete = Recipe::pick(&user_recipes, &args.recipe)?;
     let deleted_file = to_delete.delete()?;
 
@@ -39,6 +42,23 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
     );
 
     Ok(())
+}
+
+/// Deletes every recipe in a namespace.
+fn delete_namespace(user_recipes: &HashMap<String, Recipe>, name: &str) -> Result<(), Error> {
+    user_recipes
+        .values()
+        .filter(|&r| r.namespace().is_some() && r.namespace().unwrap() == name)
+        .try_for_each(|r| {
+            let deleted_file = r.delete()?;
+
+            println!(
+                "{}",
+                t!("recipes.delete_msg", path => &deleted_file.display())
+            );
+
+            Ok(())
+        })
 }
 
 impl Recipe {
