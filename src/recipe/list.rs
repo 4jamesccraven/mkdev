@@ -38,7 +38,7 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
         }
         None => {
             let mut recipes: Vec<_> = user_recipes.values().collect();
-            recipes.sort_by(|a, b| a.name.cmp(&b.name));
+            recipes.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
 
             display_all(recipes, output_type, !args.no_description);
         }

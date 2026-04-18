@@ -46,11 +46,29 @@ pub struct DisplayConfig {
     #[serde(default = "default_recipe_fmt")]
     pub recipe_fmt: String,
 
-    // --- Name ---
-    /// How to format the name of the recipe. (use "{name}" to reference the raw name).
+    // --- Namespace ---
+    /// How to format the namespace divider. Use "{namespace}" to reference the namespace. If the
+    /// namespace_fmt is empty, namespace dividers are not shown. Leading newlines are stripped for
+    /// the first given namespace.
     ///
     /// Default:
-    /// "{name}"
+    /// "\n--- {namespace} ---"
+    #[serde(default = "default_namespace_fmt")]
+    pub namespace_fmt: String,
+    /// Whether the namespace divider should always show even if only the global namespace exists.
+    ///
+    /// Default:
+    /// false
+    #[serde(default = "default_namespace_show_always")]
+    pub namespace_show_always: bool,
+
+    // --- Name ---
+    /// How to format the name of the recipe. Use "{name}" to reference the full recipe name (with
+    /// the namespace), "{namespace}" to reference the namespace, or "{shortname}" to reference the
+    /// short name.
+    ///
+    /// Default:
+    /// "{shortname}"
     #[serde(default = "default_name_fmt")]
     pub name_fmt: String,
     /// Whether the name should be bolded.
@@ -81,6 +99,7 @@ pub struct DisplayConfig {
     ///
     /// Default:
     /// true
+    #[serde(default = "default_lang_colour")]
     pub lang_colour: bool,
     /// Text that joins formatted languages.
     ///
@@ -97,6 +116,8 @@ impl Default for DisplayConfig {
             recipes_suffix: default_recipes_suffix(),
             show_descriptions: None,
             recipe_fmt: default_recipe_fmt(),
+            namespace_fmt: default_namespace_fmt(),
+            namespace_show_always: default_namespace_show_always(),
             name_fmt: default_name_fmt(),
             name_bold: default_name_bold(),
             desc_fmt: default_desc_fmt(),
@@ -111,13 +132,15 @@ use config_defaults::*;
 #[rustfmt::skip]
 mod config_defaults {
     //! Source of truth for `DisplayConfig::default` implementation
-    pub fn default_recipes_join()   -> String { "\n".to_string()                     }
-    pub fn default_recipes_suffix() -> String { "\n".to_string()                     }
-    pub fn default_recipe_fmt()     -> String { "{name} ({langs}){desc}".to_string() }
-    pub fn default_name_fmt()       -> String { "{name}".to_string()                 }
-    pub fn default_name_bold()      -> bool   { true                                 }
-    pub fn default_desc_fmt()       -> String { "\n  {desc}".to_string()             }
-    pub fn default_lang_fmt()       -> String { "{lang}".to_string()                 }
-    pub fn default_lang_colour()    -> bool   { true                                 }
-    pub fn default_langs_join()     -> String { " ".to_string()                      }
+    pub fn default_recipes_join()          -> String { "\n".to_string()                     }
+    pub fn default_recipes_suffix()        -> String { "\n".to_string()                     }
+    pub fn default_recipe_fmt()            -> String { "{name} ({langs}){desc}".to_string() }
+    pub fn default_namespace_fmt()         -> String { "\n--- {namespace} ---".to_string()  }
+    pub fn default_namespace_show_always() -> bool   { false                                }
+    pub fn default_name_fmt()              -> String { "{shortname}".to_string()            }
+    pub fn default_name_bold()             -> bool   { true                                 }
+    pub fn default_desc_fmt()              -> String { "\n  {desc}".to_string()             }
+    pub fn default_lang_fmt()              -> String { "{lang}".to_string()                 }
+    pub fn default_lang_colour()           -> bool   { true                                 }
+    pub fn default_langs_join()            -> String { " ".to_string()                      }
 }
