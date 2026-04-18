@@ -31,6 +31,12 @@ pub enum Error {
         examples: Option<Vec<String>>,
     },
 
+    /// Occurs when a recipe query does not uniquely identify a recipe.
+    AmbiguousShortRecipe {
+        query: String,
+        possibilities: Vec<String>,
+    },
+
     /// Indicates that an action would be destructive.
     DestructionWarning { name: String },
 
@@ -89,6 +95,13 @@ impl std::fmt::Display for Error {
                         write!(f, "{base}")
                     }
                 }
+            }
+            Error::AmbiguousShortRecipe {
+                query,
+                possibilities,
+            } => {
+                let ps = possibilities.join(", ");
+                write!(f, "{} '{query}' ({ps})", t!("errors.ambiguous"))
             }
             Error::Exclude { cause } => {
                 write!(f, "{}: {cause}", t!("errors.exclude"))

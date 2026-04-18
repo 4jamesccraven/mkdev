@@ -65,6 +65,7 @@ pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<&Recipe>, Error> {
 
     Ok(selection
         .into_iter()
+        // This use of .get is fine since we're using a list of fully qualified recipe names.
         .map(|k| recipes.get(&k).unwrap())
         .collect())
 }

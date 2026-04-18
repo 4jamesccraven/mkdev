@@ -70,18 +70,19 @@ man = "generating man pages"
 tempfile = "creating temporary directory or file"
 
 [errors] # What went wrong?
+ambiguous = "ambiguous query"
 deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
 destruction = "%{name} already exists; use -s to overwrite"
 evoke = "could not build `%{recipe}` in '%{target}'"
 exclude = "imprint: invalid value for flag `--exclude`"
 fs_denied = "permission denied: could not access %{which} (while %{context})"
+interrupted = "operation was interrupted"
 invalid = "invalid %{subject}"
 no_cwd = "the current directory does not exist"
 none_specified = "no %{subject} specified"
 not_tty = "the input device is not a TTY"
 not_utf8 = "%{file} is not valid UTF-8"
 serialise = "serialization error: could not serialize data to %{which} (while %{context})"
-interrupted = "operation was interrupted"
 
 [warnings]
 child_failed = "could not run command '%{child}'"
