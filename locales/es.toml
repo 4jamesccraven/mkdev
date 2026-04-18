@@ -76,13 +76,13 @@ none_specified = "no se especificó ninguna(s) %{subject}"
 not_tty = "el dispositivo de entrada no es un teletipo"
 not_utf8 = "%{file} no contiene datos UTF-8 válidos"
 serialise = "error de serialización: no se pudo serializar datos a %{which} (%{context})"
-toml_all = "no es posible mostrar todas las recetas a la vez con el formato toml"
 interrupted = "la acción fue interrumpida"
 
 [warnings]
 child_failed = "no se pudo ejecutar el comando '%{child}'"
 invalid_recipe = "%{path} no contiene una receta válida"
 storage_full = "almacenamiento lleno: no se pudo escribir %{what}"
+toml_all = "lo anterior no es una lista de archivos de recetas válida—no intentes deserializarlo"
 
 [subject]
 recipe = "receta"

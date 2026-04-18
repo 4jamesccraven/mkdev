@@ -81,13 +81,13 @@ none_specified = "no %{subject} specified"
 not_tty = "the input device is not a TTY"
 not_utf8 = "%{file} is not valid UTF-8"
 serialise = "serialization error: could not serialize data to %{which} (while %{context})"
-toml_all = "displaying all recipes as TOML simultaneously is unsupported"
 interrupted = "operation was interrupted"
 
 [warnings]
 child_failed = "could not run command '%{child}'"
 invalid_recipe = "%{path} is not a valid recipe"
 storage_full = "storage full: could not write %{what}"
+toml_all = "the above is not a list of valid recipe files—do not attempt to deserialize it"
 
 [subject] # See errors.invalid
 recipe = "recipe"
