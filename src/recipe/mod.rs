@@ -123,6 +123,10 @@ impl Recipe {
             return Ok(exact);
         }
 
+        if let Some(ns_default) = map.get(&format!("{name}::default")) {
+            return Ok(ns_default);
+        }
+
         let potential_matches: Vec<_> = map.values().filter(|r| r.shortname() == name).collect();
 
         if potential_matches.len() > 1 {
