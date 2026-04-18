@@ -61,6 +61,22 @@ pub struct Recipe {
 }
 
 impl Recipe {
+    /// Get the recipe's short name with no namespace component.
+    pub fn shortname(&self) -> &str {
+        self.name
+            .rsplit_once("::")
+            .map(|(_, sn)| sn)
+            .unwrap_or(&self.name)
+    }
+
+    /// Get the recipe's namespace.
+    ///
+    /// Returns `Some(namespace)` if it belongs to a named namespace, or `None` if it belongs to the
+    /// global namespace.
+    pub fn namespace(&self) -> Option<&str> {
+        self.name.rsplit_once("::").map(|(ns, _)| ns)
+    }
+
     /// Gathers all recipes from the user directory.
     ///
     /// Only files with the .toml extension are checked. An invalid recipe gives a warning.
@@ -97,15 +113,39 @@ impl Recipe {
 
     /// Validates and returns a reference to one recipe in a map of many.
     ///
-    /// Returns `Error::Invalid` if there is no such recipe.
+    /// Returns `Error::Invalid` if there is no such recipe, or `Error::AmbiguousShortRecipe` if
+    /// multiple recipes match the query.
     pub fn pick<'recipes>(
         map: &'recipes HashMap<String, Recipe>,
         name: &str,
     ) -> Result<&'recipes Recipe, Error> {
-        map.get(name).ok_or_else(|| Error::Invalid {
-            subject: Subject::Recipe,
-            examples: Some(vec![name.into()]),
-        })
+        if let Some(exact) = map.get(name) {
+            return Ok(exact);
+        }
+
+        if let Some(ns_default) = map.get(&format!("{name}::default")) {
+            return Ok(ns_default);
+        }
+
+        let potential_matches: Vec<_> = map.values().filter(|r| r.shortname() == name).collect();
+
+        if potential_matches.len() > 1 {
+            return Err(Error::AmbiguousShortRecipe {
+                query: name.to_string(),
+                possibilities: potential_matches
+                    .into_iter()
+                    .map(|r| r.name.clone())
+                    .collect(),
+            });
+        }
+
+        potential_matches
+            .into_iter()
+            .next()
+            .ok_or_else(|| Error::Invalid {
+                subject: Subject::Recipe,
+                examples: Some(vec![name.into()]),
+            })
     }
 
     /// Validates and returns a list of reference to several recipes from a map of them.
@@ -118,30 +158,27 @@ impl Recipe {
     where
         S: AsRef<str>,
     {
-        let fake_recipes: Vec<&str> = names
-            .iter()
-            .map(|s| s.as_ref())
-            .filter(|n| !map.contains_key(*n))
-            .collect();
+        let mut out = Vec::with_capacity(names.len());
+        let mut invalid = Vec::new();
 
-        if !fake_recipes.is_empty() {
-            let count = fake_recipes.len();
+        for name in names {
+            match Self::pick(map, name.as_ref()) {
+                Ok(r) => out.push(r),
+                Err(Error::Invalid { .. }) => {
+                    invalid.push(name.as_ref().to_string());
+                }
+                Err(e) => return Err(e),
+            }
+        }
+
+        if !invalid.is_empty() {
             return Err(Error::Invalid {
-                subject: Subject::from_count(count),
-                examples: Some(
-                    fake_recipes
-                        .into_iter()
-                        .map(|name| name.to_string())
-                        .collect(),
-                ),
+                subject: Subject::from_count(invalid.len()),
+                examples: Some(invalid),
             });
         }
 
-        Ok(names
-            .iter()
-            .map(|s| s.as_ref())
-            .map(|name| map.get(name).unwrap())
-            .collect())
+        Ok(out)
     }
 
     /// Replaces a specific item in a recipe with a new one.

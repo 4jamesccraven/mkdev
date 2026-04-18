@@ -180,9 +180,13 @@ pub struct Imprint {
 
 #[derive(Parser, Debug)]
 pub struct Delete {
-    /// The recipe to delete
+    /// The recipe/namespace to delete
     #[arg(add = ArgValueCompleter::new(recipe_completer))]
     pub recipe: String,
+
+    /// Delete an entire namespace.
+    #[arg(long)]
+    pub namespace: bool,
 }
 
 #[derive(Parser, Debug)]

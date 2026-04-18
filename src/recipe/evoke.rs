@@ -40,20 +40,14 @@ use rust_i18n::t;
 
 /// Evokes a recipe according to arguments from the command line.
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    // Make sure that the recipes past are valid.
-    validate_args(&args, &user_recipes)?;
-
+    // Get the desire recipes from the cli or interactively.
     let recipes = if !args.interactive {
-        Vec::from_iter(
-            args.recipes
-                .iter()
-                .map(|r| user_recipes.get(r).expect("validated above")),
-        )
+        validate_args(&args, &user_recipes)?
     } else {
         menus::evoke(&user_recipes)?
     };
 
-    // Build to the cwd, or a directory specified by the user
+    // Build to the cwd, or a target directory if specified.
     let dir = match &args.dir_name {
         Some(dir) => PathBuf::from(dir),
         None => fs_wrappers::current_dir()?,
@@ -125,18 +119,21 @@ fn run_shell(cmd: &str) -> Option<String> {
 }
 
 /// Verifies that at least one valid recipes was passed at the command line.
-fn validate_args(args: &Evoke, user_recipes: &HashMap<String, Recipe>) -> Result<(), Error> {
+fn validate_args<'recipes>(
+    args: &Evoke,
+    user_recipes: &'recipes HashMap<String, Recipe>,
+) -> Result<Vec<&'recipes Recipe>, Error> {
     // There is an error if no recipes are provided
-    if !args.interactive && args.recipes.is_empty() {
+    if args.recipes.is_empty() {
         return Err(NoneSpecified {
             subject: Subject::Recipes,
         });
     }
 
     // Validate existence of all recipes
-    _ = Recipe::pick_many(user_recipes, &args.recipes)?;
+    let out = Recipe::pick_many(user_recipes, &args.recipes)?;
 
-    Ok(())
+    Ok(out)
 }
 
 /// Sets up the replacefmt used during evocation.

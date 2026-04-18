@@ -65,18 +65,19 @@ man = "generar páginas de manual"
 tempfile = "crear directorio o archivo temporal"
 
 [errors]
+ambiguous = "búsqueda ambigua"
 deserialise = "error de deserialización: no se pudo deserializar datos desde %{which} (%{context})"
 destruction = "%{name} ya existe; proporciona -s para sobrescribirlo"
 evoke = "no se pudo construir `%{recipe}` en '%{target}'"
 exclude = "improntar: se proporcionó un valor inválido al argumento `--exclude`"
 fs_denied = "permiso denegado: no se pudo acceder a %{which} (%{context})"
+interrupted = "la acción fue interrumpida"
 invalid = "%{subject} inválida(s)"
 no_cwd = "el directorio de trabajo actual no existe"
 none_specified = "no se especificó ninguna(s) %{subject}"
 not_tty = "el dispositivo de entrada no es un teletipo"
 not_utf8 = "%{file} no contiene datos UTF-8 válidos"
 serialise = "error de serialización: no se pudo serializar datos a %{which} (%{context})"
-interrupted = "la acción fue interrumpida"
 
 [warnings]
 child_failed = "no se pudo ejecutar el comando '%{child}'"

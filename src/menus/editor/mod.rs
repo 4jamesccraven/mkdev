@@ -43,17 +43,18 @@ use strum::IntoEnumIterator;
 pub fn editor(args: Alter, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     let _config = Config::get()?;
+    let original = Recipe::pick(&user_recipes, &args.recipe)?;
 
-    let mut recipe = Recipe::pick(&user_recipes, &args.recipe)?.clone();
-    let mut recipe_altered = false;
-
-    let original_path = recipe.dwelling()?;
-    let was_external = recipe.is_external()?;
+    let original_path = original.dwelling()?;
+    let was_external = original.is_external()?;
     let external_msg = format!(
         "{} – {}?",
-        t!("recipes.external", name => &recipe.name),
+        t!("recipes.external", name => &original.name),
         t!("general.proceed")
     );
+
+    let mut recipe = original.clone();
+    let mut recipe_altered = false;
 
     loop {
         // Target field/action,

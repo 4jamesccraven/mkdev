@@ -20,10 +20,7 @@ use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
 use crate::display::{display_recipes_with_config, repr_tree};
-use crate::mkdev_error::{
-    Error::{self, *},
-    Subject,
-};
+use crate::mkdev_error::Error;
 use crate::output_type::OutputType::{self, *};
 
 use std::collections::HashMap;
@@ -37,16 +34,11 @@ pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<
 
     match args.recipe {
         Some(recipe) => {
-            let recipe = user_recipes.get(recipe.as_str()).ok_or_else(|| Invalid {
-                subject: Subject::Recipe,
-                examples: Some(vec![recipe]),
-            })?;
-
-            display_one(recipe, output_type);
+            display_one(Recipe::pick(&user_recipes, &recipe)?, output_type);
         }
         None => {
             let mut recipes: Vec<_> = user_recipes.values().collect();
-            recipes.sort_by(|a, b| a.name.cmp(&b.name));
+            recipes.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
 
             display_all(recipes, output_type, !args.no_description);
         }

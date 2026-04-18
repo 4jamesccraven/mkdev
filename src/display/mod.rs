@@ -32,12 +32,42 @@ const FALLBACK: InvalidTokenStrategy = InvalidTokenStrategy::Preserve;
 
 /// Formats and displays a list of recipes according to a provided configuration.
 pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) -> String {
-    recipes
-        .iter()
-        .map(|r| cfg_display_recipe(r, config))
-        .collect::<Vec<String>>()
-        .join(&config.recipes_join)
-        + config.recipes_suffix.as_str()
+    let additional_namespaces = !recipes.iter().all(|r| r.namespace().is_none());
+    let mut prev_ns = recipes.first().and_then(|r| r.namespace());
+
+    // Only show the Global namespace header if there are others or if the user's config requests
+    // it.
+    let mut lines = if additional_namespaces || config.namespace_show_always {
+        let first_line = cfg_display_namespace(prev_ns, config)
+            .trim_start_matches('\n')
+            .to_string();
+        vec![first_line]
+    } else {
+        Vec::new()
+    };
+
+    for recipe in recipes {
+        let curr_ns = recipe.namespace();
+        if curr_ns != prev_ns {
+            lines.push(cfg_display_namespace(curr_ns, config));
+        }
+
+        lines.push(cfg_display_recipe(recipe, config));
+
+        prev_ns = curr_ns;
+    }
+
+    lines.join("\n") + &config.recipes_suffix
+}
+
+/// Formats a namespace divider according to a provided configuration.
+fn cfg_display_namespace(namespace: Option<&str>, config: &DisplayConfig) -> String {
+    let subs = HashMap::from([(
+        "namespace".to_string(),
+        namespace.unwrap_or("Globals").to_string(),
+    )]);
+
+    replace(subs, &config.namespace_fmt)
 }
 
 /// Formats a single recipe according to a provided configuration.
@@ -47,7 +77,7 @@ fn cfg_display_recipe(recipe: &Recipe, config: &DisplayConfig) -> String {
     let subs = HashMap::from([
         (
             "name".to_string(),
-            cfg_display_recipe_name(&recipe.name, &config.name_fmt, config.name_bold),
+            cfg_display_recipe_name(recipe, &config.name_fmt, config.name_bold),
         ),
         (
             "langs".to_string(),
@@ -74,14 +104,23 @@ fn replace(subs: HashMap<String, String>, fmt_string: &str) -> String {
 }
 
 /// Displays the recipe name as configured.
-fn cfg_display_recipe_name(name: &str, fmt_string: &str, bold: bool) -> String {
-    let name_fmt = if bold {
-        name.to_string().bold().to_string()
-    } else {
-        name.to_string()
+fn cfg_display_recipe_name(recipe: &Recipe, fmt_string: &str, bold: bool) -> String {
+    let do_cond_fmt = |name: &str| {
+        if bold {
+            name.bold().to_string()
+        } else {
+            name.to_string()
+        }
     };
 
-    let subs = HashMap::from([("name".to_string(), name_fmt)]);
+    let subs = HashMap::from([
+        ("name".to_string(), do_cond_fmt(&recipe.name)),
+        ("shortname".to_string(), do_cond_fmt(recipe.shortname())),
+        (
+            "namespace".to_string(),
+            do_cond_fmt(recipe.namespace().unwrap_or("Global")),
+        ),
+    ]);
     replace(subs, fmt_string)
 }
 
