@@ -197,65 +197,17 @@ impl PartialOrd for TreeContent {
 impl Ord for TreeContent {
     fn cmp(&self, other: &Self) -> Ordering {
         use TreeContent::*;
-        use std::cmp::Ordering::*;
-        // In all cases, this places a directory earlier (less) than a file, and later (greater)
-        // for a file. If two of the same type are encountered, they are sorted lexographically as
-        // a fallback
-        match (self, other) {
-            // Two leaves
-            (
-                Leaf { name, empty_dir },
-                Leaf {
-                    name: other_name,
-                    empty_dir: other_dir,
-                },
-            ) => match (empty_dir, other_dir) {
-                // Directories first
-                (true, false) => Less,
-                (false, true) => Greater,
-                // Fallback to name
-                _ => name.cmp(other_name),
-            },
-            // Mixed cases
-            (
-                Leaf { name, empty_dir },
-                HasChildren {
-                    name: other_name,
-                    contents: _,
-                },
-            ) => {
-                // If it's not a directory, then later
-                if !empty_dir {
-                    Greater
-                // If it is, fallback to names
-                } else {
-                    name.cmp(other_name)
-                }
+
+        /// Convert to a tuple key of (is_file, name)
+        fn key(t: &TreeContent) -> (bool, &str) {
+            match t {
+                Leaf { name, empty_dir } => (!*empty_dir, name.as_str()),
+                HasChildren { name, .. } => (false, name.as_str()),
             }
-            (
-                HasChildren { name, contents: _ },
-                Leaf {
-                    name: other_name,
-                    empty_dir,
-                },
-            ) => {
-                // If the other isn't also a directory, earlier
-                if !empty_dir {
-                    Less
-                // If it is, fallback to names
-                } else {
-                    name.cmp(other_name)
-                }
-            }
-            // Two directories
-            // just compare names
-            (
-                HasChildren { name, contents: _ },
-                HasChildren {
-                    name: other_name,
-                    contents: _,
-                },
-            ) => name.cmp(other_name),
         }
+
+        // Sorts directories before standalone files, and then sorts by content name if ambiguity
+        // arises.
+        key(self).cmp(&key(other))
     }
 }

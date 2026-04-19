@@ -88,6 +88,7 @@ serialise = "serialization error: could not serialize data to %{which} (while %{
 child_failed = "could not run command '%{child}'"
 invalid_recipe = "%{path} is not a valid recipe"
 storage_full = "storage full: could not write %{what}"
+subcommand_suppressed = "subcommand suppressed by one or more flags"
 toml_all = "the above is not a list of valid recipe files—do not attempt to deserialize it"
 
 [subject] # See errors.invalid

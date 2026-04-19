@@ -71,7 +71,7 @@ pub struct Config {
 impl Config {
     /// Retrieves the user config.
     ///
-    /// The config is cached on the first call, so it is safe to call it more than once.
+    /// The config is cached on the first call.
     pub fn get() -> Result<&'static Config, Error> {
         if CONFIG.get().is_none() {
             let config = Config::load()?;
@@ -82,8 +82,6 @@ impl Config {
     }
 
     /// Override the default config path.
-    ///
-    /// This is used to implement the global `--config` flag.
     pub fn override_path(path: PathBuf) {
         CONFIG_PATH_OVERRIDE
             .set(path)
@@ -154,6 +152,7 @@ fn default_subs() -> HashMap<String, String> {
     )
 }
 
+/// Whether menus should use vim keybindings by default.
 fn default_vim() -> bool {
     false
 }

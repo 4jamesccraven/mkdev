@@ -25,11 +25,12 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     if let Some(current) = current.to_str()
         && let Ok(recipes) = Recipe::gather()
     {
-        recipes.iter().map(|r| r.0).for_each(|c: &String| {
-            if c.starts_with(current) {
+        recipes
+            .keys()
+            .filter(|&c| c.starts_with(current))
+            .for_each(|c: &String| {
                 completions.push(CompletionCandidate::new(c));
-            }
-        });
+            });
     }
 
     completions

@@ -18,15 +18,17 @@ use crate::cli::Cli;
 use crate::config::Config;
 use crate::{die, warning};
 
+use rust_i18n::t;
+
 /// Handles operations that modify or pertain to mkdev's config file.
 ///
 /// The print operations cause the program to exit early.
 pub fn hook(args: &Cli) {
-    let skip_main_logic = [args.gen_config, args.print_config].iter().any(|f| *f);
+    let skip_main_logic = args.gen_config || args.print_config;
     let commands_present = args.command.is_some();
 
     if skip_main_logic && commands_present {
-        warning!("subcommand suppressed by one or more flags.");
+        warning!("{}", t!("warnings.subcommand_suppressed"));
     }
 
     if args.gen_config {
@@ -53,10 +55,7 @@ fn print_config() {
         Err(why) => die!("{}", why),
     };
 
-    let config = match toml::to_string_pretty(&config) {
-        Ok(cfg) => cfg,
-        Err(_) => die!("improperly formatted configuration file."),
-    };
+    let config = toml::to_string_pretty(&config).unwrap();
 
     print!("{config}");
 }

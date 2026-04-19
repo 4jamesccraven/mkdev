@@ -82,6 +82,7 @@ serialise = "error de serialización: no se pudo serializar datos a %{which} (%{
 [warnings]
 child_failed = "no se pudo ejecutar el comando '%{child}'"
 invalid_recipe = "%{path} no contiene una receta válida"
+subcommand_suppressed = "subcomando suprimido por uno o más argumentos"
 storage_full = "almacenamiento lleno: no se pudo escribir %{what}"
 toml_all = "lo anterior no es una lista de archivos de recetas válida—no intentes deserializarlo"
 

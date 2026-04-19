@@ -40,7 +40,7 @@ use rust_i18n::t;
 
 /// Evokes a recipe according to arguments from the command line.
 pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    // Get the desire recipes from the cli or interactively.
+    // Determine a list of recipes to evoke.
     let recipes = if !args.interactive {
         validate_args(&args, &user_recipes)?
     } else {
@@ -71,6 +71,48 @@ pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Resu
             )
         })
     })
+}
+
+/// Verifies that at least one valid recipes was passed at the command line.
+fn validate_args<'recipes>(
+    args: &Evoke,
+    user_recipes: &'recipes HashMap<String, Recipe>,
+) -> Result<Vec<&'recipes Recipe>, Error> {
+    // There is an error if no recipes are provided
+    if args.recipes.is_empty() {
+        return Err(NoneSpecified {
+            subject: Subject::Recipes,
+        });
+    }
+
+    // Validate existence of all recipes
+    Recipe::pick_many(user_recipes, &args.recipes)
+}
+
+/// Sets up the replacefmt used during evocation.
+fn evocation_resolver(args: &Evoke, dir: &Path) -> Result<ReplaceFmt, Error> {
+    // Ensure project name is set to something
+    let name = match args.name {
+        Some(ref name) => name.clone(),
+        None => "NAME".to_string(),
+    };
+
+    let user_subs: HashMap<_, _> = Config::get()?
+        .subs
+        .iter()
+        // Patch in reserved values
+        .map(|(k, v)| match v.as_str() {
+            "mk::name" => (k.clone(), format!("mk::{}", name.clone())),
+            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy())),
+            _ => (k.clone(), v.clone()),
+        })
+        .collect();
+
+    Ok(ReplaceFmt::new(
+        user_subs,
+        ("{{", "}}"),
+        InvalidTokenStrategy::Preserve,
+    ))
 }
 
 /// Applies a replacer to all the names and contents of a collection of RecipeItems, returning a
@@ -116,49 +158,4 @@ fn run_shell(cmd: &str) -> Option<String> {
             None
         }
     }
-}
-
-/// Verifies that at least one valid recipes was passed at the command line.
-fn validate_args<'recipes>(
-    args: &Evoke,
-    user_recipes: &'recipes HashMap<String, Recipe>,
-) -> Result<Vec<&'recipes Recipe>, Error> {
-    // There is an error if no recipes are provided
-    if args.recipes.is_empty() {
-        return Err(NoneSpecified {
-            subject: Subject::Recipes,
-        });
-    }
-
-    // Validate existence of all recipes
-    let out = Recipe::pick_many(user_recipes, &args.recipes)?;
-
-    Ok(out)
-}
-
-/// Sets up the replacefmt used during evocation.
-fn evocation_resolver(args: &Evoke, dir: &Path) -> Result<ReplaceFmt, Error> {
-    // Ensure project name is set to something
-    let name = match args.name {
-        Some(ref name) => name.clone(),
-        None => "NAME".to_string(),
-    };
-
-    let user_subs: HashMap<_, _> = Config::get()?
-        .subs
-        .iter()
-        // Patch in reserved values
-        .map(|(k, v)| match v.as_str() {
-            "mk::name" => (k.clone(), format!("mk::{}", name.clone())),
-            #[rustfmt::skip]
-            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy())),
-            _ => (k.clone(), v.clone()),
-        })
-        .collect();
-
-    Ok(ReplaceFmt::new(
-        user_subs,
-        ("{{", "}}"),
-        InvalidTokenStrategy::Preserve,
-    ))
 }

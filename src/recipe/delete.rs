@@ -33,6 +33,7 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
     if args.namespace {
         return delete_namespace(&user_recipes, &args.recipe);
     }
+
     let to_delete = Recipe::pick(&user_recipes, &args.recipe)?;
     let deleted_file = to_delete.delete()?;
 
@@ -48,7 +49,7 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 fn delete_namespace(user_recipes: &HashMap<String, Recipe>, name: &str) -> Result<(), Error> {
     user_recipes
         .values()
-        .filter(|&r| r.namespace().is_some() && r.namespace().unwrap() == name)
+        .filter(|&r| matches!(r.namespace(), Some(ns) if ns == name))
         .try_for_each(|r| {
             let deleted_file = r.delete()?;
 

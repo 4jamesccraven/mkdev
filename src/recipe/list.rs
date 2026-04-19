@@ -53,17 +53,19 @@ const SER_EXISTING_RECIPE: &str = //.
 
 /// Displays all recipes.
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
-    let mut config = Config::get()
-        .expect("config is guaranteed to be set")
-        .recipe_fmt
-        .clone();
-
-    if config.show_descriptions.is_none() {
-        config.show_descriptions = Some(show_description)
-    }
-
     match output_type {
-        Default => print!("{}", display_recipes_with_config(&recipes, &config)),
+        Default => {
+            let mut display_cfg = Config::get()
+                .expect("config is guaranteed to be set")
+                .recipe_fmt
+                .clone();
+
+            if display_cfg.show_descriptions.is_none() {
+                display_cfg.show_descriptions = Some(show_description)
+            }
+
+            print!("{}", display_recipes_with_config(&recipes, &display_cfg));
+        }
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
         Print0 => print!(
@@ -79,14 +81,9 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
             serde_json::to_string_pretty(&recipes).expect(SER_EXISTING_RECIPE)
         ),
         Toml => {
-            println!(
-                "{}",
-                recipes
-                    .iter()
-                    .map(|r| toml::to_string_pretty(r).expect(SER_EXISTING_RECIPE))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-            );
+            recipes.iter().for_each(|r| {
+                println!("{}", toml::to_string_pretty(r).expect(SER_EXISTING_RECIPE))
+            });
             crate::warning!("{}", t!("warnings.toml_all"));
         }
         Nix => println!(

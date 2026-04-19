@@ -40,14 +40,13 @@ impl From<hyperpolyglot::Language> for Language {
     fn from(value: hyperpolyglot::Language) -> Self {
         let name = value.name.to_string();
 
-        let colour: Option<(u8, u8, u8)> = value.color.and_then(|s| {
-            let hex = &s[1..].to_string();
-
-            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
-            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
-            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-
-            Some((r, g, b))
+        let colour = value.color.and_then(|s| {
+            let s = s.strip_prefix('#')?;
+            Some((
+                u8::from_str_radix(&s[0..2], 16).ok()?,
+                u8::from_str_radix(&s[2..4], 16).ok()?,
+                u8::from_str_radix(&s[4..6], 16).ok()?,
+            ))
         });
 
         Language { name, colour }
@@ -68,13 +67,16 @@ impl From<&str> for Language {
             let (g, s) = s.split_once(';')?;
             let (b, s) = s.split_once('m')?;
 
-            let r = r.parse().ok()?;
-            let g = g.parse().ok()?;
-            let b = b.parse().ok()?;
+            #[rustfmt::skip]
+            let col = (
+                r.parse().ok()?,
+                g.parse().ok()?,
+                b.parse().ok()?
+            );
 
             name = s.strip_suffix("\x1b[0m")?;
 
-            Some((r, g, b))
+            Some(col)
         })();
         let name = name.to_string();
 

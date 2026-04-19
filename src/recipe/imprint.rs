@@ -82,26 +82,22 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 impl Recipe {
     /// Create a `Recipe` by imprinting/cloning the contents of the cwd
     pub fn imprint(name: String, description: Option<String>, walker: Walk) -> Result<Self, Error> {
-        let contents = make_contents(walker, &current_dir()?)?;
-
         let description = description.unwrap_or("".into());
-
-        // Converts HashMap<&name, detected_info> -> Vec<(name, num_matching_files)>
         let languages = Recipe::languages(".");
+        let contents = make_contents(walker, &current_dir()?)?;
 
         Ok(Self {
             name,
-            contents,
-            languages,
             description,
+            languages,
+            contents,
         })
     }
 
     /// Ensures that a recipe's data is canonical.
     ///
     /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
-    /// preserving the metadata associated with the potentially non-canonical self. This ensures
-    /// that all directories are explicitly modeled, for example.
+    /// preserving the metadata associated with the potentially non-canonical self.
     pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
         let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;

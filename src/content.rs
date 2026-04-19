@@ -63,8 +63,6 @@ pub struct File {
 /// Recursively detects and saves every file and subdirectory in the current working directory.
 ///
 /// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
-///
-/// Panics if an improperly constructed walk is made such that the current directory is invalid.
 pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> {
     let mut out = vec![];
 
@@ -86,18 +84,15 @@ pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> 
                 .into();
         }
 
-        let (is_file, is_dir, is_symlink) = (data.is_file(), data.is_dir(), data.is_symlink());
-
-        // Make File or Directory variant as necessary
-        match (is_file, is_dir, is_symlink) {
-            (true, false, false) => out.push(RecipeItem::File(File {
+        match data {
+            data if data.is_symlink() => continue, // ignore symlinks
+            data if data.is_dir() => out.push(RecipeItem::dir(path)),
+            data if data.is_file() => out.push(RecipeItem::File(File {
                 name: path.clone(),
                 content: fs_wrappers::read_to_string(root.join(path), Context::Imprint)?,
             })),
-            (false, true, false) => out.push(RecipeItem::dir(path)),
-            // ignore symlinks (TODO: allow customisation with CLI)
-            (false, false, true) => continue,
-            // All of these methods' results are mutually exclusive
+
+            // All of these methods' results are mutually exclusive and exhaustive.
             // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
             _ => unreachable!(),
         }
@@ -147,13 +142,11 @@ impl PartialOrd for RecipeItem {
 
 impl Ord for RecipeItem {
     fn cmp(&self, other: &Self) -> Ordering {
-        use RecipeItem::*;
-        match (self, other) {
-            (Directory(_), File(_)) => Ordering::Less,
-            (File(_), Directory(_)) => Ordering::Greater,
-            (File(a), File(b)) => a.name.cmp(&b.name),
-            (Directory(a), Directory(b)) => a.cmp(b),
+        fn key(r: &RecipeItem) -> (bool, String) {
+            (matches!(r, RecipeItem::File(_)), r.name())
         }
+
+        key(self).cmp(&key(other))
     }
 }
 

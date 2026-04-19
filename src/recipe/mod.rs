@@ -26,8 +26,6 @@ pub use evoke::*;
 pub use imprint::*;
 pub use lang::Language;
 pub use list::*;
-
-use tempfile::TempDir;
 use version::*;
 
 use crate::config::Config;
@@ -42,6 +40,7 @@ use std::path::{Path, PathBuf};
 use dirs::data_dir;
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
+use tempfile::TempDir;
 
 /// A mkdev recipe (v2).
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -87,8 +86,9 @@ impl Recipe {
 
         for file in files {
             let path = file.map_err(|e| crate::borked!(e)).unwrap().path();
+            let is_toml = path.is_file() && path.extension().is_some_and(|ext| ext == "toml");
 
-            if path.extension() == Some(std::ffi::OsStr::new("toml")) && path.is_file() {
+            if is_toml {
                 let file_contents = fs_wrappers::read_to_string(&path, Context::Gather)?;
                 let recipe = deserialise_recipe(&file_contents);
 
