@@ -59,15 +59,11 @@ pub fn imprint() -> Result<Recipe, Error> {
 }
 
 /// Interactively select recipes to evoke.
-pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<&Recipe>, Error> {
+pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<String>, Error> {
     let _config = Config::get()?;
     let selection = select_recipes(recipes.keys().collect())?;
 
-    Ok(selection
-        .into_iter()
-        // This use of .get is fine since we're using a list of fully qualified recipe names.
-        .map(|k| recipes.get(&k).unwrap())
-        .collect())
+    Ok(selection)
 }
 
 /// Prompt the user to confirm something.

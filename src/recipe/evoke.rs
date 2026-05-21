@@ -33,86 +33,159 @@ use crate::warning;
 use crate::{fs_wrappers, menus};
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 use rust_i18n::t;
 
-/// Evokes a recipe according to arguments from the command line.
-pub fn build_recipes(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
-    // Determine a list of recipes to evoke.
-    let recipes = if !args.interactive {
-        validate_args(&args, &user_recipes)?
-    } else {
-        menus::evoke(&user_recipes)?
-    };
+/// The set of parameters that define how evocation should be carried out.
+pub struct EvocationCtx {
+    /// Command line arguments.
+    args: Evoke,
+    /// Where fully resolved evocation results are placed.
+    target_dir: PathBuf,
+    /// All the user's recipes.
+    recipes: HashMap<String, Recipe>,
+    /// The names of the recipes that were selected.
+    target_recipes: Vec<String>,
+    /// Recipes that have had their contents fully resolved.
+    resolved_recipes: Vec<Recipe>,
+    /// The name of the fully resolved and instantiated recipe, as provided by the CLI argument
+    /// `--name`.
+    name: String,
+}
 
-    // Build to the cwd, or a target directory if specified.
-    let dir = match &args.dir_name {
-        Some(dir) => PathBuf::from(dir),
-        None => fs_wrappers::current_dir()?,
-    };
+impl EvocationCtx {
+    /// Generate the context for evocation from a collection of command line arguments.
+    pub fn from_args(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<Self, Error> {
+        if args.interactive {
+            return Self::from_prompt(args, user_recipes);
+        }
 
-    let re = evocation_resolver(&args, &dir)?;
+        // There is an error if no recipes are provided
+        if args.recipes.is_empty() {
+            return Err(NoneSpecified {
+                subject: Subject::Recipes,
+            });
+        }
 
-    recipes.iter().try_for_each(|&recipe| {
-        let contents = resolve_items(&recipe.contents, &re);
-        let on_conflict = if args.suppress_warnings {
-            OnConflict::Overwrite
-        } else {
-            OnConflict::Guard
+        // Validate & store the name of the requested recipes.
+        let target_recipes = Recipe::pick_many(&user_recipes, &args.recipes)
+            .map(|rs| rs.into_iter().map(|r| r.name.clone()).collect::<Vec<_>>())?;
+
+        // User specified target or default to CWD.
+        let target_dir = match &args.dir_name {
+            Some(dir) => PathBuf::from(dir),
+            None => fs_wrappers::current_dir()?,
         };
 
-        // Context for failure, should building fail
-        instantiate_contents(&dir, &contents, on_conflict, args.verbose).inspect_err(|_| {
-            warning!(
-                "{}",
-                t!("errors.evoke", recipe => recipe.name, target => dir.display())
-            )
-        })
-    })
-}
+        let mut ctx = Self {
+            name: Self::unwrap_name(&args),
+            args,
+            target_dir,
+            recipes: user_recipes,
+            resolved_recipes: Vec::with_capacity(target_recipes.len()),
+            target_recipes,
+        };
+        ctx.resolve_targets()?;
 
-/// Verifies that at least one valid recipes was passed at the command line.
-fn validate_args<'recipes>(
-    args: &Evoke,
-    user_recipes: &'recipes HashMap<String, Recipe>,
-) -> Result<Vec<&'recipes Recipe>, Error> {
-    // There is an error if no recipes are provided
-    if args.recipes.is_empty() {
-        return Err(NoneSpecified {
-            subject: Subject::Recipes,
-        });
+        Ok(ctx)
     }
 
-    // Validate existence of all recipes
-    Recipe::pick_many(user_recipes, &args.recipes)
-}
+    /// Create the context for evocation partially interactively.
+    pub fn from_prompt(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<Self, Error> {
+        let target_recipes = menus::evoke(&user_recipes)?;
+        let target_dir = fs_wrappers::current_dir()?;
 
-/// Sets up the replacefmt used during evocation.
-fn evocation_resolver(args: &Evoke, dir: &Path) -> Result<ReplaceFmt, Error> {
-    // Ensure project name is set to something
-    let name = match args.name {
-        Some(ref name) => name.clone(),
-        None => "NAME".to_string(),
-    };
+        let mut ctx = Self {
+            name: Self::unwrap_name(&args),
+            args,
+            target_dir,
+            recipes: user_recipes,
+            resolved_recipes: Vec::with_capacity(target_recipes.len()),
+            target_recipes,
+        };
+        ctx.resolve_targets()?;
 
-    let user_subs: HashMap<_, _> = Config::get()?
-        .subs
-        .iter()
-        // Patch in reserved values
-        .map(|(k, v)| match v.as_str() {
-            "mk::name" => (k.clone(), format!("mk::{}", name.clone())),
-            "mk::dir" => (k.clone(), format!("mk::{}", dir.to_string_lossy())),
-            _ => (k.clone(), v.clone()),
+        Ok(ctx)
+    }
+
+    /// Perform evocation as defined by the context.
+    pub fn evoke(&mut self) -> Result<(), Error> {
+        let on_conflict = match self.args.suppress_warnings {
+            true => OnConflict::Overwrite,
+            false => OnConflict::Guard,
+        };
+
+        self.resolved_recipes.iter().try_for_each(|recipe| {
+            instantiate_contents(
+                &self.target_dir,
+                &recipe.contents,
+                on_conflict,
+                self.args.verbose,
+            )
+            .inspect_err(|_| {
+                warning!(
+                    "{}",
+                    t!("errors.evoke", recipe => recipe.name, target => self.target_dir.display())
+                )
+            })
         })
-        .collect();
+    }
 
-    Ok(ReplaceFmt::new(
-        user_subs,
-        ("{{", "}}"),
-        InvalidTokenStrategy::Preserve,
-    ))
+    /// Resolve the contents of all the recipes and store them.
+    fn resolve_targets(&mut self) -> Result<(), Error> {
+        let re = self.init_resolver()?;
+        self.resolved_recipes.clear();
+
+        for recipe_name in &self.target_recipes {
+            let recipe = self
+                .recipes
+                .get(recipe_name)
+                .expect("These are checked during initialisation.");
+
+            self.resolved_recipes.push(Recipe {
+                contents: resolve_items(&recipe.contents, &re),
+                ..recipe.clone()
+            })
+        }
+
+        Ok(())
+    }
+
+    /// Initialises the evocation resolver.
+    ///
+    /// The resolver is the mechanism by which templated text is replaced with actual values.
+    fn init_resolver(&self) -> Result<ReplaceFmt, Error> {
+        let user_subs: HashMap<_, _> = Config::get()?
+            .subs
+            .iter()
+            // Patch in reserved values
+            .map(|(k, v)| match v.as_str() {
+                "mk::name" => (k.clone(), format!("mk::{}", self.name.clone())),
+                "mk::dir" => (
+                    k.clone(),
+                    format!("mk::{}", self.target_dir.to_string_lossy()),
+                ),
+                _ => (k.clone(), v.clone()),
+            })
+            .collect();
+
+        Ok(ReplaceFmt::new(
+            user_subs,
+            ("{{", "}}"),
+            InvalidTokenStrategy::Preserve,
+        ))
+    }
+
+    /// Helper method to ensure that users not specifying `--name` is resolved consistently across
+    /// contexts.
+    fn unwrap_name(args: &Evoke) -> String {
+        match &args.name {
+            Some(n) => n.clone(),
+            None => String::from("NAME"),
+        }
+    }
 }
 
 /// Applies a replacer to all the names and contents of a collection of RecipeItems, returning a

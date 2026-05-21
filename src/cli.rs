@@ -72,11 +72,13 @@ impl Cli {
     /// Determine main logic based on the given arguments.
     pub fn dispatch(self, recipes: HashMap<String, Recipe>) -> Result<(), Error> {
         use crate::menus::editor;
-        use crate::recipe::{build_recipes, delete_recipe, imprint_recipe, list_recipe};
+        use crate::recipe::{EvocationCtx, delete_recipe, imprint_recipe, list_recipe};
 
         match self.command {
             Some(command) => match command {
-                Commands::Evoke(sub_args) => build_recipes(sub_args, recipes),
+                Commands::Evoke(sub_args) => {
+                    EvocationCtx::from_args(sub_args, recipes).and_then(|mut ctx| ctx.evoke())
+                }
                 Commands::Imprint(sub_args) => imprint_recipe(sub_args, recipes),
                 Commands::Delete(sub_args) => delete_recipe(sub_args, recipes),
                 Commands::List(sub_args) => list_recipe(sub_args, recipes),
