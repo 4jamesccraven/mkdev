@@ -44,7 +44,7 @@ pub struct EvocationCtx {
     args: Evoke,
     /// Where fully resolved evocation results are placed.
     target_dir: PathBuf,
-    /// All the users' recipes.
+    /// All the user's recipes.
     recipes: HashMap<String, Recipe>,
     /// The names of the recipes that were selected.
     target_recipes: Vec<String>,
@@ -69,24 +69,27 @@ impl EvocationCtx {
             });
         }
 
-        // Validate existence of all recipes
+        // Validate & store the name of the requested recipes.
         let target_recipes = Recipe::pick_many(&user_recipes, &args.recipes)
-            .map(|rs| rs.into_iter().map(|r| r.name.clone()).collect())?;
+            .map(|rs| rs.into_iter().map(|r| r.name.clone()).collect::<Vec<_>>())?;
 
-        // User specified target or fallback to CWD.
+        // User specified target or default to CWD.
         let target_dir = match &args.dir_name {
             Some(dir) => PathBuf::from(dir),
             None => fs_wrappers::current_dir()?,
         };
 
-        Ok(Self {
+        let mut ctx = Self {
             name: Self::unwrap_name(&args),
             args,
             target_dir,
             recipes: user_recipes,
+            resolved_recipes: Vec::with_capacity(target_recipes.len()),
             target_recipes,
-            resolved_recipes: vec![],
-        })
+        };
+        ctx.resolve_targets()?;
+
+        Ok(ctx)
     }
 
     /// Create the context for evocation partially interactively.
@@ -94,22 +97,21 @@ impl EvocationCtx {
         let target_recipes = menus::evoke(&user_recipes)?;
         let target_dir = fs_wrappers::current_dir()?;
 
-        Ok(Self {
+        let mut ctx = Self {
             name: Self::unwrap_name(&args),
             args,
             target_dir,
             recipes: user_recipes,
+            resolved_recipes: Vec::with_capacity(target_recipes.len()),
             target_recipes,
-            resolved_recipes: vec![],
-        })
+        };
+        ctx.resolve_targets()?;
+
+        Ok(ctx)
     }
 
     /// Perform evocation as defined by the context.
     pub fn evoke(&mut self) -> Result<(), Error> {
-        if self.resolved_recipes.is_empty() {
-            self.resolve_targets()?;
-        }
-
         let on_conflict = match self.args.suppress_warnings {
             true => OnConflict::Overwrite,
             false => OnConflict::Guard,
@@ -131,10 +133,10 @@ impl EvocationCtx {
         })
     }
 
-    /// Create and cache the resolved contents for each target recipe.
+    /// Resolve the contents of all the recipes and store them.
     fn resolve_targets(&mut self) -> Result<(), Error> {
-        let mut resolved = Vec::with_capacity(self.target_recipes.len());
         let re = self.init_resolver()?;
+        self.resolved_recipes.clear();
 
         for recipe_name in &self.target_recipes {
             let recipe = self
@@ -142,13 +144,11 @@ impl EvocationCtx {
                 .get(recipe_name)
                 .expect("These are checked during initialisation.");
 
-            resolved.push(Recipe {
+            self.resolved_recipes.push(Recipe {
                 contents: resolve_items(&recipe.contents, &re),
                 ..recipe.clone()
             })
         }
-
-        self.resolved_recipes = resolved;
 
         Ok(())
     }
