@@ -281,7 +281,7 @@ pub fn instantiate_contents(
         ensure_parent(&dest)?;
 
         if verbose {
-            eprintln!("{}", &dest.display());
+            eprintln!("{}", dest.display());
         }
 
         match content {

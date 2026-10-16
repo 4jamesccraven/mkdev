@@ -74,7 +74,7 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
 
     let save_location = new.save()?;
 
-    println!("{}", &save_location.display());
+    println!("{}", save_location.display());
 
     Ok(())
 }
