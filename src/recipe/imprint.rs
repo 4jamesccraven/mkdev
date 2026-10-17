@@ -25,16 +25,16 @@ use crate::content::{build_walk, make_contents};
 use crate::fs_wrappers::{self, current_dir};
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
+use crate::recipe::RecipeStore;
 use crate::{menus, warning};
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use ignore::Walk;
 use rust_i18n::t;
 
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
-pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
     let new = if args.interactive {
         menus::imprint()?
     } else {
@@ -52,7 +52,8 @@ pub fn imprint_recipe(args: Imprint, user_recipes: HashMap<String, Recipe>) -> R
     }
 
     // Is the action going to overwrite an existing recipe?
-    let destructive = user_recipes.iter().any(|(recipe, _)| recipe == &new.name);
+    // TODO: make existence check that's nicer looking
+    let destructive = store.pick_one(&new.name).is_ok();
 
     // If not, proceed, otherwise we defer to the user.
     // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
@@ -134,6 +135,7 @@ impl Recipe {
     ///
     /// This consumes the recipe, as the previous representation may not be valid after
     /// canonicalisation.
+    // TODO: This should be the store's responsibility
     pub fn save(self) -> Result<PathBuf, Error> {
         let canonical_recipe = self.to_canonical()?;
         let recipe_file = self.dwelling()?;

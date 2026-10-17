@@ -58,6 +58,13 @@ impl From<ManifestKey> for StoreQuery {
     }
 }
 
+impl StoreQuery {
+    /// Convert the query results into their string IDs.
+    pub fn into_ids(self) -> impl Iterator<Item = String> {
+        self.0.into_iter().map(|k| k.to_id())
+    }
+}
+
 impl ManifestKey {
     /// Provides the full ID as a [`String`].
     pub fn to_id(&self) -> String {
@@ -183,7 +190,7 @@ impl RecipeStore {
     }
 
     // ------------------------------------------------------------
-    // Queries
+    // Query Construction
     // ------------------------------------------------------------
 
     /// Get all information associated with a recipe ID.
@@ -236,15 +243,23 @@ impl RecipeStore {
     }
 
     /// Query the store for several manifest entries.
-    pub fn pick_many(&self, recipe_ids: &[&str]) -> Result<StoreQuery, Error> {
+    pub fn pick_many<S>(&self, recipe_ids: &[S]) -> Result<StoreQuery, Error>
+    where
+        S: AsRef<str>,
+    {
         recipe_ids
             .iter()
-            .map(|id| self.pick_raw(id))
+            .map(|id| self.pick_raw(id.as_ref()))
             .collect::<Result<_, _>>()
             .map(StoreQuery)
     }
 
-    /// Query the store for a namespace.
+    /// Query the store for all manifest entries.
+    pub fn pick_all(&self) -> StoreQuery {
+        StoreQuery(self.manifest.keys().cloned().collect())
+    }
+
+    /// Query the store for all manifest entries in the namespace.
     pub fn pick_namespace(&self, namespace_id: &str) -> StoreQuery {
         let matches: Vec<_> = self
             .manifest
@@ -254,6 +269,22 @@ impl RecipeStore {
             .collect();
 
         StoreQuery(matches)
+    }
+
+    // ------------------------------------------------------------
+    // Query Operations
+    // ------------------------------------------------------------
+
+    /// Get the entries associated with the query.
+    pub fn select<'a>(
+        &'a self,
+        query: &'a StoreQuery,
+    ) -> impl Iterator<Item = &'a ManifestEntry> + 'a {
+        query.0.iter().map(|k| {
+            self.manifest
+                .get(k)
+                .expect("`StoreQuery` referencing non-existent entries")
+        })
     }
 }
 

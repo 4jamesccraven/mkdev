@@ -24,9 +24,7 @@ use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
 use crate::mkdev_error::{Context, Error};
-use crate::recipe::Recipe;
-
-use std::collections::HashMap;
+use crate::recipe::{Recipe, RecipeStore};
 
 use colored::Colorize;
 use inquire::error::InquireResult;
@@ -40,10 +38,11 @@ use strum::IntoEnumIterator;
 ///
 /// On exit, the user may choose to save the recipe, at which point it is canonicalised and then
 /// saved to the recipe directory.
-pub fn editor(args: Alter, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn editor(args: Alter, store: RecipeStore) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
-    let _config = Config::get()?;
-    let original = Recipe::pick(&user_recipes, &args.recipe)?;
+    _ = Config::get()?;
+    let query = store.pick_one(&args.recipe)?;
+    let original = store.select(&query).next().unwrap().recipe.clone();
 
     let original_path = original.dwelling()?;
     let was_external = original.is_external()?;

@@ -21,20 +21,22 @@ use crate::cli::Delete;
 use crate::fs_wrappers;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
+use crate::recipe::RecipeStore;
 use crate::warning;
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use rust_i18n::t;
 
 /// Deletes a recipe based on command line arguments.
-pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn delete_recipe(args: Delete, store: RecipeStore) -> Result<(), Error> {
     if args.namespace {
-        return delete_namespace(&user_recipes, &args.recipe);
+        return delete_namespace(&store, &args.recipe);
     }
 
-    let to_delete = Recipe::pick(&user_recipes, &args.recipe)?;
+    let query = store.pick_one(&args.recipe)?;
+    // TODO: let the store handle deletion
+    let to_delete = store.select(&query).next().unwrap().recipe.clone();
     let deleted_file = to_delete.delete()?;
 
     println!(
@@ -46,20 +48,19 @@ pub fn delete_recipe(args: Delete, user_recipes: HashMap<String, Recipe>) -> Res
 }
 
 /// Deletes every recipe in a namespace.
-fn delete_namespace(user_recipes: &HashMap<String, Recipe>, name: &str) -> Result<(), Error> {
-    user_recipes
-        .values()
-        .filter(|&r| matches!(r.namespace(), Some(ns) if ns == name))
-        .try_for_each(|r| {
-            let deleted_file = r.delete()?;
+fn delete_namespace(store: &RecipeStore, namespace: &str) -> Result<(), Error> {
+    let query = store.pick_namespace(namespace);
 
-            println!(
-                "{}",
-                t!("recipes.delete_msg", path => &deleted_file.display())
-            );
+    store.select(&query).try_for_each(|r| {
+        let deleted_file = r.recipe.delete()?;
 
-            Ok(())
-        })
+        println!(
+            "{}",
+            t!("recipes.delete_msg", path => &deleted_file.display())
+        );
+
+        Ok(())
+    })
 }
 
 impl Recipe {

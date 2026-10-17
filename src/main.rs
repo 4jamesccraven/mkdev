@@ -28,7 +28,7 @@ mod replacer;
 
 use cli::Cli;
 use hooks::hooks;
-use recipe::Recipe;
+use recipe::RecipeStore;
 
 use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
@@ -44,7 +44,7 @@ fn main() {
     // Parse the command line, run hooks, and then dispatch main logic.
     let args = Cli::parse();
     let status = hooks(&args)
-        .and_then(|_| Recipe::gather())
+        .and_then(|_| RecipeStore::from_default_indices())
         .and_then(|recipes| args.dispatch(recipes));
 
     // Inform user of error, then exit with fail code

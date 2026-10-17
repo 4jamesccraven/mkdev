@@ -188,6 +188,7 @@ impl Subject {
     /// Gets the correct plurality from a count.
     ///
     /// Panics if 0 is passed.
+    #[expect(unused)]
     pub fn from_count(count: usize) -> Self {
         match count {
             1 => Self::Recipe,

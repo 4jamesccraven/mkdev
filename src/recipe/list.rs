@@ -22,26 +22,27 @@ use crate::config::Config;
 use crate::display::{display_recipes_with_config, repr_tree};
 use crate::mkdev_error::Error;
 use crate::output_type::OutputType::{self, *};
-
-use std::collections::HashMap;
+use crate::recipe::RecipeStore;
 
 use colored::Colorize;
 use rust_i18n::t;
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
-pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
-    match args.recipe {
-        Some(recipe) => {
-            display_one(Recipe::pick(&user_recipes, &recipe)?, output_type);
-        }
-        None => {
-            let mut recipes: Vec<_> = user_recipes.values().collect();
-            recipes.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
+    let query = match args.recipe {
+        Some(id) => store.pick_one(&id)?,
+        None => store.pick_all(),
+    };
 
-            display_all(recipes, output_type, !args.no_description);
-        }
+    let mut selection: Vec<_> = store.select(&query).map(|m| &m.recipe).collect();
+    selection.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
+
+    match selection.len() {
+        1 => display_one(selection[0], output_type),
+        2.. => display_all(selection, output_type, !args.no_description),
+        _ => unreachable!(),
     }
 
     Ok(())

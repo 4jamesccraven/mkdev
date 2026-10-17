@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! An internal function that allows shell completions to detect the user's recipes.
-use crate::recipe::Recipe;
+use crate::recipe::RecipeStore;
 
 use clap_complete::engine::CompletionCandidate;
 
@@ -23,12 +23,13 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     let mut completions = vec![];
 
     if let Some(current) = current.to_str()
-        && let Ok(recipes) = Recipe::gather()
+        && let Ok(store) = RecipeStore::from_default_indices()
     {
-        recipes
-            .keys()
-            .filter(|&c| c.starts_with(current))
-            .for_each(|c: &String| {
+        let query = store.pick_all();
+        query
+            .into_ids()
+            .filter(|c| c.starts_with(current))
+            .for_each(|c: String| {
                 completions.push(CompletionCandidate::new(c));
             });
     }

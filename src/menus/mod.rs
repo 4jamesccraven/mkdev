@@ -17,7 +17,6 @@
 mod editor;
 mod locale;
 
-use std::collections::HashMap;
 use std::fmt::Display;
 
 pub use editor::editor;
@@ -58,14 +57,6 @@ pub fn imprint() -> Result<Recipe, Error> {
     Ok(recipe)
 }
 
-/// Interactively select recipes to evoke.
-pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<String>, Error> {
-    let _config = Config::get()?;
-    let selection = select_recipes(recipes.keys().collect())?;
-
-    Ok(selection)
-}
-
 /// Prompt the user to confirm something.
 pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
     let parser: BoolParser = &locale_bool_parser;
@@ -93,6 +84,8 @@ fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
+/// TODO: re-evaluate inclusion later
+#[expect(unused)]
 fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
     let vim = Config::get().unwrap().vim;
 

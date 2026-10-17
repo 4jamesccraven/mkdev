@@ -31,17 +31,14 @@ pub use evoke::*;
 pub use imprint::*;
 pub use lang::Language;
 pub use list::*;
-use version::*;
+pub use store::RecipeStore;
 
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error, Subject};
-use crate::warning;
+use crate::mkdev_error::{Context, Error};
 
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
 
@@ -77,111 +74,6 @@ impl Recipe {
     /// global namespace.
     pub fn namespace(&self) -> Option<&str> {
         self.name.rsplit_once("::").map(|(ns, _)| ns)
-    }
-
-    /// Gathers all recipes from the user directory.
-    ///
-    /// Only files with the .toml extension are checked. An invalid recipe gives a warning.
-    pub fn gather() -> Result<HashMap<String, Recipe>, Error> {
-        let data_dir = recipe_dir()?;
-        let files = fs_wrappers::read_dir(data_dir, Context::Gather)?;
-        let mut recipes: Vec<Recipe> = Vec::new();
-
-        for file in files {
-            let path = file.map_err(|e| crate::borked!(e)).unwrap().path();
-            let is_toml = path.is_file() && path.extension().is_some_and(|ext| ext == "toml");
-
-            if is_toml {
-                let file_contents = fs_wrappers::read_to_string(&path, Context::Gather)?;
-                let recipe = deserialise_recipe(&file_contents);
-
-                match recipe {
-                    Some(recipe) => {
-                        recipes.push(recipe);
-                    }
-                    None => {
-                        warning!("{}", t!("warnings.invalid_recipe", path => path.display()));
-                    }
-                }
-            }
-        }
-
-        let recipes = recipes
-            .iter()
-            .map(|r| (r.name.clone(), r.to_owned()))
-            .collect();
-
-        Ok(recipes)
-    }
-
-    /// Validates and returns a reference to one recipe in a map of many.
-    ///
-    /// Returns `Error::Invalid` if there is no such recipe, or `Error::AmbiguousShortRecipe` if
-    /// multiple recipes match the query.
-    pub fn pick<'recipes>(
-        map: &'recipes HashMap<String, Recipe>,
-        name: &str,
-    ) -> Result<&'recipes Recipe, Error> {
-        if let Some(exact) = map.get(name) {
-            return Ok(exact);
-        }
-
-        if let Some(ns_default) = map.get(&format!("{name}::default")) {
-            return Ok(ns_default);
-        }
-
-        let potential_matches: Vec<_> = map.values().filter(|r| r.shortname() == name).collect();
-
-        if potential_matches.len() > 1 {
-            return Err(Error::AmbiguousShortRecipe {
-                query: name.to_string(),
-                possibilities: potential_matches
-                    .into_iter()
-                    .map(|r| r.name.clone())
-                    .collect(),
-            });
-        }
-
-        potential_matches
-            .into_iter()
-            .next()
-            .ok_or_else(|| Error::Invalid {
-                subject: Subject::Recipe,
-                examples: Some(vec![name.into()]),
-            })
-    }
-
-    /// Validates and returns a list of reference to several recipes from a map of them.
-    ///
-    /// Returns `Error::Invalid` if there are no such recipe(s).
-    pub fn pick_many<'recipes, S>(
-        map: &'recipes HashMap<String, Recipe>,
-        names: &[S],
-    ) -> Result<Vec<&'recipes Recipe>, Error>
-    where
-        S: AsRef<str>,
-    {
-        let mut out = Vec::with_capacity(names.len());
-        let mut invalid = Vec::new();
-
-        for name in names {
-            match Self::pick(map, name.as_ref()) {
-                Ok(r) => out.push(r),
-                Err(Error::Invalid { .. }) => {
-                    invalid.push(name.as_ref().to_string());
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
-        if !invalid.is_empty() {
-            return Err(Error::Invalid {
-                subject: Subject::from_count(invalid.len()),
-                examples: Some(invalid),
-            });
-        }
-
-        Ok(out)
     }
 
     /// Replaces a specific item in a recipe with a new one.

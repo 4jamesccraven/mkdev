@@ -15,11 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The command line interface for mkdev.
 #![deny(missing_docs)]
+use crate::mkdev_error::Error;
 use crate::output_type::OutputType;
+use crate::recipe::RecipeStore;
 use crate::recipe_completer::recipe_completer;
-use crate::{mkdev_error::Error, recipe::Recipe};
 
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use clap::{
     ArgAction, CommandFactory, Parser, Subcommand, crate_authors, crate_description, crate_version,
@@ -70,19 +71,19 @@ pub struct Cli {
 
 impl Cli {
     /// Determine main logic based on the given arguments.
-    pub fn dispatch(self, recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+    pub fn dispatch(self, store: RecipeStore) -> Result<(), Error> {
         use crate::menus::editor;
         use crate::recipe::{EvocationCtx, delete_recipe, imprint_recipe, list_recipe};
 
         match self.command {
             Some(command) => match command {
                 Commands::Evoke(sub_args) => {
-                    EvocationCtx::from_args(sub_args, recipes).and_then(|mut ctx| ctx.evoke())
+                    EvocationCtx::from_args(sub_args, store).and_then(|mut ctx| ctx.evoke())
                 }
-                Commands::Imprint(sub_args) => imprint_recipe(sub_args, recipes),
-                Commands::Delete(sub_args) => delete_recipe(sub_args, recipes),
-                Commands::List(sub_args) => list_recipe(sub_args, recipes),
-                Commands::Alter(sub_args) => editor(sub_args, recipes),
+                Commands::Imprint(sub_args) => imprint_recipe(sub_args, store),
+                Commands::Delete(sub_args) => delete_recipe(sub_args, store),
+                Commands::List(sub_args) => list_recipe(sub_args, store),
+                Commands::Alter(sub_args) => editor(sub_args, store),
             },
             None if self.interactive => {
                 let fake_args = Imprint {
@@ -90,7 +91,7 @@ impl Cli {
                     ..Default::default()
                 };
 
-                imprint_recipe(fake_args, recipes)
+                imprint_recipe(fake_args, store)
             }
             None => {
                 // Print help and exit if no action is provided
@@ -126,10 +127,6 @@ pub struct Evoke {
     /// The recipe(s) to build
     #[arg(add = ArgValueCompleter::new(recipe_completer))]
     pub recipes: Vec<String>,
-
-    /// Evoke recipes in interactive mode
-    #[arg(short, long)]
-    pub interactive: bool,
 
     /// Target directory for recipe output
     #[arg(last = true)]
