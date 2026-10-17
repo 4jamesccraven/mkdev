@@ -19,7 +19,12 @@ mod evoke;
 mod imprint;
 mod lang;
 mod list;
+#[expect(dead_code)]
+mod store;
 mod version;
+
+// TODO: remove this.
+use store::recipe_dir;
 
 pub use delete::*;
 pub use evoke::*;
@@ -28,7 +33,6 @@ pub use lang::Language;
 pub use list::*;
 use version::*;
 
-use crate::config::Config;
 use crate::content::RecipeItem;
 use crate::fs_wrappers;
 use crate::mkdev_error::{Context, Error, Subject};
@@ -37,7 +41,6 @@ use crate::warning;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use dirs::data_dir;
 use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
@@ -319,24 +322,4 @@ fn ensure_parent(path: &Path) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-/// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
-fn recipe_dir() -> Result<PathBuf, Error> {
-    let cfg = Config::get()?;
-
-    let data_dir = match &cfg.recipe_dir {
-        Some(dir) => dir.clone(),
-        None => {
-            let mut temp = data_dir().expect("$HOME is not set; cannot determine data directory.");
-            temp.push("mkdev");
-            temp
-        }
-    };
-
-    if !data_dir.is_dir() {
-        fs_wrappers::create_dir_all(&data_dir, Context::Gather)?;
-    }
-
-    Ok(data_dir)
 }
