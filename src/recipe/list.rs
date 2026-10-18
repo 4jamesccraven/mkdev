@@ -20,7 +20,7 @@ use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
 use crate::display::{display_recipes_with_config, repr_tree};
-use crate::mkdev_error::Error;
+use crate::mkdev_error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::RecipeStore;
 
@@ -32,17 +32,26 @@ pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
     let query = match args.recipe {
-        Some(id) => store.pick_one(&id)?,
+        Some(ref id) => store.pick_one(id)?,
         None => store.pick_all(),
     };
 
     let mut selection: Vec<_> = store.select(&query).map(|m| &m.recipe).collect();
     selection.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
 
-    match selection.len() {
-        1 => display_one(selection[0], output_type),
-        2.. => display_all(selection, output_type, !args.no_description),
-        _ => unreachable!(),
+    if let Some(id) = args.recipe {
+        match selection.len() {
+            1 => display_one(selection[0], output_type),
+            0 => {
+                return Err(Error::Invalid {
+                    subject: Subject::Recipe,
+                    examples: Some(vec![id]),
+                });
+            }
+            _ => unreachable!(),
+        }
+    } else {
+        display_all(selection, output_type, !args.no_description);
     }
 
     Ok(())
