@@ -19,9 +19,12 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::Recipe;
+use super::{
+    Recipe,
+    capture::{build_walk, make_contents},
+};
+
 use crate::cli::Imprint;
-use crate::content::{build_walk, make_contents};
 use crate::error::Context;
 use crate::error::Error::{self, *};
 use crate::fs::{self, current_dir};

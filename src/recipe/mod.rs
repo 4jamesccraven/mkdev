@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's core library. Defines the recipe schema and provides tools for working with them.
-mod capture;
-mod content;
+pub mod capture;
+pub mod content;
 mod delete;
 mod evoke;
 mod imprint;
-mod lang;
+pub mod lang;
 mod list;
 #[expect(dead_code)]
 mod store;

@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 mod cli;
 mod config;
-mod content;
 mod display;
 mod error;
 mod fs;

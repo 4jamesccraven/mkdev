@@ -23,11 +23,11 @@ pub use editor::editor;
 use locale::*;
 
 use crate::config::Config;
-use crate::content::make_contents;
 use crate::error::Error;
 use crate::fs::current_dir;
 use crate::recipe::Recipe;
 use crate::recipe::RecipeItem;
+use crate::recipe::capture::make_contents;
 
 use ignore::Walk;
 use inquire::error::InquireResult;
