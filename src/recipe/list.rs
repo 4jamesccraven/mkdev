@@ -20,7 +20,7 @@ use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
 use crate::display::{display_recipes_with_config, repr_tree};
-use crate::mkdev_error::{Error, Subject};
+use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
 use crate::recipe::RecipeStore;
 

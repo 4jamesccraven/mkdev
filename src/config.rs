@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's user configuration file.
 use crate::display::DisplayConfig;
+use crate::error::{Context, Error};
 use crate::fs;
-use crate::mkdev_error::{Context, Error};
 
 use std::collections::HashMap;
 use std::default::Default;

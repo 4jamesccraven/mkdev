@@ -24,8 +24,8 @@ use locale::*;
 
 use crate::config::Config;
 use crate::content::{RecipeItem, make_contents};
+use crate::error::Error;
 use crate::fs::current_dir;
-use crate::mkdev_error::Error;
 use crate::recipe::Recipe;
 
 use ignore::Walk;

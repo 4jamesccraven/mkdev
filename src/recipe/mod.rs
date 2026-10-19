@@ -34,8 +34,8 @@ pub use list::*;
 pub use store::RecipeStore;
 
 use crate::content::RecipeItem;
+use crate::error::{Context, Error};
 use crate::fs;
-use crate::mkdev_error::{Context, Error};
 
 use std::path::{Path, PathBuf};
 

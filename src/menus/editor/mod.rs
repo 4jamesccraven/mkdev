@@ -22,8 +22,8 @@ use super::confirm_action;
 use crate::cli::Alter;
 use crate::config::Config;
 use crate::content::RecipeItem;
+use crate::error::{Context, Error};
 use crate::fs;
-use crate::mkdev_error::{Context, Error};
 use crate::recipe::{Recipe, RecipeStore};
 
 use colored::Colorize;

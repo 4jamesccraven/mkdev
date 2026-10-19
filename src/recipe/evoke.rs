@@ -23,11 +23,11 @@ use super::Recipe;
 use crate::cli::Evoke;
 use crate::config::Config;
 use crate::content::{File, RecipeItem};
-use crate::fs;
-use crate::mkdev_error::{
+use crate::error::{
     Error::{self, *},
     Subject,
 };
+use crate::fs;
 use crate::recipe::{OnConflict, RecipeStore, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;

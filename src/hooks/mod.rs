@@ -19,7 +19,7 @@ mod i18n;
 mod man;
 
 use crate::cli::Cli;
-use crate::mkdev_error::Error;
+use crate::error::Error;
 
 /// Calls every mkdev hook sequentially.
 pub fn hooks(args: &Cli) -> Result<(), Error> {

@@ -22,9 +22,9 @@
 use super::Recipe;
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
+use crate::error::Context;
+use crate::error::Error::{self, *};
 use crate::fs::{self, current_dir};
-use crate::mkdev_error::Context;
-use crate::mkdev_error::Error::{self, *};
 use crate::recipe::RecipeStore;
 use crate::{menus, warning};
 

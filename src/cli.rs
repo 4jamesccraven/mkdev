@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The command line interface for mkdev.
 #![deny(missing_docs)]
-use crate::mkdev_error::Error;
+use crate::error::Error;
 use crate::output_type::OutputType;
 use crate::recipe::RecipeStore;
 use crate::recipe_completer::recipe_completer;

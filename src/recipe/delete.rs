@@ -18,9 +18,9 @@
 //! Used to delete recipes from their default location.
 use super::Recipe;
 use crate::cli::Delete;
+use crate::error::Context;
+use crate::error::Error;
 use crate::fs;
-use crate::mkdev_error::Context;
-use crate::mkdev_error::Error;
 use crate::recipe::RecipeStore;
 use crate::warning;
 

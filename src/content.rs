@@ -17,9 +17,9 @@
 use ignore::overrides::OverrideBuilder;
 
 use crate::cli::Imprint;
+use crate::error::Context;
+use crate::error::Error;
 use crate::fs;
-use crate::mkdev_error::Context;
-use crate::mkdev_error::Error;
 
 use std::cmp::Ordering;
 use std::path::Path;

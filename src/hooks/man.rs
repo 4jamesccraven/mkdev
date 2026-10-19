@@ -19,9 +19,9 @@
 //! the config struct.
 use crate::cli::Cli;
 use crate::config::Config;
+use crate::error::Context;
+use crate::error::Error;
 use crate::fs;
-use crate::mkdev_error::Context;
-use crate::mkdev_error::Error;
 
 use std::io::{BufWriter, ErrorKind};
 use std::path::{Path, PathBuf};
