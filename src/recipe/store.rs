@@ -16,7 +16,7 @@
 //! The interface to mkdev's central recipe repository.
 use super::Recipe;
 use crate::config::Config;
-use crate::fs_wrappers as fs;
+use crate::fs;
 use crate::mkdev_error::{Context, Error, Subject};
 use crate::recipe::version::deserialise_recipe;
 

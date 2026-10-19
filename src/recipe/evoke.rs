@@ -23,7 +23,7 @@ use super::Recipe;
 use crate::cli::Evoke;
 use crate::config::Config;
 use crate::content::{File, RecipeItem};
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::{
     Error::{self, *},
     Subject,
@@ -70,7 +70,7 @@ impl EvocationCtx {
         // User specified target or default to CWD.
         let target_dir = match &args.dir_name {
             Some(dir) => PathBuf::from(dir),
-            None => fs_wrappers::current_dir()?,
+            None => fs::current_dir()?,
         };
 
         let mut ctx = Self {

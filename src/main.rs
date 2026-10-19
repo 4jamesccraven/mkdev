@@ -17,7 +17,7 @@ mod cli;
 mod config;
 mod content;
 mod display;
-mod fs_wrappers;
+mod fs;
 mod hooks;
 mod menus;
 mod mkdev_error;

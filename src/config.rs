@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's user configuration file.
 use crate::display::DisplayConfig;
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::{Context, Error};
 
 use std::collections::HashMap;
@@ -106,7 +106,7 @@ impl Config {
         if let Some(dir) = config_file.parent()
             && !dir.is_dir()
         {
-            fs_wrappers::create_dir_all(dir, Context::Config)?;
+            fs::create_dir_all(dir, Context::Config)?;
         }
 
         if !config_file.is_file() {
@@ -114,11 +114,11 @@ impl Config {
             let serialized_default =
                 toml::to_string(&cfg).expect("default `Config` is always serialisable.");
 
-            fs_wrappers::write(config_file, serialized_default, Context::Config)?;
+            fs::write(config_file, serialized_default, Context::Config)?;
 
             Ok(cfg)
         } else {
-            let cfg_contents = fs_wrappers::read_to_string(&config_file, Context::Config)?;
+            let cfg_contents = fs::read_to_string(&config_file, Context::Config)?;
 
             let cfg: Config =
                 toml::from_str(&cfg_contents).map_err(|e| Error::Deserialisation {

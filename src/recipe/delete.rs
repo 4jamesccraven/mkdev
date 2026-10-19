@@ -18,7 +18,7 @@
 //! Used to delete recipes from their default location.
 use super::Recipe;
 use crate::cli::Delete;
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
 use crate::recipe::RecipeStore;
@@ -71,7 +71,7 @@ impl Recipe {
         if self.is_external()? {
             warning!("{}", t!("recipes.external"));
         }
-        fs_wrappers::remove_file(&recipe_file, Context::Delete)?;
+        fs::remove_file(&recipe_file, Context::Delete)?;
 
         Ok(recipe_file)
     }

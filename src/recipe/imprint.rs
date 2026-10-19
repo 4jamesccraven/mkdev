@@ -22,7 +22,7 @@
 use super::Recipe;
 use crate::cli::Imprint;
 use crate::content::{build_walk, make_contents};
-use crate::fs_wrappers::{self, current_dir};
+use crate::fs::{self, current_dir};
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error::{self, *};
 use crate::recipe::RecipeStore;
@@ -46,7 +46,7 @@ pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
         let nix_expression = ser_nix::to_string(&new)
             .expect("ser_nix's serialisation is infallible with non-path types.");
 
-        fs_wrappers::write(path, nix_expression, Context::Imprint)?;
+        fs::write(path, nix_expression, Context::Imprint)?;
 
         return Ok(());
     }
@@ -141,10 +141,10 @@ impl Recipe {
         let recipe_file = self.dwelling()?;
 
         if self.is_external()? {
-            fs_wrappers::remove_file(&recipe_file, Context::Imprint)?;
+            fs::remove_file(&recipe_file, Context::Imprint)?;
         }
 
-        fs_wrappers::write(
+        fs::write(
             &recipe_file,
             toml::to_string_pretty(&canonical_recipe).unwrap(),
             Context::Imprint,

@@ -17,7 +17,7 @@
 use ignore::overrides::OverrideBuilder;
 
 use crate::cli::Imprint;
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::Context;
 use crate::mkdev_error::Error;
 
@@ -89,7 +89,7 @@ pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> 
             data if data.is_dir() => out.push(RecipeItem::dir(path)),
             data if data.is_file() => out.push(RecipeItem::File(File {
                 name: path.clone(),
-                content: fs_wrappers::read_to_string(root.join(path), Context::Imprint)?,
+                content: fs::read_to_string(root.join(path), Context::Imprint)?,
             })),
 
             // All of these methods' results are mutually exclusive and exhaustive.
@@ -106,7 +106,7 @@ pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> 
 ///
 /// This function exists to allow users to override the walk behaviour.
 pub fn build_walk(args: &Imprint) -> Result<Walk, Error> {
-    let cwd = fs_wrappers::current_dir()?;
+    let cwd = fs::current_dir()?;
 
     let mut ob = OverrideBuilder::new(&cwd);
     for over in &args.exclude {

@@ -34,7 +34,7 @@ pub use list::*;
 pub use store::RecipeStore;
 
 use crate::content::RecipeItem;
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::{Context, Error};
 
 use std::path::{Path, PathBuf};
@@ -187,10 +187,10 @@ pub fn instantiate_contents(
                     OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
                         name: dest.to_string_lossy().into(),
                     }),
-                    _ => fs_wrappers::write(&dest, &file.content, Context::Evoke),
+                    _ => fs::write(&dest, &file.content, Context::Evoke),
                 }
             }
-            RecipeItem::Directory(_) => fs_wrappers::create_dir_all(&dest, Context::Evoke),
+            RecipeItem::Directory(_) => fs::create_dir_all(&dest, Context::Evoke),
         }
     })
 }
@@ -210,7 +210,7 @@ fn ensure_parent(path: &Path) -> Result<(), Error> {
     };
 
     if !parent.is_dir() {
-        fs_wrappers::create_dir_all(parent, Context::Evoke)?;
+        fs::create_dir_all(parent, Context::Evoke)?;
     }
 
     Ok(())

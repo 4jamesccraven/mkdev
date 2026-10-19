@@ -22,7 +22,7 @@ use super::confirm_action;
 use crate::cli::Alter;
 use crate::config::Config;
 use crate::content::RecipeItem;
-use crate::fs_wrappers;
+use crate::fs;
 use crate::mkdev_error::{Context, Error};
 use crate::recipe::{Recipe, RecipeStore};
 
@@ -77,7 +77,7 @@ pub fn editor(args: Alter, store: RecipeStore) -> Result<(), Error> {
 
                     // If the recipe's path changed, delete the old file/link.
                     if new_path != original_path {
-                        fs_wrappers::remove_file(original_path, Context::Imprint)?;
+                        fs::remove_file(original_path, Context::Imprint)?;
                     }
                     break;
                 }
