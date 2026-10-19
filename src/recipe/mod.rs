@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's core library. Defines the recipe schema and provides tools for working with them.
+mod capture;
+mod content;
 mod delete;
 mod evoke;
 mod imprint;
@@ -26,6 +28,7 @@ mod version;
 // TODO: remove this.
 use store::recipe_dir;
 
+pub use content::RecipeItem;
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
@@ -33,7 +36,6 @@ pub use lang::Language;
 pub use list::*;
 pub use store::RecipeStore;
 
-use crate::content::RecipeItem;
 use crate::error::{Context, Error};
 use crate::fs;
 

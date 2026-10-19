@@ -17,11 +17,7 @@
 //!
 //! Recipes used to store their data differently; this allows for them to be converted as
 //! losslessly as possible to the newer format with no user intervention.
-use crate::content::File;
-use crate::content::RecipeItem;
-
-use super::Language;
-use super::Recipe;
+use super::{Language, Recipe, RecipeItem, content::File};
 
 use serde::{Deserialize, Serialize};
 

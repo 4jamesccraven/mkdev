@@ -19,10 +19,10 @@
 //! are systematically loaded, formatted with custom substitutions, and copied into the target
 //! directory.
 use super::Recipe;
+use super::content::{File, RecipeItem};
 
 use crate::cli::Evoke;
 use crate::config::Config;
-use crate::content::{File, RecipeItem};
 use crate::error::{
     Error::{self, *},
     Subject,

@@ -21,10 +21,9 @@ use super::confirm_action;
 
 use crate::cli::Alter;
 use crate::config::Config;
-use crate::content::RecipeItem;
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::{Recipe, RecipeStore};
+use crate::recipe::{Recipe, RecipeItem, RecipeStore};
 
 use colored::Colorize;
 use inquire::error::InquireResult;
