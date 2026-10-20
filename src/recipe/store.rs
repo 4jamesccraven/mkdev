@@ -27,7 +27,7 @@ use dirs::data_dir;
 
 /// A destructured unique identifier for a recipe.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-struct RecipeId {
+pub struct RecipeId {
     namespace: Option<String>,
     shortname: String,
 }
@@ -49,9 +49,15 @@ impl<T: AsRef<str>> From<T> for RecipeId {
     }
 }
 
+impl From<&Recipe> for RecipeId {
+    fn from(recipe: &Recipe) -> Self {
+        Self::from(recipe.name.as_str())
+    }
+}
+
 impl RecipeId {
     /// Provides the full ID as a [`String`].
-    pub fn to_id(&self) -> String {
+    pub fn to_str(&self) -> String {
         match &self.namespace {
             Some(ns) => format!("{}::{}", ns, self.shortname),
             None => self.shortname.clone(),
@@ -86,9 +92,14 @@ impl From<RecipeId> for StoreQuery {
 }
 
 impl StoreQuery {
+    /// Convert the query results into [`RecipeId`]s.
+    pub fn into_ids(self) -> impl Iterator<Item = RecipeId> {
+        self.0.into_iter()
+    }
+
     /// Convert the query results into their string IDs.
-    pub fn into_ids(self) -> impl Iterator<Item = String> {
-        self.0.into_iter().map(|k| k.to_id())
+    pub fn into_strs(self) -> impl Iterator<Item = String> {
+        self.into_ids().map(|k| k.to_str())
     }
 }
 /// Mkdev's recipe repository.
@@ -96,6 +107,7 @@ impl StoreQuery {
 pub struct RecipeStore {
     /// The underlying mapping of recipe IDs and their location on disk.
     manifest: HashMap<RecipeId, ManifestEntry>,
+    default_dir: PathBuf,
 }
 
 impl RecipeStore {
@@ -113,15 +125,25 @@ impl RecipeStore {
 
     /// Creates a [`RecipeStore`] from a list of directories to index.
     ///
+    /// Indices should be placed in order from least to most priority---in other words, the most
+    /// important, "default" directory should come last. Each subsequent index's contents overrides
+    /// the previous and so on.
+    ///
     /// Returns `Ok((store, invalid_recipe_paths))` if the directories can be indexed. Otherwise
-    /// returns an [`Error`].
+    /// returns an [`Error`]. Panics if no indices are passed.
     pub fn from_indices<P>(dirs: &[P]) -> Result<(Self, Vec<PathBuf>), Error>
     where
         P: AsRef<Path>,
     {
+        let default_dir = PathBuf::from(
+            dirs.iter()
+                .last()
+                .expect("`RecipeStore::from_indices` called with no indices.")
+                .as_ref(),
+        );
+
         let mut valid = HashMap::new();
         let mut invalid = Vec::new();
-
         for dir in dirs {
             let p_ref = dir.as_ref();
             if !p_ref.is_dir() {
@@ -134,7 +156,10 @@ impl RecipeStore {
             invalid.extend(i);
         }
 
-        let store = Self { manifest: valid };
+        let store = Self {
+            manifest: valid,
+            default_dir,
+        };
 
         Ok((store, invalid))
     }
@@ -199,9 +224,12 @@ impl RecipeStore {
     // ------------------------------------------------------------
 
     /// Get all information associated with a recipe ID.
-    fn pick_raw(&self, recipe_id: &str) -> Result<RecipeId, Error> {
+    fn pick_raw<K>(&self, recipe_id: K) -> Result<RecipeId, Error>
+    where
+        K: Into<RecipeId>,
+    {
         // Always prefer an exact match.
-        let key = RecipeId::from(recipe_id);
+        let key = recipe_id.into();
         if self.manifest.contains_key(&key) {
             return Ok(key);
         }
@@ -209,7 +237,7 @@ impl RecipeStore {
         // Failing that see if the ID is referring to the default recipe by only specifying its
         // namespace.
         let remainder_as_namespace = RecipeId {
-            namespace: Some(recipe_id.into()),
+            namespace: key.namespace.clone(),
             shortname: "default".into(),
         };
         if self.manifest.contains_key(&remainder_as_namespace) {
@@ -220,20 +248,20 @@ impl RecipeStore {
         let potential_matches: Vec<_> = self
             .manifest
             .keys()
-            .filter(|k| k.shortname == recipe_id)
+            .filter(|k| k.shortname == key.shortname)
             .collect();
 
         match potential_matches.len() {
             0 => Err(Error::Invalid {
                 subject: Subject::Recipe,
-                examples: Some(vec![recipe_id.into()]),
+                examples: Some(vec![(&key).to_str().into()]),
             }),
             1 => {
                 let entry = potential_matches.into_iter().next().unwrap();
                 Ok(entry.clone())
             }
             2.. => Err(Error::AmbiguousShortRecipe {
-                query: recipe_id.to_string(),
+                query: key.to_str().into(),
                 possibilities: potential_matches
                     .into_iter()
                     .map(|k| self.manifest.get(k).unwrap().recipe.name.clone())
@@ -243,18 +271,22 @@ impl RecipeStore {
     }
 
     /// Query the store for a single manifest entries.
-    pub fn pick_one(&self, recipe_id: &str) -> Result<StoreQuery, Error> {
+    pub fn pick_one<K>(&self, recipe_id: K) -> Result<StoreQuery, Error>
+    where
+        K: Into<RecipeId>,
+    {
         self.pick_raw(recipe_id).map(StoreQuery::from)
     }
 
     /// Query the store for several manifest entries.
-    pub fn pick_many<S>(&self, recipe_ids: &[S]) -> Result<StoreQuery, Error>
+    pub fn pick_many<I, K>(&self, recipe_ids: I) -> Result<StoreQuery, Error>
     where
-        S: AsRef<str>,
+        I: IntoIterator<Item = K>,
+        K: Into<RecipeId>,
     {
         recipe_ids
-            .iter()
-            .map(|id| self.pick_raw(id.as_ref()))
+            .into_iter()
+            .map(|id| self.pick_raw(id))
             .collect::<Result<_, _>>()
             .map(StoreQuery)
     }
@@ -290,6 +322,100 @@ impl RecipeStore {
                 .get(k)
                 .expect("`StoreQuery` referencing non-existent entries")
         })
+    }
+
+    // ------------------------------------------------------------
+    // Filesystem Operations
+    // ------------------------------------------------------------
+
+    /// Add a recipe to the store.
+    ///
+    /// This not only adds it to the memory in-store, but saves it on disk to the default directory
+    /// as well.
+    pub fn save_in<P>(&mut self, dir: P, recipe: Recipe) -> Result<(), Error>
+    where
+        P: AsRef<Path>,
+    {
+        // Ensure that the intended directory exists.
+        fs::create_dir_all(&dir.as_ref(), Context::Gather)?;
+
+        // Calculate the store path.
+        let basename = Self::store_name(&recipe);
+        let store_path = dir.as_ref().join(basename);
+
+        // Serialise the recipe and store it on disk.
+        let contents = toml::to_string_pretty(&recipe)
+            .expect("Recipes are generated at runtime in a toml-serialisable way.");
+        fs::write(&store_path, contents, Context::Imprint)?;
+
+        // Add to manifest.
+        let recipe_key = RecipeId::from(&recipe.name);
+        self.manifest
+            .insert(recipe_key, ManifestEntry { store_path, recipe });
+
+        Ok(())
+    }
+
+    /// Delete the recipe from the store.
+    ///
+    /// This operation is atomic---if the recipe is successfully removed from disk, it is removed
+    /// from the manifest. If it can't be removed from disk it remains in the manifest.
+    pub fn delete<K>(&mut self, recipe_id: K) -> Result<PathBuf, Error>
+    where
+        K: Into<RecipeId>,
+    {
+        // Query the manifest for the given entry.
+        let query = self
+            .pick_one(recipe_id)?
+            .into_ids()
+            .next()
+            .expect("`RecipeStore::pick_one` is guaranteed to return at least 1 match.");
+
+        // Convert that ID into a store_path to remove.
+        let entry_path = self
+            .manifest
+            .get(&query)
+            .expect("manifest guaranteed to contain this id.")
+            .store_path
+            .clone();
+
+        // Delete the corresponding store path.
+        fs::remove_file(&entry_path, Context::Delete)?;
+
+        // Remove from the manifest.
+        self.manifest
+            .remove(&query)
+            .expect("manifest guaranteed to contain this id.");
+
+        Ok(entry_path)
+    }
+
+    // ------------------------------------------------------------
+    // Path Helpers
+    // ------------------------------------------------------------
+
+    /// Returns the default index path to place new recipes in.
+    fn default_index() -> Result<PathBuf, Error> {
+        let cfg = Config::get()?;
+
+        let data_dir = match &cfg.recipe_dir {
+            Some(dir) => dir.clone(),
+            None => {
+                let mut temp =
+                    data_dir().expect("$HOME is not set; cannot determine data directory.");
+                temp.push("mkdev");
+                temp
+            }
+        };
+
+        Ok(data_dir)
+    }
+
+    /// Gives a recipe a base file name to be placed in the store.
+    ///
+    /// TOML is assumed, to change it use [`PathBuf::set_extension`] or similar.
+    fn store_name(recipe: &Recipe) -> PathBuf {
+        PathBuf::from(&recipe.name).with_extension(".toml")
     }
 }
 
