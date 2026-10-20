@@ -27,21 +27,21 @@ use dirs::data_dir;
 
 /// A destructured unique identifier for a recipe.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-struct ManifestKey {
+struct RecipeId {
     namespace: Option<String>,
     shortname: String,
 }
 
-impl<T: AsRef<str>> From<T> for ManifestKey {
+impl<T: AsRef<str>> From<T> for RecipeId {
     fn from(id: T) -> Self {
         let id_str = id.as_ref();
 
         match id_str.rsplit_once("::") {
-            Some((namespace, shortname)) => ManifestKey {
+            Some((namespace, shortname)) => RecipeId {
                 namespace: Some(namespace.to_string()),
                 shortname: shortname.to_string(),
             },
-            None => ManifestKey {
+            None => RecipeId {
                 namespace: None,
                 shortname: id_str.to_string(),
             },
@@ -49,23 +49,7 @@ impl<T: AsRef<str>> From<T> for ManifestKey {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct StoreQuery(Vec<ManifestKey>);
-
-impl From<ManifestKey> for StoreQuery {
-    fn from(key: ManifestKey) -> Self {
-        Self(vec![key])
-    }
-}
-
-impl StoreQuery {
-    /// Convert the query results into their string IDs.
-    pub fn into_ids(self) -> impl Iterator<Item = String> {
-        self.0.into_iter().map(|k| k.to_id())
-    }
-}
-
-impl ManifestKey {
+impl RecipeId {
     /// Provides the full ID as a [`String`].
     pub fn to_id(&self) -> String {
         match &self.namespace {
@@ -84,13 +68,34 @@ pub struct ManifestEntry {
     pub recipe: Recipe,
 }
 
-type ManifestEntries = HashMap<ManifestKey, ManifestEntry>;
+impl ManifestEntry {
+    /// Destructure the entry into its parts.
+    pub fn into_parts(self) -> (PathBuf, Recipe) {
+        (self.store_path, self.recipe)
+    }
+}
 
+/// A list of keys returned by the store after a successful Query
+#[derive(Clone, Debug)]
+pub struct StoreQuery(Vec<RecipeId>);
+
+impl From<RecipeId> for StoreQuery {
+    fn from(key: RecipeId) -> Self {
+        Self(vec![key])
+    }
+}
+
+impl StoreQuery {
+    /// Convert the query results into their string IDs.
+    pub fn into_ids(self) -> impl Iterator<Item = String> {
+        self.0.into_iter().map(|k| k.to_id())
+    }
+}
 /// Mkdev's recipe repository.
 #[derive(Clone, Debug)]
 pub struct RecipeStore {
     /// The underlying mapping of recipe IDs and their location on disk.
-    manifest: ManifestEntries,
+    manifest: HashMap<RecipeId, ManifestEntry>,
 }
 
 impl RecipeStore {
@@ -139,7 +144,7 @@ impl RecipeStore {
     /// For each entry, if it is valid it is added to a partial manifest, and if it's not, the
     /// invalid path is stored in a list with all the others. The function itself only errs if the
     /// directory cannot be read.
-    fn index_dir<P>(dir: P) -> Result<(ManifestEntries, Vec<PathBuf>), Error>
+    fn index_dir<P>(dir: P) -> Result<(HashMap<RecipeId, ManifestEntry>, Vec<PathBuf>), Error>
     where
         P: AsRef<Path>,
     {
@@ -172,7 +177,7 @@ impl RecipeStore {
                     match deserialise_recipe(&file_contents) {
                         Some(r) => {
                             _ = valid.insert(
-                                ManifestKey::from(&r.name),
+                                RecipeId::from(&r.name),
                                 ManifestEntry {
                                     store_path: entry,
                                     recipe: r,
@@ -194,16 +199,16 @@ impl RecipeStore {
     // ------------------------------------------------------------
 
     /// Get all information associated with a recipe ID.
-    fn pick_raw(&self, recipe_id: &str) -> Result<ManifestKey, Error> {
+    fn pick_raw(&self, recipe_id: &str) -> Result<RecipeId, Error> {
         // Always prefer an exact match.
-        let key = ManifestKey::from(recipe_id);
+        let key = RecipeId::from(recipe_id);
         if self.manifest.contains_key(&key) {
             return Ok(key);
         }
 
         // Failing that see if the ID is referring to the default recipe by only specifying its
         // namespace.
-        let remainder_as_namespace = ManifestKey {
+        let remainder_as_namespace = RecipeId {
             namespace: Some(recipe_id.into()),
             shortname: "default".into(),
         };
