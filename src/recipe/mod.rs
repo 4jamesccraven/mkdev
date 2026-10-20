@@ -206,14 +206,8 @@ pub enum OnConflict {
 
 /// Ensures that all parent directories of a file exist.
 fn ensure_parent(path: &Path) -> Result<(), Error> {
-    let parent = match path.parent() {
-        Some(p) => p,
-        None => return Ok(()),
-    };
-
-    if !parent.is_dir() {
+    if let Some(parent) = path.parent() {
         fs::create_dir_all(parent, Context::Evoke)?;
     }
-
     Ok(())
 }
