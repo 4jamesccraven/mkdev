@@ -19,6 +19,7 @@ pub mod content;
 mod delete;
 mod evoke;
 mod imprint;
+pub mod instantiate;
 pub mod lang;
 mod list;
 #[expect(dead_code)]
@@ -26,6 +27,7 @@ mod store;
 mod version;
 
 // TODO: remove this.
+use instantiate::{OnConflict, instantiate_contents};
 use store::recipe_dir;
 
 pub use content::RecipeItem;
@@ -37,7 +39,6 @@ pub use list::*;
 pub use store::RecipeStore;
 
 use crate::error::{Context, Error};
-use crate::fs;
 
 use std::path::{Path, PathBuf};
 
@@ -161,53 +162,4 @@ impl Recipe {
     pub fn dwelling(&self) -> Result<PathBuf, Error> {
         Ok(recipe_dir()?.join(format!("{}.toml", self.name)))
     }
-}
-
-/// Builds a single recipe by taking in its contents and writing them to disk.
-///
-/// If a file in the target directory already exists and the conflict resolution strategy is not
-/// `Overwrite`, a Destruction error is returned.
-pub fn instantiate_contents(
-    dir: &Path,
-    contents: &[RecipeItem],
-    on_conflict: OnConflict,
-    verbose: bool,
-) -> Result<(), Error> {
-    contents.iter().try_for_each(|content| {
-        let dest = dir.join(content.name());
-        ensure_parent(&dest)?;
-
-        if verbose {
-            eprintln!("{}", dest.display());
-        }
-
-        match content {
-            RecipeItem::File(file) => {
-                // Stop if a file would be overwritten unless the user has explicitly suppressed
-                // it.
-                match on_conflict {
-                    OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
-                        name: dest.to_string_lossy().into(),
-                    }),
-                    _ => fs::write(&dest, &file.content, Context::Evoke),
-                }
-            }
-            RecipeItem::Directory(_) => fs::create_dir_all(&dest, Context::Evoke),
-        }
-    })
-}
-
-/// What should happen if a file already exists in the target directory during evocation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OnConflict {
-    Overwrite,
-    Guard,
-}
-
-/// Ensures that all parent directories of a file exist.
-fn ensure_parent(path: &Path) -> Result<(), Error> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent, Context::Evoke)?;
-    }
-    Ok(())
 }
