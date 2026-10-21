@@ -254,14 +254,14 @@ impl RecipeStore {
         match potential_matches.len() {
             0 => Err(Error::Invalid {
                 subject: Subject::Recipe,
-                examples: Some(vec![(&key).to_str().into()]),
+                examples: Some(vec![key.to_str()]),
             }),
             1 => {
                 let entry = potential_matches.into_iter().next().unwrap();
                 Ok(entry.clone())
             }
             2.. => Err(Error::AmbiguousShortRecipe {
-                query: key.to_str().into(),
+                query: key.to_str(),
                 possibilities: potential_matches
                     .into_iter()
                     .map(|k| self.manifest.get(k).unwrap().recipe.name.clone())
@@ -312,7 +312,7 @@ impl RecipeStore {
     // Query Operations
     // ------------------------------------------------------------
 
-    /// Get the entries associated with the query.
+    /// Get the entries associated with a raw query.
     pub fn select<'a>(
         &'a self,
         query: &'a StoreQuery,
@@ -324,20 +324,42 @@ impl RecipeStore {
         })
     }
 
+    /// Query the store to see if an ID exists.
+    pub fn recipe_exists<K>(&self, recipe_id: K) -> bool
+    where
+        K: Into<RecipeId>,
+    {
+        self.pick_raw(recipe_id).is_ok()
+    }
+
     // ------------------------------------------------------------
     // Filesystem Operations
     // ------------------------------------------------------------
 
+    /// Add a recipe to the store, using the default save location.
+    ///
+    /// This not only adds it to the memory in-store, but saves it on disk as well.
+    pub fn save(&mut self, recipe: Recipe) -> Result<PathBuf, Error> {
+        // This seems to be unavoidable without unsafe. It sucks because it's a waste,
+        // but I think it's worth it to have the ability to specify the directory without
+        // duplicating logic. A single clone is worth potential errors and inconsistencies later.
+        // TODO: see if this clone can be avoided.
+        let dir = self.default_dir.clone();
+        self.save_in(dir, recipe)
+    }
+
     /// Add a recipe to the store.
     ///
-    /// This not only adds it to the memory in-store, but saves it on disk to the default directory
-    /// as well.
-    pub fn save_in<P>(&mut self, dir: P, recipe: Recipe) -> Result<(), Error>
+    /// This not only adds it to the memory in-store, but saves it on disk as well.
+    pub fn save_in<P>(&mut self, dir: P, recipe: Recipe) -> Result<PathBuf, Error>
     where
         P: AsRef<Path>,
     {
-        // Ensure that the intended directory exists.
-        fs::create_dir_all(&dir.as_ref(), Context::Gather)?;
+        // Ensure that the intended directory exists. Unless it's the default index, which is
+        // verified once at init time.
+        if dir.as_ref() != self.default_dir {
+            fs::create_dir_all(dir.as_ref(), Context::Gather)?;
+        }
 
         // Calculate the store path.
         let basename = Self::store_name(&recipe);
@@ -350,10 +372,15 @@ impl RecipeStore {
 
         // Add to manifest.
         let recipe_key = RecipeId::from(&recipe.name);
-        self.manifest
-            .insert(recipe_key, ManifestEntry { store_path, recipe });
+        self.manifest.insert(
+            recipe_key,
+            ManifestEntry {
+                store_path: store_path.clone(),
+                recipe,
+            },
+        );
 
-        Ok(())
+        Ok(store_path)
     }
 
     /// Delete the recipe from the store.
@@ -362,14 +389,10 @@ impl RecipeStore {
     /// from the manifest. If it can't be removed from disk it remains in the manifest.
     pub fn delete<K>(&mut self, recipe_id: K) -> Result<PathBuf, Error>
     where
-        K: Into<RecipeId>,
+        K: Into<RecipeId> + Clone,
     {
         // Query the manifest for the given entry.
-        let query = self
-            .pick_one(recipe_id)?
-            .into_ids()
-            .next()
-            .expect("`RecipeStore::pick_one` is guaranteed to return at least 1 match.");
+        let query = self.pick_raw(recipe_id.clone())?;
 
         // Convert that ID into a store_path to remove.
         let entry_path = self
@@ -394,6 +417,27 @@ impl RecipeStore {
     // Path Helpers
     // ------------------------------------------------------------
 
+    /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)
+    /// by determining whether or not the store path is a symlink.
+    ///
+    /// Assuming the path exists, `true` is returned for a store path that is a symlink, otherwise
+    /// `false` is returned. If the symlink metadata cannot be determined, this function's return
+    /// value is inconclusive and `None` is returned.
+    ///
+    /// None is also returned for recipes not part of the store. Do not use unverified IDs when
+    /// calling this method.
+    pub fn is_external<K>(&self, recipe_id: K) -> Option<bool>
+    where
+        K: Into<RecipeId>,
+    {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let store_path = &self.manifest.get(&key).unwrap().store_path;
+
+        std::fs::symlink_metadata(store_path)
+            .ok()
+            .map(|s| s.is_symlink())
+    }
+
     /// Returns the default index path to place new recipes in.
     fn default_index() -> Result<PathBuf, Error> {
         let cfg = Config::get()?;
@@ -408,6 +452,8 @@ impl RecipeStore {
             }
         };
 
+        fs::create_dir_all(&data_dir, Context::Gather)?;
+
         Ok(data_dir)
     }
 
@@ -415,7 +461,7 @@ impl RecipeStore {
     ///
     /// TOML is assumed, to change it use [`PathBuf::set_extension`] or similar.
     fn store_name(recipe: &Recipe) -> PathBuf {
-        PathBuf::from(&recipe.name).with_extension(".toml")
+        PathBuf::from(&recipe.name).with_extension("toml")
     }
 }
 

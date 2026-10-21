@@ -37,7 +37,7 @@ use ignore::Walk;
 use rust_i18n::t;
 
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
-pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
+pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
     let new = if args.interactive {
         menus::imprint()?
     } else {
@@ -55,8 +55,8 @@ pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
     }
 
     // Is the action going to overwrite an existing recipe?
-    // TODO: make existence check that's nicer looking
-    let destructive = store.pick_one(&new.name).is_ok();
+    let destructive = store.recipe_exists(&new.name);
+    let is_external = store.is_external(&new.name) == Some(true);
 
     // If not, proceed, otherwise we defer to the user.
     // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
@@ -68,7 +68,7 @@ pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
             args.suppress_warnings
         };
 
-    if destructive && new.is_external()? {
+    if destructive && is_external {
         warning!("{}", t!("recipes.external"));
     }
 
@@ -76,7 +76,7 @@ pub fn imprint_recipe(args: Imprint, store: RecipeStore) -> Result<(), Error> {
         return Err(DestructionWarning { name: new.name });
     }
 
-    let save_location = new.save()?;
+    let save_location = store.save(new)?;
 
     println!("{}", save_location.display());
 

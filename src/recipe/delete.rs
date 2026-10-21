@@ -16,29 +16,35 @@
 //! Implementation of `mk delete`.
 //!
 //! Used to delete recipes from their default location.
-use super::Recipe;
 use crate::cli::Delete;
-use crate::error::Context;
 use crate::error::Error;
-use crate::fs;
 use crate::recipe::RecipeStore;
 use crate::warning;
 
-use std::path::PathBuf;
-
 use rust_i18n::t;
 
+macro_rules! warn_if_external {
+    ($id:expr, $store:ident) => {{
+        if let Some(is_external) = $store.is_external($id)
+            && is_external
+        {
+            warning!("{}", t!("recipes.external"));
+        }
+    }};
+}
+
 /// Deletes a recipe based on command line arguments.
-pub fn delete_recipe(args: Delete, store: RecipeStore) -> Result<(), Error> {
+pub fn delete_recipe(args: Delete, mut store: RecipeStore) -> Result<(), Error> {
+    // Handle namespace deletion
     if args.namespace {
-        return delete_namespace(&store, &args.recipe);
+        return delete_namespace(&mut store, &args.recipe);
     }
 
-    let query = store.pick_one(&args.recipe)?;
-    // TODO: let the store handle deletion
-    let to_delete = store.select(&query).next().unwrap().recipe.clone();
-    let deleted_file = to_delete.delete()?;
+    // Warn the user if the store_path is a symlink.
+    warn_if_external!(&args.recipe, store);
 
+    // Delete and confirm the path deleted.
+    let deleted_file = store.delete(&args.recipe)?;
     println!(
         "{}",
         t!("recipes.delete_msg", path => &deleted_file.display())
@@ -48,31 +54,21 @@ pub fn delete_recipe(args: Delete, store: RecipeStore) -> Result<(), Error> {
 }
 
 /// Deletes every recipe in a namespace.
-fn delete_namespace(store: &RecipeStore, namespace: &str) -> Result<(), Error> {
+fn delete_namespace(store: &mut RecipeStore, namespace: &str) -> Result<(), Error> {
     let query = store.pick_namespace(namespace);
+    let recipe_ids: Vec<_> = store
+        .select(&query)
+        .map(|m| m.recipe.name.clone())
+        .collect();
 
-    store.select(&query).try_for_each(|r| {
-        let deleted_file = r.recipe.delete()?;
+    for id in recipe_ids {
+        warn_if_external!(&id, store);
 
+        let deleted_file = store.delete(id)?;
         println!(
             "{}",
             t!("recipes.delete_msg", path => &deleted_file.display())
         );
-
-        Ok(())
-    })
-}
-
-impl Recipe {
-    /// Delete the recipe by deleting its serialised self.
-    pub fn delete(&self) -> Result<PathBuf, Error> {
-        let recipe_file = self.dwelling()?;
-
-        if self.is_external()? {
-            warning!("{}", t!("recipes.external"));
-        }
-        fs::remove_file(&recipe_file, Context::Delete)?;
-
-        Ok(recipe_file)
     }
+    Ok(())
 }
