@@ -20,7 +20,7 @@ mod delete;
 mod evoke;
 mod imprint;
 pub mod instantiate;
-pub mod lang;
+pub mod language;
 mod list;
 #[expect(dead_code)]
 mod store;
@@ -28,19 +28,18 @@ mod version;
 
 // TODO: remove this.
 use instantiate::{OnConflict, instantiate_contents};
-use store::recipe_dir;
 
 pub use content::RecipeItem;
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
-pub use lang::Language;
+pub use language::Language;
 pub use list::*;
 pub use store::RecipeStore;
 
 use crate::error::{Context, Error};
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
@@ -133,6 +132,7 @@ impl Recipe {
     /// Variable substitution does not occur. This is esentially an out-of-memory representation of
     /// the recipe's `contents` field.
     // TODO: refactor to avoid `Option` parameter.
+    #[expect(unused)]
     pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {
         let maybe_temp = match maybe_dir {
             Some(ref dir) => tempfile::tempdir_in(dir),
@@ -154,12 +154,5 @@ impl Recipe {
         )?;
 
         Ok(temp_dir)
-    }
-
-    /// The location on disk where a recipe should live.
-    ///
-    /// Returns `Err` if the user's data directory cannot be determined.
-    pub fn dwelling(&self) -> Result<PathBuf, Error> {
-        Ok(recipe_dir()?.join(format!("{}.toml", self.name)))
     }
 }

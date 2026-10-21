@@ -21,8 +21,7 @@ use super::confirm_action;
 
 use crate::cli::Alter;
 use crate::config::Config;
-use crate::error::{Context, Error};
-use crate::fs;
+use crate::error::Error;
 use crate::recipe::{Recipe, RecipeItem, RecipeStore};
 
 use colored::Colorize;
@@ -37,21 +36,20 @@ use strum::IntoEnumIterator;
 ///
 /// On exit, the user may choose to save the recipe, at which point it is canonicalised and then
 /// saved to the recipe directory.
-pub fn editor(args: Alter, store: RecipeStore) -> Result<(), Error> {
+pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     _ = Config::get()?;
     let query = store.pick_one(&args.recipe)?;
-    let original = store.select(&query).next().unwrap().recipe.clone();
+    let query_result = store.select(&query).next().unwrap().clone();
 
-    let original_path = original.dwelling()?;
-    let was_external = original.is_external()?;
+    let (_, original_recipe) = query_result.into_parts();
     let external_msg = format!(
-        "{} – {}?",
-        t!("recipes.external", name => &original.name),
+        "{} - {}?",
+        t!("recipes.external", name => &original_recipe.name),
         t!("general.proceed")
     );
 
-    let mut recipe = original.clone();
+    let mut recipe = original_recipe.clone();
     let mut recipe_altered = false;
 
     loop {
@@ -64,20 +62,15 @@ pub fn editor(args: Alter, store: RecipeStore) -> Result<(), Error> {
                 ExitAction::Save => {
                     // Give the user the opportunity to quit if the recipe is or was externally
                     // managed.
-                    if (recipe.is_external()? || was_external)
+                    if (store.is_external(&recipe) == Some(true)
+                        || store.is_external(&original_recipe) == Some(true))
                         && !confirm_action(&external_msg, true)?
                     {
                         continue;
                     }
 
                     // Store the recipe's new path.
-                    let new_path = recipe.dwelling()?;
-                    recipe.save()?;
-
-                    // If the recipe's path changed, delete the old file/link.
-                    if new_path != original_path {
-                        fs::remove_file(original_path, Context::Imprint)?;
-                    }
+                    store.update(&original_recipe, recipe)?;
                     break;
                 }
                 ExitAction::Exit => break,

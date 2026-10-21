@@ -413,6 +413,43 @@ impl RecipeStore {
         Ok(entry_path)
     }
 
+    pub fn update<K>(&mut self, recipe_id: K, new_recipe: Recipe) -> Result<(), Error>
+    where
+        K: Into<RecipeId>,
+    {
+        // Verify that the ID exists in the first place.
+        let key = self.pick_raw(recipe_id)?;
+
+        // Get the store paths associated with the current and updated values.
+        let current_store_path = self
+            .manifest
+            .get(&key)
+            .expect("manifest guaranteed to contain this id.")
+            .store_path
+            .clone();
+
+        let updated_store_path = current_store_path
+            .parent()
+            .unwrap_or(&self.default_dir)
+            .join(Self::store_name(&new_recipe));
+
+        // If the paths are different, extra steps have to be taken to remove the old value...
+        let cleanup = current_store_path != updated_store_path;
+
+        // Save the recipe to disk and update the manifest.
+        // This will always run because we gave it a default parent above.
+        if let Some(dir) = updated_store_path.parent() {
+            self.save_in(dir, new_recipe)?;
+        }
+
+        // If there was a different starting file, we remove it.
+        if cleanup {
+            fs::remove_file(&current_store_path, Context::Imprint)?;
+        }
+
+        Ok(())
+    }
+
     // ------------------------------------------------------------
     // Path Helpers
     // ------------------------------------------------------------

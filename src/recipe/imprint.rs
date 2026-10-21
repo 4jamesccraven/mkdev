@@ -31,8 +31,6 @@ use crate::fs::{self, current_dir};
 use crate::recipe::RecipeStore;
 use crate::{menus, warning};
 
-use std::path::PathBuf;
-
 use ignore::Walk;
 use rust_i18n::t;
 
@@ -102,6 +100,7 @@ impl Recipe {
     ///
     /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
     /// preserving the metadata associated with the potentially non-canonical self.
+    #[expect(unused)]
     pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
         let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
@@ -112,47 +111,5 @@ impl Recipe {
             languages,
             ..self.clone()
         })
-    }
-
-    /// Determines if the recipe is externally managed.
-    ///
-    /// A recipe is considered to be externally managed if it already exists and is a symlink.
-    /// If the recipe is a symlink, that implies that the source of truth for the recipe is not the
-    /// file in the recipe_dir itself, and can thus be safely deleted before the recipe saves
-    /// itself.
-    pub fn is_external(&self) -> Result<bool, Error> {
-        let recipe_file = self.dwelling()?;
-
-        if !recipe_file.exists() {
-            return Ok(false);
-        }
-
-        let metadata = std::fs::symlink_metadata(&recipe_file).map_err(|_| Error::FsDenied {
-            which: recipe_file,
-            context: Context::Imprint,
-        })?;
-        Ok(metadata.is_symlink())
-    }
-
-    /// Save the recipe object by serialising a canonicalised `self` into the data directory.
-    ///
-    /// This consumes the recipe, as the previous representation may not be valid after
-    /// canonicalisation.
-    // TODO: This should be the store's responsibility
-    pub fn save(self) -> Result<PathBuf, Error> {
-        let canonical_recipe = self.to_canonical()?;
-        let recipe_file = self.dwelling()?;
-
-        if self.is_external()? {
-            fs::remove_file(&recipe_file, Context::Imprint)?;
-        }
-
-        fs::write(
-            &recipe_file,
-            toml::to_string_pretty(&canonical_recipe).unwrap(),
-            Context::Imprint,
-        )?;
-
-        Ok(recipe_file)
     }
 }
