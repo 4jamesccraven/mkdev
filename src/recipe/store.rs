@@ -413,7 +413,12 @@ impl RecipeStore {
         Ok(entry_path)
     }
 
-    pub fn update<K>(&mut self, recipe_id: K, new_recipe: Recipe) -> Result<(), Error>
+    /// Replace the recipe at `recipe_id` with a different one.
+    ///
+    /// After this method is called, it is **not** guaranteed that the manifest contains the
+    /// original `recipe_id`, as the new_recipe may have a different derived ID, especially when it
+    /// has a different name than the original.
+    pub fn replace<K>(&mut self, recipe_id: K, new_recipe: Recipe) -> Result<(), Error>
     where
         K: Into<RecipeId>,
     {
@@ -424,7 +429,7 @@ impl RecipeStore {
         let current_store_path = self
             .manifest
             .get(&key)
-            .expect("manifest guaranteed to contain this id.")
+            .expect("manifest guaranteed to contain original id by this point")
             .store_path
             .clone();
 
@@ -445,6 +450,11 @@ impl RecipeStore {
         // If there was a different starting file, we remove it.
         if cleanup {
             fs::remove_file(&current_store_path, Context::Imprint)?;
+            // If the paths were different, so was the ID. The stale ID must be removed.
+            _ = self
+                .manifest
+                .remove(&key)
+                .expect("`RecipeStore::replace`: original recipe ID could not be removed");
         }
 
         Ok(())

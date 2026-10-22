@@ -70,7 +70,7 @@ pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
                     }
 
                     // Store the recipe's new path.
-                    store.update(&original_recipe, recipe)?;
+                    store.replace(&original_recipe, recipe)?;
                     break;
                 }
                 ExitAction::Exit => break,
