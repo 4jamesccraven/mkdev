@@ -48,42 +48,35 @@ pub fn capture_contents_with(opts: CaptureOpts) -> Result<Vec<RecipeItem>, Error
     let root = opts.root.clone();
     let walk = Walk::try_from(opts)?;
 
-    let mut out = vec![];
+    walk.flatten()
+        .filter(|e| (e.path() != root) && !e.path_is_symlink())
+        .filter_map(|entry| -> Option<Result<RecipeItem, Error>> {
+            // This will never be `None` unless `entry` is stdin.
+            let data = entry.file_type()?;
 
-    for file in walk.flatten() {
-        if file.path() == root {
-            continue;
-        }
+            // Get the path relative to root.
+            let raw_path = entry.into_path();
+            let path = raw_path.strip_prefix(&root).unwrap_or(&raw_path).to_owned();
 
-        let data = file
-            .file_type()
-            .expect("only none for stdin, which is not allowed.");
-
-        let mut path = file.into_path();
-
-        if path.starts_with(&root) {
-            path = path
-                .strip_prefix(&root)
-                .expect("prefix is confirmed to exist")
-                .into();
-        }
-
-        match data {
-            data if data.is_symlink() => continue, // ignore symlinks
-            data if data.is_dir() => out.push(RecipeItem::dir(path)),
-            data if data.is_file() => out.push(RecipeItem::file(
-                path.clone(),
-                fs::read_to_string(root.join(path), Context::Imprint)?,
-            )),
-
-            // All of these methods' results are mutually exclusive and exhaustive.
-            // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
-            _ => unreachable!(),
-        }
-    }
-
-    out.sort();
-    Ok(out)
+            match data {
+                data if data.is_dir() => Some(Ok(RecipeItem::dir(path))),
+                // This line will need to break if we can't read the contents of path to a string
+                data if data.is_file() => {
+                    let try_init = fs::read_to_string(root.join(&path), Context::Imprint)
+                        .map(|content| RecipeItem::file(path, content));
+                    Some(try_init)
+                }
+                // The only possibilities are is_dir, is_file, or is_symlink; and is_symlink is
+                // filtered out by this point.
+                // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
+                _ => unreachable!(),
+            }
+        })
+        .collect::<Result<Vec<_>, Error>>()
+        .map(|mut rs| {
+            rs.sort();
+            rs
+        })
 }
 
 /// Options for capturing the contents of a directory.
