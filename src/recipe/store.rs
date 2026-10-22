@@ -119,7 +119,7 @@ impl RecipeStore {
     //
     // TODO: add more index locations, namely `/usr/share/mkdev`
     pub fn from_default_indices() -> Result<Self, Error> {
-        let (store, _) = Self::from_indices(&[recipe_dir()?])?;
+        let (store, _) = Self::from_indices(&[Self::default_index()?])?;
         Ok(store)
     }
 
@@ -510,24 +510,4 @@ impl RecipeStore {
     fn store_name(recipe: &Recipe) -> PathBuf {
         PathBuf::from(&recipe.name).with_extension("toml")
     }
-}
-
-/// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
-pub fn recipe_dir() -> Result<PathBuf, Error> {
-    let cfg = Config::get()?;
-
-    let data_dir = match &cfg.recipe_dir {
-        Some(dir) => dir.clone(),
-        None => {
-            let mut temp = data_dir().expect("$HOME is not set; cannot determine data directory.");
-            temp.push("mkdev");
-            temp
-        }
-    };
-
-    if !data_dir.is_dir() {
-        fs::create_dir_all(&data_dir, Context::Gather)?;
-    }
-
-    Ok(data_dir)
 }

@@ -85,7 +85,7 @@ fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
-/// TODO: re-evaluate inclusion later
+// TODO: re-evaluate inclusion later
 #[expect(unused)]
 fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
     let vim = Config::get().unwrap().vim;

@@ -22,7 +22,6 @@ mod imprint;
 pub mod instantiate;
 pub mod language;
 mod list;
-#[expect(dead_code)]
 mod store;
 mod version;
 
