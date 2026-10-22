@@ -24,8 +24,6 @@ use crate::recipe::version::deserialise_recipe;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use dirs::data_dir;
-
 /// A single entry in the recipe store.
 #[derive(Clone, Debug)]
 pub struct ManifestEntry {
@@ -426,23 +424,19 @@ impl RecipeStore {
             .map(|s| s.is_symlink())
     }
 
-    /// Returns the default index path to place new recipes in.
+    /// Returns the default index for new recipes.
     fn default_index() -> Result<PathBuf, Error> {
-        let cfg = Config::get()?;
-
-        let data_dir = match &cfg.recipe_dir {
-            Some(dir) => dir.clone(),
-            None => {
-                let mut temp =
-                    data_dir().expect("$HOME is not set; cannot determine data directory.");
-                temp.push("mkdev");
-                temp
-            }
-        };
-
+        let data_dir = Config::get()?.recipe_dir.clone();
         fs::create_dir_all(&data_dir, Context::Gather)?;
 
         Ok(data_dir)
+    }
+
+    /// Determines where the default index should be if the user doesn't specify one.
+    pub fn default_recipe_dir() -> PathBuf {
+        dirs::data_dir()
+            .expect("$HOME is not set; cannot determine data directory.")
+            .join("mkdev")
     }
 
     /// Gives a recipe a base file name to be placed in the store.

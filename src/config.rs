@@ -17,6 +17,7 @@
 use crate::display::DisplayConfig;
 use crate::error::{Context, Error};
 use crate::fs;
+use crate::recipe::RecipeStore;
 
 use std::collections::HashMap;
 use std::default::Default;
@@ -40,7 +41,8 @@ pub struct Config {
     ///
     /// Default:
     /// Absent (evaluates to ~/.local/share/mkdev on Linux)
-    pub recipe_dir: Option<PathBuf>,
+    #[serde(default = "RecipeStore::default_recipe_dir")]
+    pub recipe_dir: PathBuf,
     /// Whether multiselect prompts in interactive mode should allow for vim keybindings. Note that
     /// this can make filtering more difficult (because h, j, k, and l will be reserved).
     ///
@@ -159,7 +161,7 @@ fn default_vim() -> bool {
 
 impl Default for Config {
     fn default() -> Self {
-        let recipe_dir = None;
+        let recipe_dir = RecipeStore::default_recipe_dir();
         let vim = default_vim();
         let subs = default_subs();
         let recipe_fmt = DisplayConfig::default();
