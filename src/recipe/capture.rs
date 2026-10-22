@@ -20,6 +20,7 @@ use crate::error::Context;
 use crate::error::Error;
 use crate::fs;
 use crate::recipe::RecipeItem;
+use crate::warning;
 
 use std::path::{Path, PathBuf};
 
@@ -63,8 +64,15 @@ pub fn capture_contents_with(opts: CaptureOpts) -> Result<Vec<RecipeItem>, Error
                 // This line will need to break if we can't read the contents of path to a string
                 data if data.is_file() => {
                     let try_init = fs::read_to_string(root.join(&path), Context::Imprint)
-                        .map(|content| RecipeItem::file(path, content));
-                    Some(try_init)
+                        .map(|content| RecipeItem::file(path.clone(), content));
+
+                    match try_init {
+                        Err(Error::NotUTF8 { .. }) => {
+                            warning!("skipping non-UTF8 path '{}'", path.display());
+                            None
+                        }
+                        result => Some(result),
+                    }
                 }
                 // The only possibilities are is_dir, is_file, or is_symlink; and is_symlink is
                 // filtered out by this point.
