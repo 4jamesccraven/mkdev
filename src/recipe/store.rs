@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The interface to mkdev's central recipe repository.
 use super::Recipe;
+use super::model::RecipeId;
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};
 use crate::fs;
@@ -24,46 +25,6 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use dirs::data_dir;
-
-/// A destructured unique identifier for a recipe.
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct RecipeId {
-    namespace: Option<String>,
-    shortname: String,
-}
-
-impl<T: AsRef<str>> From<T> for RecipeId {
-    fn from(id: T) -> Self {
-        let id_str = id.as_ref();
-
-        match id_str.rsplit_once("::") {
-            Some((namespace, shortname)) => RecipeId {
-                namespace: Some(namespace.to_string()),
-                shortname: shortname.to_string(),
-            },
-            None => RecipeId {
-                namespace: None,
-                shortname: id_str.to_string(),
-            },
-        }
-    }
-}
-
-impl From<&Recipe> for RecipeId {
-    fn from(recipe: &Recipe) -> Self {
-        Self::from(recipe.name.as_str())
-    }
-}
-
-impl RecipeId {
-    /// Provides the full ID as a [`String`].
-    pub fn to_str(&self) -> String {
-        match &self.namespace {
-            Some(ns) => format!("{}::{}", ns, self.shortname),
-            None => self.shortname.clone(),
-        }
-    }
-}
 
 /// A single entry in the recipe store.
 #[derive(Clone, Debug)]
@@ -81,32 +42,12 @@ impl ManifestEntry {
     }
 }
 
-/// A list of keys returned by the store after a successful Query
-#[derive(Clone, Debug)]
-pub struct StoreQuery(Vec<RecipeId>);
-
-impl From<RecipeId> for StoreQuery {
-    fn from(key: RecipeId) -> Self {
-        Self(vec![key])
-    }
-}
-
-impl StoreQuery {
-    /// Convert the query results into [`RecipeId`]s.
-    pub fn into_ids(self) -> impl Iterator<Item = RecipeId> {
-        self.0.into_iter()
-    }
-
-    /// Convert the query results into their string IDs.
-    pub fn into_strs(self) -> impl Iterator<Item = String> {
-        self.into_ids().map(|k| k.to_str())
-    }
-}
 /// Mkdev's recipe repository.
 #[derive(Clone, Debug)]
 pub struct RecipeStore {
     /// The underlying mapping of recipe IDs and their location on disk.
     manifest: HashMap<RecipeId, ManifestEntry>,
+    /// The index in which new recipes should be stored.
     default_dir: PathBuf,
 }
 
@@ -202,7 +143,7 @@ impl RecipeStore {
                     match deserialise_recipe(&file_contents) {
                         Some(r) => {
                             _ = valid.insert(
-                                RecipeId::from(&r.name),
+                                r.as_id(),
                                 ManifestEntry {
                                     store_path: entry,
                                     recipe: r,
@@ -371,7 +312,7 @@ impl RecipeStore {
         fs::write(&store_path, contents, Context::Imprint)?;
 
         // Add to manifest.
-        let recipe_key = RecipeId::from(&recipe.name);
+        let recipe_key = recipe.as_id();
         self.manifest.insert(
             recipe_key,
             ManifestEntry {
@@ -509,5 +450,27 @@ impl RecipeStore {
     /// TOML is assumed, to change it use [`PathBuf::set_extension`] or similar.
     fn store_name(recipe: &Recipe) -> PathBuf {
         PathBuf::from(&recipe.name).with_extension("toml")
+    }
+}
+
+/// A list of keys returned by the store after a successful Query
+#[derive(Clone, Debug)]
+pub struct StoreQuery(Vec<RecipeId>);
+
+impl From<RecipeId> for StoreQuery {
+    fn from(key: RecipeId) -> Self {
+        Self(vec![key])
+    }
+}
+
+impl StoreQuery {
+    /// Convert the query results into [`RecipeId`]s.
+    pub fn into_ids(self) -> impl Iterator<Item = RecipeId> {
+        self.0.into_iter()
+    }
+
+    /// Convert the query results into their string IDs.
+    pub fn into_strs(self) -> impl Iterator<Item = String> {
+        self.into_ids().map(|k| k.to_str())
     }
 }
