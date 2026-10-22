@@ -27,9 +27,8 @@ use crate::error::Error;
 use crate::fs::current_dir;
 use crate::recipe::Recipe;
 use crate::recipe::RecipeItem;
-use crate::recipe::capture::make_contents;
+use crate::recipe::capture::capture_contents;
 
-use ignore::Walk;
 use inquire::error::InquireResult;
 use inquire::formatter::{BoolFormatter, MultiOptionFormatter};
 use inquire::list_option::ListOption;
@@ -51,8 +50,7 @@ pub fn imprint() -> Result<Recipe, Error> {
     let description = get_recipe_description()?;
     recipe.description = description;
 
-    let walk = Walk::new(&cwd);
-    let default_contents = make_contents(walk, &cwd)?;
+    let default_contents = capture_contents(&cwd)?;
     recipe.contents = select_contents(default_contents)?;
 
     Ok(recipe)
@@ -71,6 +69,11 @@ pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
         .with_error_message(&t!("menus.imprint.invalid_yn"))
         .with_default_value_formatter(default_formatter)
         .prompt()
+}
+
+/// Confirms that it's okay to overwrite a given recipe.
+pub fn confirm_recipe_overwrite(recipe_name: &str) -> InquireResult<bool> {
+    confirm_action(&t!("menus.recipe_overwrite", recipe => recipe_name), false)
 }
 
 fn get_recipe_name() -> InquireResult<String> {

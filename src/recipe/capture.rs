@@ -16,20 +16,38 @@
 //! Utilties for constructing and manipulating the contents of a mkdev recipe.
 use ignore::overrides::OverrideBuilder;
 
-use crate::cli::Imprint;
 use crate::error::Context;
 use crate::error::Error;
 use crate::fs;
 use crate::recipe::RecipeItem;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use ignore::{Walk, WalkBuilder};
 
-/// Recursively detects and saves every file and subdirectory in the current working directory.
+/// Create a [`Vec`] of [`RecipeItem`] based on the contents of the provided path.
 ///
-/// Standard ignore filters are applied (.gitignore, .ignore, etc.), and symlinks are ignored.
-pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> {
+/// Some files are excluded, see [`CaptureOpts`]. For details, see [`ignore::Walk`].
+pub fn capture_contents<P>(root: P) -> Result<Vec<RecipeItem>, Error>
+where
+    P: AsRef<Path>,
+{
+    let opts = CaptureOpts {
+        root: PathBuf::from(root.as_ref()),
+        ..Default::default()
+    };
+
+    capture_contents_with(opts)
+}
+
+/// Walk a directory collecting files and directories as [`RecipeItem`]s.
+///
+/// The directory, as well as the types of filters to apply, are specified via the `opts` parameter.
+/// For details, see [`CaptureOpts`].
+pub fn capture_contents_with(opts: CaptureOpts) -> Result<Vec<RecipeItem>, Error> {
+    let root = opts.root.clone();
+    let walk = Walk::try_from(opts)?;
+
     let mut out = vec![];
 
     for file in walk.flatten() {
@@ -43,9 +61,9 @@ pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> 
 
         let mut path = file.into_path();
 
-        if path.starts_with(root) {
+        if path.starts_with(&root) {
             path = path
-                .strip_prefix(root)
+                .strip_prefix(&root)
                 .expect("prefix is confirmed to exist")
                 .into();
         }
@@ -68,20 +86,45 @@ pub fn make_contents(walk: Walk, root: &Path) -> Result<Vec<RecipeItem>, Error> 
     Ok(out)
 }
 
-/// Constructs a recursive walk.
-///
-/// This function exists to allow users to override the walk behaviour.
-pub fn build_walk(args: &Imprint) -> Result<Walk, Error> {
-    let cwd = fs::current_dir()?;
+/// Options for capturing the contents of a directory.
+#[derive(Clone, Debug)]
+pub struct CaptureOpts {
+    /// The directory to walk.
+    /// Default: "."
+    pub root: PathBuf,
+    /// Whether to apply standard filters.
+    /// Default: true
+    pub filtered: bool,
+    /// Extra globs to exclude from the walk.
+    /// Default: []
+    pub overrides: Vec<String>,
+}
 
-    let mut ob = OverrideBuilder::new(&cwd);
-    for over in &args.exclude {
-        ob.add(&format!("!{over}"))?;
+impl Default for CaptureOpts {
+    fn default() -> Self {
+        Self {
+            root: PathBuf::from("."),
+            filtered: true,
+            overrides: vec![],
+        }
     }
-    let user_filters = ob.build()?;
+}
 
-    Ok(WalkBuilder::new(&cwd)
-        .standard_filters(!args.no_filter)
-        .overrides(user_filters)
-        .build())
+impl TryFrom<CaptureOpts> for Walk {
+    type Error = Error;
+
+    fn try_from(opts: CaptureOpts) -> Result<Self, Self::Error> {
+        let mut wb = WalkBuilder::new(opts.root.as_path());
+        wb.standard_filters(opts.filtered);
+
+        if !opts.overrides.is_empty() {
+            let mut ob = OverrideBuilder::new(opts.root.as_path());
+            opts.overrides
+                .into_iter()
+                .try_for_each(|over| ob.add(&over).map(|_| ()))?;
+            wb.overrides(ob.build()?);
+        }
+
+        Ok(wb.build())
+    }
 }

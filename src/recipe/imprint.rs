@@ -19,83 +19,85 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::{
-    Recipe,
-    capture::{build_walk, make_contents},
-};
+use super::Recipe;
+use super::capture::{CaptureOpts, capture_contents, capture_contents_with};
+
+use std::path::PathBuf;
 
 use crate::cli::Imprint;
 use crate::error::Context;
-use crate::error::Error::{self, *};
-use crate::fs::{self, current_dir};
+use crate::error::Error;
+use crate::fs;
+use crate::menus::{self, confirm_recipe_overwrite};
 use crate::recipe::RecipeStore;
-use crate::{menus, warning};
+use crate::warning;
 
-use ignore::Walk;
 use rust_i18n::t;
 
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
 pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
+    // Generate the new recipe
     let new = if args.interactive {
         menus::imprint()?
     } else {
-        let walker = build_walk(&args)?;
-        Recipe::imprint(args.recipe, args.description, walker)?
+        // Capture the current directory with filters (unless the user disables them) and with any
+        // additional exclusion globs the user provides.
+        let contents = capture_contents_with(CaptureOpts {
+            filtered: !args.no_filter,
+            overrides: args.exclude,
+            ..Default::default()
+        })?;
+
+        Recipe {
+            name: args.recipe,
+            description: args.description.unwrap_or("".into()),
+            languages: Recipe::languages("."),
+            contents,
+        }
     };
 
+    // If the user wants a nix expression, we write that file and bail early.
     if let Some(path) = args.to_nix {
-        let nix_expression = ser_nix::to_string(&new)
-            .expect("ser_nix's serialisation is infallible with non-path types.");
-
-        fs::write(path, nix_expression, Context::Imprint)?;
-
-        return Ok(());
+        return write_to_nix(path, new);
     }
 
     // Is the action going to overwrite an existing recipe?
     let destructive = store.recipe_exists(&new.name);
-    let is_external = store.is_external(&new.name) == Some(true);
 
-    // If not, proceed, otherwise we defer to the user.
-    // If running interactively, use a prompt. Otherwise, check for the `-s` flag.
+    // We can proceed if no data will be overwritten...
     let can_proceed = !destructive
-        || if args.interactive {
-            menus::confirm_action(&t!("menus.recipe_overwrite", recipe => &new.name), false)
-                .unwrap()
-        } else {
-            args.suppress_warnings
-        };
+        // ... or if the user overrides safety warnings.
+        || args.suppress_warnings
+        || (args.interactive && confirm_recipe_overwrite(&new.name)?);
 
+    // Warn the user if the original source was a symlink instead of a file.
+    //
+    // This allows, e.g., home-manager users to know that the file was only changed locally instead
+    // of in the source of whatever program externally manages it.
+    let is_external = store.is_external(&new.name) == Some(true);
     if destructive && is_external {
         warning!("{}", t!("recipes.external"));
     }
 
     if !can_proceed {
-        return Err(DestructionWarning { name: new.name });
+        return Err(Error::DestructionWarning { name: new.name });
     }
 
     let save_location = store.save(new)?;
-
     println!("{}", save_location.display());
 
     Ok(())
 }
 
+/// Writes a recipe to a Nix file.
+fn write_to_nix(path: PathBuf, recipe: Recipe) -> Result<(), Error> {
+    let recipe_as_nix = ser_nix::to_string(&recipe)
+        .expect("ser_nix's serialisation is infallible with non-path types.");
+
+    fs::write(path, recipe_as_nix, Context::Imprint)
+}
+
 impl Recipe {
-    /// Create a `Recipe` by imprinting/cloning the contents of the cwd
-    pub fn imprint(name: String, description: Option<String>, walker: Walk) -> Result<Self, Error> {
-        let description = description.unwrap_or("".into());
-        let languages = Recipe::languages(".");
-        let contents = make_contents(walker, &current_dir()?)?;
-
-        Ok(Self {
-            name,
-            description,
-            languages,
-            contents,
-        })
-    }
-
     /// Ensures that a recipe's data is canonical.
     ///
     /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
@@ -103,7 +105,7 @@ impl Recipe {
     #[expect(unused)]
     pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
-        let contents = make_contents(Walk::new(temp_dir.path()), temp_dir.path())?;
+        let contents = capture_contents(temp_dir.path())?;
         let languages = Recipe::languages(temp_dir.path());
 
         Ok(Self {
