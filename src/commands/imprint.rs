@@ -19,9 +19,6 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use super::Recipe;
-use super::capture::{CaptureOpts, capture_contents_with};
-
 use std::path::PathBuf;
 
 use crate::cli::Imprint;
@@ -29,7 +26,8 @@ use crate::error::Context;
 use crate::error::Error;
 use crate::fs;
 use crate::menus::{self, confirm_recipe_overwrite};
-use crate::recipe::RecipeStore;
+use crate::recipe::capture::{CaptureOpts, capture_contents_with};
+use crate::recipe::{Recipe, RecipeStore};
 use crate::warning;
 
 use rust_i18n::t;

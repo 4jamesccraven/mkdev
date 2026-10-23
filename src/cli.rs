@@ -15,9 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The command line interface for mkdev.
 #![deny(missing_docs)]
+use crate::commands::imprint_recipe;
 use crate::error::Error;
+use crate::menus::editor;
 use crate::output_type::OutputType;
 use crate::recipe::RecipeStore;
+use crate::recipe::{EvocationCtx, delete_recipe, list_recipe};
 use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
@@ -72,9 +75,6 @@ pub struct Cli {
 impl Cli {
     /// Determine main logic based on the given arguments.
     pub fn dispatch(self, store: RecipeStore) -> Result<(), Error> {
-        use crate::menus::editor;
-        use crate::recipe::{EvocationCtx, delete_recipe, imprint_recipe, list_recipe};
-
         match self.command {
             Some(command) => match command {
                 Commands::Evoke(sub_args) => {
