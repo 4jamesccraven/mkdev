@@ -20,7 +20,7 @@
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
 use super::Recipe;
-use super::capture::{CaptureOpts, capture_contents, capture_contents_with};
+use super::capture::{CaptureOpts, capture_contents_with};
 
 use std::path::PathBuf;
 
@@ -95,23 +95,4 @@ fn write_to_nix(path: PathBuf, recipe: Recipe) -> Result<(), Error> {
         .expect("ser_nix's serialisation is infallible with non-path types.");
 
     fs::write(path, recipe_as_nix, Context::Imprint)
-}
-
-impl Recipe {
-    /// Ensures that a recipe's data is canonical.
-    ///
-    /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
-    /// preserving the metadata associated with the potentially non-canonical self.
-    #[expect(unused)]
-    pub fn to_canonical(&self) -> Result<Self, Error> {
-        let temp_dir = self.materialise(None)?;
-        let contents = capture_contents(temp_dir.path())?;
-        let languages = Recipe::languages(temp_dir.path());
-
-        Ok(Self {
-            contents,
-            languages,
-            ..self.clone()
-        })
-    }
 }

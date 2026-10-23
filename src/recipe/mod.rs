@@ -42,7 +42,6 @@ pub use store::RecipeStore;
 use crate::error::{Context, Error};
 
 use std::path::Path;
-
 use tempfile::TempDir;
 
 impl Recipe {
@@ -97,5 +96,22 @@ impl Recipe {
         )?;
 
         Ok(temp_dir)
+    }
+
+    /// Ensures that a recipe's data is canonical.
+    ///
+    /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
+    /// preserving the metadata associated with the potentially non-canonical self.
+    #[expect(unused)]
+    pub fn to_canonical(&self) -> Result<Self, Error> {
+        let temp_dir = self.materialise(None)?;
+        let contents = capture::capture_contents(temp_dir.path())?;
+        let languages = Recipe::languages(temp_dir.path());
+
+        Ok(Self {
+            contents,
+            languages,
+            ..self.clone()
+        })
     }
 }
