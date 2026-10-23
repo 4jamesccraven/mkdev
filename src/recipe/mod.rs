@@ -17,7 +17,6 @@
 //! created, and the most fundamental operations to be done with them.
 pub mod capture;
 pub mod content;
-mod delete;
 mod evoke;
 pub mod instantiate;
 pub mod language;
@@ -30,7 +29,6 @@ mod version;
 use instantiate::{OnConflict, instantiate_contents};
 
 pub use content::RecipeItem;
-pub use delete::*;
 pub use evoke::*;
 pub use language::Language;
 pub use list::*;
