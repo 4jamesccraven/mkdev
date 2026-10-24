@@ -21,10 +21,9 @@ use crate::cli::List;
 use crate::config::Config;
 use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
-use crate::presentation::{format_content_tree, format_recipe_list};
+use crate::presentation::{format_recipe_list, recipe_treefmt};
 use crate::recipe::RecipeStore;
 
-use colored::Colorize;
 use rust_i18n::t;
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
@@ -105,10 +104,10 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
 
 fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
-        Default => print!("{}", recipe.display_contents()),
+        Default => print!("{}", recipe_treefmt(recipe)),
         Debug => println!("{:#?}", recipe),
-        Plain => println!("{}", recipe.display_contents_plain("\n")),
-        Print0 => print!("{}", recipe.display_contents_plain("\0")),
+        Plain => println!("{}", content_names_joined(recipe, "\n")),
+        Print0 => print!("{}", content_names_joined(recipe, "\0")),
         Json => println!(
             "{}",
             serde_json::to_string_pretty(recipe).expect(SER_EXISTING_RECIPE)
@@ -124,21 +123,9 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
     }
 }
 
-impl Recipe {
-    /// Display the recipe's contents in a tree format.
-    pub fn display_contents(&self) -> String {
-        let mut out = format!("{}\n", self.name.bold().blue());
-        let contents = format_content_tree(&self.contents);
-        out.push_str(&contents);
+fn content_names_joined(recipe: &Recipe, sep: &str) -> String {
+    let mut names = recipe.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
+    names.sort();
 
-        out
-    }
-
-    /// Display the name of all the recipe's contents.
-    pub fn display_contents_plain(&self, sep: &str) -> String {
-        let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
-        names.sort();
-
-        names.join(sep)
-    }
+    names.join(sep)
 }

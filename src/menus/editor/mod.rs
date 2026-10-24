@@ -22,6 +22,7 @@ use super::confirm_action;
 use crate::cli::Alter;
 use crate::config::Config;
 use crate::error::Error;
+use crate::presentation::recipe_treefmt;
 use crate::recipe::{Recipe, RecipeItem, RecipeStore};
 
 use colored::Colorize;
@@ -157,8 +158,7 @@ impl EditorAction {
         let val = match self {
             Self::Name => format!("\"{}\"", recipe.name),
             Self::Description => format!("\"{}\"", recipe.description),
-            Self::AddContent | Self::RemoveContents | Self::EditContent => recipe
-                .display_contents()
+            Self::AddContent | Self::RemoveContents | Self::EditContent => recipe_treefmt(recipe)
                 .lines()
                 .collect::<Vec<_>>()
                 .join("\n  "),

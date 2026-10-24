@@ -14,15 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! Tree-like output for the contents of a mkdev recipe.
-use crate::recipe::RecipeItem;
+use crate::recipe::{Recipe, RecipeItem};
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use colored::Colorize;
 
+pub fn recipe_treefmt(recipe: &Recipe) -> String {
+    let mut out = format!("{}\n", recipe.name.bold().blue());
+    let contents = format_content_tree(&recipe.contents);
+    out.push_str(&contents);
+
+    out
+}
+
 /// Create a String that represents the file system akin to the output of the program "tree"
-pub fn format_content_tree(files: &[RecipeItem]) -> String {
+fn format_content_tree(files: &[RecipeItem]) -> String {
     let tree = build_content_tree(files);
     format_tree(&tree, "".into())
 }

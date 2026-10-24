@@ -19,6 +19,6 @@ mod content_tree;
 mod format_config;
 mod recipe_list;
 
-pub use content_tree::format_content_tree;
+pub use content_tree::recipe_treefmt;
 pub use format_config::FormatConfig;
 pub use recipe_list::format_recipe_list;
