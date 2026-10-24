@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! User-facing display for recipes.
+mod content_tree;
 mod display_config;
-mod tree;
 
+pub use content_tree::repr_tree;
 pub use display_config::DisplayConfig;
-pub use tree::repr_tree;
 
 use crate::recipe::{Language, Recipe};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
@@ -98,7 +98,7 @@ fn cfg_display_recipe(recipe: &Recipe, config: &DisplayConfig) -> String {
 }
 
 /// Helper function to fill a format string.
-#[inline(always)]
+#[inline]
 fn replace(subs: HashMap<String, String>, fmt_string: &str) -> String {
     ReplaceFmt::new(subs, DELIMS, FALLBACK).replace(fmt_string)
 }

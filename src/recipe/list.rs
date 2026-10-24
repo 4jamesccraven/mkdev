@@ -19,9 +19,9 @@
 use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
-use crate::display::{display_recipes_with_config, repr_tree};
 use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
+use crate::presentation::{display_recipes_with_config, repr_tree};
 use crate::recipe::RecipeStore;
 
 use colored::Colorize;
