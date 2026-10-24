@@ -96,7 +96,7 @@ impl Recipe {
         match self
             .contents
             .iter_mut()
-            .find(|item| &item.name() == old_name)
+            .find(|item| item.as_path() == old_name)
         {
             Some(item) => match (item, new_item) {
                 (RecipeItem::File(f), RecipeItem::File(other)) => {
@@ -121,6 +121,28 @@ pub struct RecipeId {
     pub shortname: String,
 }
 
+impl RecipeId {
+    /// Provides the full ID as a [`String`].
+    pub fn to_str(&self) -> String {
+        match &self.namespace {
+            Some(ns) => format!("{}::{}", ns, self.shortname),
+            None => self.shortname.clone(),
+        }
+    }
+
+    /// Destructure the ID into its constituent parts.
+    pub fn into_parts(self) -> (Option<String>, String) {
+        (self.namespace, self.shortname)
+    }
+
+    /// Destrucutre the ID into its constituent parts, converting the [`Option`] namespace to an
+    /// empty [`String`] on [`None`].
+    pub fn into_parts_infallibe(self) -> (String, String) {
+        let (maybe_ns, shortname) = self.into_parts();
+        (maybe_ns.unwrap_or_else(String::new), shortname)
+    }
+}
+
 impl<T: AsRef<str>> From<T> for RecipeId {
     fn from(id: T) -> Self {
         let (namespace, shortname) = destructure_id_str(id.as_ref());
@@ -135,16 +157,6 @@ impl<T: AsRef<str>> From<T> for RecipeId {
 impl From<&Recipe> for RecipeId {
     fn from(recipe: &Recipe) -> Self {
         Self::from(recipe.name.as_str())
-    }
-}
-
-impl RecipeId {
-    /// Provides the full ID as a [`String`].
-    pub fn to_str(&self) -> String {
-        match &self.namespace {
-            Some(ns) => format!("{}::{}", ns, self.shortname),
-            None => self.shortname.clone(),
-        }
     }
 }
 
