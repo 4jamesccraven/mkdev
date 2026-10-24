@@ -37,7 +37,7 @@ pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
     };
 
     let mut selection: Vec<_> = store.select(&query).map(|m| &m.recipe).collect();
-    selection.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
+    selection.sort_by_key(|&r| (r.namespace(), r.shortname()));
 
     if let Some(id) = args.recipe {
         match selection.len() {

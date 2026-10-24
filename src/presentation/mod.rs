@@ -57,7 +57,7 @@ pub fn display_recipes_with_config(recipes: &[&Recipe], config: &DisplayConfig) 
         prev_ns = curr_ns;
     }
 
-    lines.join("\n") + &config.recipes_suffix
+    lines.join(&config.recipes_join) + &config.recipes_suffix
 }
 
 /// Formats a namespace divider according to a provided configuration.
