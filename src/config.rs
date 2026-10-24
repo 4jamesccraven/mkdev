@@ -16,7 +16,7 @@
 //! mkdev's user configuration file.
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::presentation::DisplayConfig;
+use crate::presentation::FormatConfig;
 use crate::recipe::RecipeStore;
 
 use std::collections::HashMap;
@@ -67,7 +67,7 @@ pub struct Config {
     /// Default: See `DisplayConfig::default`
     #[serde(default)]
     #[config(nested)]
-    pub recipe_fmt: DisplayConfig,
+    pub recipe_fmt: FormatConfig,
 }
 
 impl Config {
@@ -164,7 +164,7 @@ impl Default for Config {
         let recipe_dir = RecipeStore::default_recipe_dir();
         let vim = default_vim();
         let subs = default_subs();
-        let recipe_fmt = DisplayConfig::default();
+        let recipe_fmt = FormatConfig::default();
 
         Self {
             recipe_dir,

@@ -28,42 +28,13 @@ const CAP: &str = "└── ";
 const GAP: &str = "    ";
 
 /// Create a String that represents the file system akin to the output of the program "tree"
-pub fn repr_tree(files: &[RecipeItem]) -> String {
-    let tree = build_recursive_content(files);
-    make_tree_string(&tree, "".into())
-}
-
-/// Nests the default, flat recipe content structure into a recursive tree.
-fn build_recursive_content(files: &[RecipeItem]) -> Vec<TreeContent> {
-    use RecipeItem::*;
-    // Create an intermediate tree
-    let mut root = TreeNode::new();
-
-    // Insert each file into the tree
-    for file in files {
-        match file {
-            File(file) => {
-                root.insert(file.name.as_path(), true);
-            }
-            Directory(name) => {
-                root.insert(name, false);
-            }
-        }
-    }
-
-    // Convert sub-components of the tree to a more fully-featured recursive representation
-    let mut out: Vec<_> = root
-        .children
-        .into_iter()
-        .map(|(name, node)| node.into_tree_content(name))
-        .collect();
-
-    out.sort_unstable();
-    out
+pub fn format_content_tree(files: &[RecipeItem]) -> String {
+    let tree = build_content_tree(files);
+    format_tree(&tree, "".into())
 }
 
 /// Displays a tree structure.
-fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
+fn format_tree(cont: &[TreeContent], prefix: String) -> String {
     let mut out = String::new();
     let mut rec_iter = cont.iter().peekable();
 
@@ -103,7 +74,7 @@ fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
                 let new_prefix = format!("{}{}", prefix, if is_last { GAP } else { WIRE });
 
                 // Recurse through this sub-directory
-                let rec = make_tree_string(contents, new_prefix);
+                let rec = format_tree(contents, new_prefix);
 
                 out.push_str(&new_line);
                 out.push_str(&rec);
@@ -114,16 +85,33 @@ fn make_tree_string(cont: &[TreeContent], prefix: String) -> String {
     out
 }
 
-/// Internal Data Type to represent a recursive file tree
-enum TreeContent {
-    Leaf {
-        name: String,
-        empty_dir: bool,
-    },
-    HasChildren {
-        name: String,
-        contents: Vec<TreeContent>,
-    },
+/// Nests the default, flat recipe content structure into a recursive tree.
+fn build_content_tree(files: &[RecipeItem]) -> Vec<TreeContent> {
+    use RecipeItem::*;
+    // Create an intermediate tree
+    let mut root = TreeNode::new();
+
+    // Insert each file into the tree
+    for file in files {
+        match file {
+            File(file) => {
+                root.insert(file.name.as_path(), true);
+            }
+            Directory(name) => {
+                root.insert(name, false);
+            }
+        }
+    }
+
+    // Convert sub-components of the tree to a more fully-featured recursive representation
+    let mut out: Vec<_> = root
+        .children
+        .into_iter()
+        .map(|(name, node)| node.into_tree_content(name))
+        .collect();
+
+    out.sort_unstable();
+    out
 }
 
 /// Intermediate representation of the file tree
@@ -178,6 +166,18 @@ impl TreeNode {
             }
         }
     }
+}
+
+/// Internal Data Type to represent a recursive file tree
+enum TreeContent {
+    Leaf {
+        name: String,
+        empty_dir: bool,
+    },
+    HasChildren {
+        name: String,
+        contents: Vec<TreeContent>,
+    },
 }
 
 impl PartialEq for TreeContent {

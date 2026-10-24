@@ -18,7 +18,7 @@ use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
 #[derive(Confique, Serialize, Deserialize, Clone, Debug)]
-pub struct DisplayConfig {
+pub struct FormatConfig {
     // --- Top Level ---
     /// Text that joins (comes between) formatted recipes.
     ///
@@ -109,7 +109,7 @@ pub struct DisplayConfig {
     pub langs_join: String,
 }
 
-impl Default for DisplayConfig {
+impl Default for FormatConfig {
     fn default() -> Self {
         Self {
             recipes_join: default_recipes_join(),

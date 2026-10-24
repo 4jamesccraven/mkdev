@@ -21,7 +21,7 @@ use crate::cli::List;
 use crate::config::Config;
 use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
-use crate::presentation::{display_recipes_with_config, repr_tree};
+use crate::presentation::{format_content_tree, format_recipe_list};
 use crate::recipe::RecipeStore;
 
 use colored::Colorize;
@@ -74,7 +74,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
                 display_cfg.show_descriptions = Some(show_description)
             }
 
-            print!("{}", display_recipes_with_config(&recipes, &display_cfg));
+            print!("{}", format_recipe_list(&recipes, &display_cfg));
         }
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
@@ -128,7 +128,7 @@ impl Recipe {
     /// Display the recipe's contents in a tree format.
     pub fn display_contents(&self) -> String {
         let mut out = format!("{}\n", self.name.bold().blue());
-        let contents = repr_tree(&self.contents);
+        let contents = format_content_tree(&self.contents);
         out.push_str(&contents);
 
         out
