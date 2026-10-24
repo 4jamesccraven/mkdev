@@ -1,6 +1,7 @@
 //! ...
 
 use std::cmp::Ordering;
+use std::path::Path;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -16,12 +17,14 @@ pub enum RecipeItem {
 impl RecipeItem {
     /// Returns the name of the `RecipeItem`.
     pub fn name(&self) -> String {
-        let name = match self {
-            RecipeItem::File(file) => file.name.to_string_lossy(),
-            RecipeItem::Directory(dir) => dir.to_string_lossy(),
-        };
+        self.as_path().to_string_lossy().to_string()
+    }
 
-        name.into()
+    pub fn as_path(&self) -> &Path {
+        match self {
+            RecipeItem::File(file) => &file.name,
+            RecipeItem::Directory(dir) => dir,
+        }
     }
 
     /// Constructs a new [`RecipeItem::Directory`] variant
