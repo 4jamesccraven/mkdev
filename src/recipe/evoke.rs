@@ -19,18 +19,18 @@
 //! are systematically loaded, formatted with custom substitutions, and copied into the target
 //! directory.
 use super::Recipe;
+use super::content::{File, RecipeItem};
 
 use crate::cli::Evoke;
 use crate::config::Config;
-use crate::content::{File, RecipeItem};
-use crate::mkdev_error::{
+use crate::error::{
     Error::{self, *},
     Subject,
 };
-use crate::recipe::{OnConflict, instantiate_contents};
+use crate::fs;
+use crate::recipe::{OnConflict, RecipeStore, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
-use crate::{fs_wrappers, menus};
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -44,10 +44,8 @@ pub struct EvocationCtx {
     args: Evoke,
     /// Where fully resolved evocation results are placed.
     target_dir: PathBuf,
-    /// All the user's recipes.
-    recipes: HashMap<String, Recipe>,
-    /// The names of the recipes that were selected.
-    target_recipes: Vec<String>,
+    /// The recipes that were selected.
+    target_recipes: Vec<Recipe>,
     /// Recipes that have had their contents fully resolved.
     resolved_recipes: Vec<Recipe>,
     /// The name of the fully resolved and instantiated recipe, as provided by the CLI argument
@@ -57,11 +55,7 @@ pub struct EvocationCtx {
 
 impl EvocationCtx {
     /// Generate the context for evocation from a collection of command line arguments.
-    pub fn from_args(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<Self, Error> {
-        if args.interactive {
-            return Self::from_prompt(args, user_recipes);
-        }
-
+    pub fn from_args(args: Evoke, store: RecipeStore) -> Result<Self, Error> {
         // There is an error if no recipes are provided
         if args.recipes.is_empty() {
             return Err(NoneSpecified {
@@ -70,38 +64,19 @@ impl EvocationCtx {
         }
 
         // Validate & store the name of the requested recipes.
-        let target_recipes = Recipe::pick_many(&user_recipes, &args.recipes)
-            .map(|rs| rs.into_iter().map(|r| r.name.clone()).collect::<Vec<_>>())?;
+        let query = store.pick_many(&args.recipes)?;
+        let target_recipes: Vec<Recipe> = store.select(&query).map(|m| m.recipe.clone()).collect();
 
         // User specified target or default to CWD.
         let target_dir = match &args.dir_name {
             Some(dir) => PathBuf::from(dir),
-            None => fs_wrappers::current_dir()?,
+            None => fs::current_dir()?,
         };
 
         let mut ctx = Self {
             name: Self::unwrap_name(&args),
             args,
             target_dir,
-            recipes: user_recipes,
-            resolved_recipes: Vec::with_capacity(target_recipes.len()),
-            target_recipes,
-        };
-        ctx.resolve_targets()?;
-
-        Ok(ctx)
-    }
-
-    /// Create the context for evocation partially interactively.
-    pub fn from_prompt(args: Evoke, user_recipes: HashMap<String, Recipe>) -> Result<Self, Error> {
-        let target_recipes = menus::evoke(&user_recipes)?;
-        let target_dir = fs_wrappers::current_dir()?;
-
-        let mut ctx = Self {
-            name: Self::unwrap_name(&args),
-            args,
-            target_dir,
-            recipes: user_recipes,
             resolved_recipes: Vec::with_capacity(target_recipes.len()),
             target_recipes,
         };
@@ -138,12 +113,7 @@ impl EvocationCtx {
         let re = self.init_resolver()?;
         self.resolved_recipes.clear();
 
-        for recipe_name in &self.target_recipes {
-            let recipe = self
-                .recipes
-                .get(recipe_name)
-                .expect("These are checked during initialisation.");
-
+        for recipe in &self.target_recipes {
             self.resolved_recipes.push(Recipe {
                 contents: resolve_items(&recipe.contents, &re),
                 ..recipe.clone()

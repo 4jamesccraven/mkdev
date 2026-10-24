@@ -16,32 +16,41 @@
 //! Implementation of `mk list`.
 //!
 //! Supports printing single recipes or all known recipes in various formats.
-use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
-use crate::display::{display_recipes_with_config, repr_tree};
-use crate::mkdev_error::Error;
+use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
+use crate::presentation::{format_recipe_list, recipe_treefmt};
+use crate::recipe::Recipe;
+use crate::recipe::RecipeStore;
 
-use std::collections::HashMap;
-
-use colored::Colorize;
 use rust_i18n::t;
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
-pub fn list_recipe(args: List, user_recipes: HashMap<String, Recipe>) -> Result<(), Error> {
+pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
-    match args.recipe {
-        Some(recipe) => {
-            display_one(Recipe::pick(&user_recipes, &recipe)?, output_type);
-        }
-        None => {
-            let mut recipes: Vec<_> = user_recipes.values().collect();
-            recipes.sort_by_key(|&r| (r.namespace().is_some(), r.shortname()));
+    let query = match args.recipe {
+        Some(ref id) => store.pick_one(id)?,
+        None => store.pick_all(),
+    };
 
-            display_all(recipes, output_type, !args.no_description);
+    let mut selection: Vec<_> = store.select(&query).map(|m| &m.recipe).collect();
+    selection.sort_by_key(|&r| (r.namespace(), r.shortname()));
+
+    if let Some(id) = args.recipe {
+        match selection.len() {
+            1 => display_one(selection[0], output_type),
+            0 => {
+                return Err(Error::Invalid {
+                    subject: Subject::Recipe,
+                    examples: Some(vec![id]),
+                });
+            }
+            _ => unreachable!(),
         }
+    } else {
+        display_all(selection, output_type, !args.no_description);
     }
 
     Ok(())
@@ -64,7 +73,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
                 display_cfg.show_descriptions = Some(show_description)
             }
 
-            print!("{}", display_recipes_with_config(&recipes, &display_cfg));
+            print!("{}", format_recipe_list(&recipes, &display_cfg));
         }
         Debug => recipes.iter().for_each(|r| println!("{:#?}", r)),
         Plain => recipes.iter().for_each(|r| println!("{}", r.name)),
@@ -95,10 +104,10 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
 
 fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
-        Default => print!("{}", recipe.display_contents()),
+        Default => print!("{}", recipe_treefmt(recipe)),
         Debug => println!("{:#?}", recipe),
-        Plain => print!("{}", recipe.display_contents_plain("\n")),
-        Print0 => print!("{}", recipe.display_contents_plain("\0")),
+        Plain => println!("{}", content_names_joined(recipe, "\n")),
+        Print0 => print!("{}", content_names_joined(recipe, "\0")),
         Json => println!(
             "{}",
             serde_json::to_string_pretty(recipe).expect(SER_EXISTING_RECIPE)
@@ -114,21 +123,9 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
     }
 }
 
-impl Recipe {
-    /// Display the recipe's contents in a tree format.
-    pub fn display_contents(&self) -> String {
-        let mut out = format!("{}\n", self.name.bold().blue());
-        let contents = repr_tree(&self.contents);
-        out.push_str(&contents);
+fn content_names_joined(recipe: &Recipe, sep: &str) -> String {
+    let mut names = recipe.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
+    names.sort();
 
-        out
-    }
-
-    /// Display the name of all the recipe's contents.
-    pub fn display_contents_plain(&self, sep: &str) -> String {
-        let mut names = self.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
-        names.sort();
-
-        names.join(sep)
-    }
+    names.join(sep)
 }

@@ -17,19 +17,18 @@
 mod editor;
 mod locale;
 
-use std::collections::HashMap;
 use std::fmt::Display;
 
 pub use editor::editor;
 use locale::*;
 
 use crate::config::Config;
-use crate::content::{RecipeItem, make_contents};
-use crate::fs_wrappers::current_dir;
-use crate::mkdev_error::Error;
+use crate::error::Error;
+use crate::fs::current_dir;
 use crate::recipe::Recipe;
+use crate::recipe::RecipeItem;
+use crate::recipe::capture::capture_contents;
 
-use ignore::Walk;
 use inquire::error::InquireResult;
 use inquire::formatter::{BoolFormatter, MultiOptionFormatter};
 use inquire::list_option::ListOption;
@@ -51,19 +50,10 @@ pub fn imprint() -> Result<Recipe, Error> {
     let description = get_recipe_description()?;
     recipe.description = description;
 
-    let walk = Walk::new(&cwd);
-    let default_contents = make_contents(walk, &cwd)?;
+    let default_contents = capture_contents(&cwd)?;
     recipe.contents = select_contents(default_contents)?;
 
     Ok(recipe)
-}
-
-/// Interactively select recipes to evoke.
-pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<String>, Error> {
-    let _config = Config::get()?;
-    let selection = select_recipes(recipes.keys().collect())?;
-
-    Ok(selection)
 }
 
 /// Prompt the user to confirm something.
@@ -81,6 +71,11 @@ pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
         .prompt()
 }
 
+/// Confirms that it's okay to overwrite a given recipe.
+pub fn confirm_recipe_overwrite(recipe_name: &str) -> InquireResult<bool> {
+    confirm_action(&t!("menus.recipe_overwrite", recipe => recipe_name), false)
+}
+
 fn get_recipe_name() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_name"))
         .with_validator(ValueRequiredValidator::new(t!(
@@ -93,6 +88,8 @@ fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
+// TODO: re-evaluate inclusion later
+#[expect(unused)]
 fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
     let vim = Config::get().unwrap().vim;
 

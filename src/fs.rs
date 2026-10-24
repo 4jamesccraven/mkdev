@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! std::fs functions wrapped to return mkdev Errors instead of IO Errors.
-use crate::mkdev_error::{Context, Error};
+use crate::error::{Context, Error};
 
 use std::fs;
 use std::io::ErrorKind;
@@ -99,10 +99,10 @@ where
 
 pub fn read_dir<P>(path: P, ctx: Context) -> Result<fs::ReadDir, Error>
 where
-    P: AsRef<Path> + Into<PathBuf>,
+    P: AsRef<Path>,
 {
     fs::read_dir(&path).map_err(|_| Error::FsDenied {
-        which: path.into(),
+        which: path.as_ref().to_owned(),
         context: ctx,
     })
 }

@@ -15,9 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! Implementation for editing specific attributes in the editor.
 use crate::config::Config;
-use crate::content::RecipeItem;
 use crate::menus::multiselect_truncate_formatter;
 use crate::recipe::Recipe;
+use crate::recipe::RecipeItem;
 
 use super::file_editor::FileEditor;
 use super::{ContentKind, EditorAction, prompt_new_name};
@@ -121,11 +121,7 @@ impl EditorAction {
                 let contents = FileEditor::new("", extension).run()?;
 
                 // Add the file into the recipe.
-                recipe.contents.push(RecipeItem::File(crate::content::File {
-                    name: path,
-                    content: contents,
-                }));
-
+                recipe.contents.push(RecipeItem::file(path, contents));
                 Ok(true)
             }
             ContentKind::Directory => {
@@ -168,13 +164,7 @@ impl EditorAction {
                 let content = FileEditor::new(&f.content, extension).run()?;
 
                 // Make the changes if necessary.
-                Ok(recipe.replace_content(
-                    &f.name,
-                    RecipeItem::File(crate::content::File {
-                        name: path,
-                        content,
-                    }),
-                ))
+                Ok(recipe.replace_content(&f.name, RecipeItem::file(path, content)))
             }
             RecipeItem::Directory(ref p) => {
                 // Determine the relative path to the new directory.

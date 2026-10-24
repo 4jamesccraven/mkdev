@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! mkdev's user configuration file.
-use crate::display::DisplayConfig;
-use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error};
+use crate::error::{Context, Error};
+use crate::fs;
+use crate::presentation::FormatConfig;
+use crate::recipe::RecipeStore;
 
 use std::collections::HashMap;
 use std::default::Default;
@@ -40,7 +41,8 @@ pub struct Config {
     ///
     /// Default:
     /// Absent (evaluates to ~/.local/share/mkdev on Linux)
-    pub recipe_dir: Option<PathBuf>,
+    #[serde(default = "RecipeStore::default_recipe_dir")]
+    pub recipe_dir: PathBuf,
     /// Whether multiselect prompts in interactive mode should allow for vim keybindings. Note that
     /// this can make filtering more difficult (because h, j, k, and l will be reserved).
     ///
@@ -65,7 +67,7 @@ pub struct Config {
     /// Default: See `DisplayConfig::default`
     #[serde(default)]
     #[config(nested)]
-    pub recipe_fmt: DisplayConfig,
+    pub recipe_fmt: FormatConfig,
 }
 
 impl Config {
@@ -106,7 +108,7 @@ impl Config {
         if let Some(dir) = config_file.parent()
             && !dir.is_dir()
         {
-            fs_wrappers::create_dir_all(dir, Context::Config)?;
+            fs::create_dir_all(dir, Context::Config)?;
         }
 
         if !config_file.is_file() {
@@ -114,11 +116,11 @@ impl Config {
             let serialized_default =
                 toml::to_string(&cfg).expect("default `Config` is always serialisable.");
 
-            fs_wrappers::write(config_file, serialized_default, Context::Config)?;
+            fs::write(config_file, serialized_default, Context::Config)?;
 
             Ok(cfg)
         } else {
-            let cfg_contents = fs_wrappers::read_to_string(&config_file, Context::Config)?;
+            let cfg_contents = fs::read_to_string(&config_file, Context::Config)?;
 
             let cfg: Config =
                 toml::from_str(&cfg_contents).map_err(|e| Error::Deserialisation {
@@ -159,10 +161,10 @@ fn default_vim() -> bool {
 
 impl Default for Config {
     fn default() -> Self {
-        let recipe_dir = None;
+        let recipe_dir = RecipeStore::default_recipe_dir();
         let vim = default_vim();
         let subs = default_subs();
-        let recipe_fmt = DisplayConfig::default();
+        let recipe_fmt = FormatConfig::default();
 
         Self {
             recipe_dir,

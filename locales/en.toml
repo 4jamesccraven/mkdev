@@ -17,9 +17,7 @@ proceed = "Proceed"
 
 [recipes]
 delete_msg = "Deleted recipe at %{path}."
-external = """This recipe is managed externally (e.g. by home-manager or GNU stow).
-It is safe to change: only the symlink will be updated, and the source will not be modified.
-You may need to make the same change in the source configuration manually."""
+external = "This recipe is managed externally (e.g. by home-manager or GNU stow)."
 
 # === Interactive Menus ===
 [menus] # Shared menu elements
