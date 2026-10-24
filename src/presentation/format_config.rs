@@ -13,7 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! The configuration for displaying a single recipe.
+//! Configuration struct for formatting a list of recipes.
+//!
+//! See [`crate::presentation::format_recipe_list`] for more info on using this struct.
 use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
@@ -79,7 +81,7 @@ pub struct FormatConfig {
     pub name_bold: bool,
 
     // --- Description ---
-    /// How to format the description of the recipe. (use "{name}" to reference the raw
+    /// How to format the description of the recipe. (use "{desc}" to reference the raw
     /// description).
     ///
     /// Default:

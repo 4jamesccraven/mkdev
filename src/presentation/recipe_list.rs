@@ -1,5 +1,5 @@
 use super::FormatConfig;
-use crate::recipe::{Language, Recipe};
+use crate::recipe::Recipe;
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 
 use std::collections::HashMap;
@@ -48,84 +48,64 @@ fn format_namespace(namespace: Option<&str>, config: &FormatConfig) -> String {
 
 /// Formats a single recipe according to a provided configuration.
 fn format_recipe(recipe: &Recipe, config: &FormatConfig) -> String {
-    let show_description = config.show_descriptions.unwrap_or(true);
-
     let subs = HashMap::from([
-        (
-            "name".to_string(),
-            format_recipe_name(recipe, &config.name_fmt, config.name_bold),
-        ),
-        (
-            "desc".to_string(),
-            format_description(&recipe.description, &config.desc_fmt, show_description),
-        ),
-        (
-            "langs".to_string(),
-            format_langs(
-                &recipe.languages,
-                &config.lang_fmt,
-                &config.langs_join,
-                config.lang_colour,
-            ),
-        ),
+        ("name".to_string(), format_recipe_name(recipe, config)),
+        ("desc".to_string(), format_description(recipe, config)),
+        ("langs".to_string(), format_languages(recipe, config)),
     ]);
 
     replace(subs, &config.recipe_fmt)
 }
 
 /// Displays the recipe name as configured.
-fn format_recipe_name(recipe: &Recipe, fmt_string: &str, bold: bool) -> String {
+fn format_recipe_name(recipe: &Recipe, config: &FormatConfig) -> String {
     let do_cond_fmt = |name: &str| {
-        if bold {
+        if config.name_bold {
             name.bold().to_string()
         } else {
             name.to_string()
         }
     };
 
+    let id = recipe.as_id();
+    let (namespace, shortname) = (id.namespace.unwrap_or("".to_string()), id.shortname);
+
     let subs = HashMap::from([
         ("name".to_string(), do_cond_fmt(&recipe.name)),
-        ("shortname".to_string(), do_cond_fmt(recipe.shortname())),
-        (
-            "namespace".to_string(),
-            do_cond_fmt(recipe.namespace().unwrap_or("global")),
-        ),
+        ("namespace".to_string(), do_cond_fmt(&namespace)),
+        ("shortname".to_string(), do_cond_fmt(&shortname)),
     ]);
-    replace(subs, fmt_string)
+    replace(subs, &config.name_fmt)
 }
 
 /// Displays the recipe description as configured.
-fn format_description(description: &str, fmt_string: &str, show_desc: bool) -> String {
-    if !show_desc {
-        return "".into();
+fn format_description(recipe: &Recipe, config: &FormatConfig) -> String {
+    if !config.show_descriptions.unwrap_or(true) {
+        return "".to_string();
     }
 
-    let subs = HashMap::from([("desc".to_string(), description.to_string())]);
-    replace(subs, fmt_string)
+    let subs = HashMap::from([("desc".to_string(), recipe.description.clone())]);
+    replace(subs, &config.desc_fmt)
 }
 
 /// Displays the recipe languages as configured.
-fn format_langs(
-    langs: &[Language],
-    fmt_string: &str,
-    join_string: &str,
-    show_colour: bool,
-) -> String {
-    langs
+fn format_languages(recipe: &Recipe, config: &FormatConfig) -> String {
+    recipe
+        .languages
         .iter()
         .map(|l| {
             HashMap::from([(
                 "lang".to_string(),
-                if show_colour {
+                if config.lang_colour {
                     format!("{l}")
                 } else {
                     l.name.clone()
                 },
             )])
         })
-        .map(|subs| replace(subs, fmt_string))
+        .map(|subs| replace(subs, &config.lang_fmt))
         .collect::<Vec<String>>()
-        .join(join_string)
+        .join(&config.langs_join)
 }
 
 /// Helper function to fill a format string.
