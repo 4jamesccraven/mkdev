@@ -19,45 +19,44 @@ use std::path::PathBuf;
 
 use rust_i18n::t;
 
-/// mkdev's error type.
 #[derive(Clone, Debug)]
 pub enum Error {
-    /// Indicates that something wasn't specified when it should be.
+    /// Recipe(s) were not specified.
     NoneSpecified { subject: Subject },
 
-    /// Indicates that a value is invalid in the context it was passed.
+    /// The value is invalid in the context it was received.
     Invalid {
         subject: Subject,
         examples: Option<Vec<String>>,
     },
 
-    /// Occurs when a recipe query does not uniquely identify a recipe.
+    /// The query does not uniquely identify a single recipe.
     AmbiguousShortRecipe {
         query: String,
         possibilities: Vec<String>,
     },
 
-    /// Indicates that an action would be destructive.
+    /// The action would be destructive.
     DestructionWarning { name: String },
 
-    /// An error arising from building user-provided exclusions during imprinting.
+    /// The user-defined exclude arguments were malformed.
     ///
     /// Note: this is effectively an ignore error, which is itself effectively an IO error.
     Exclude { cause: String },
 
-    /// Tried to create a directory without valid permissions to do so.
+    /// The filesystem operation lacked the necessary privileges to complete.
     FsDenied { which: PathBuf, context: Context },
 
-    /// An error arising from trying to read a non-UTF-8 file.
+    /// The file's contents were not UTF-8 encoded.
     NotUTF8 { which: PathBuf },
 
-    /// Arises when the input device is not a TTY during interactive mode.
+    /// The input device was not a TTY (during interactive mode).
     NotTTY,
 
-    /// Arises when the user cancels an interactive process.
+    /// The user canceled an interactive process.
     InteractiveCancelled,
 
-    /// Indicates that a value failed to serialise.
+    /// The value failed to serialise.
     #[allow(unused)]
     Serialisation {
         which: PathBuf,
@@ -65,7 +64,7 @@ pub enum Error {
         context: Context,
     },
 
-    /// Indicates that a value failed to deserialise.
+    /// The value failed to deserialise.
     Deserialisation {
         which: PathBuf,
         cause: String,
@@ -237,8 +236,7 @@ macro_rules! borked {
     }};
 }
 
-/// A helper for providing debug info (file/line number) either on a raw error message or on a
-/// result that implements `ResultExt`.
+/// Formats the current file and line number.
 #[macro_export]
 macro_rules! ctx {
     ($msg:literal) => {
