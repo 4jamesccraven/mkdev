@@ -39,7 +39,7 @@ pub fn instantiate_contents(
     verbose: bool,
 ) -> Result<(), Error> {
     contents.iter().try_for_each(|content| {
-        let dest = dir.join(content.name());
+        let dest = dir.join(content.as_path());
         if let Some(parent) = &dest.parent() {
             fs::create_dir_all(parent, Context::Evoke)?;
         }
