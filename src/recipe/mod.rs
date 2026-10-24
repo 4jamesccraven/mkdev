@@ -20,7 +20,6 @@ pub mod content;
 mod evoke;
 pub mod instantiate;
 pub mod language;
-mod list;
 pub mod model;
 mod store;
 mod version;
@@ -31,7 +30,6 @@ use instantiate::{OnConflict, instantiate_contents};
 pub use content::RecipeItem;
 pub use evoke::*;
 pub use language::Language;
-pub use list::*;
 pub use model::Recipe;
 pub use store::RecipeStore;
 

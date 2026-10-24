@@ -16,12 +16,12 @@
 //! Implementation of `mk list`.
 //!
 //! Supports printing single recipes or all known recipes in various formats.
-use super::Recipe;
 use crate::cli::List;
 use crate::config::Config;
 use crate::error::{Error, Subject};
 use crate::output_type::OutputType::{self, *};
 use crate::presentation::{format_recipe_list, recipe_treefmt};
+use crate::recipe::Recipe;
 use crate::recipe::RecipeStore;
 
 use rust_i18n::t;
