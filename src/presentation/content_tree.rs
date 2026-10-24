@@ -16,16 +16,10 @@
 //! Tree-like output for the contents of a mkdev recipe.
 use crate::recipe::RecipeItem;
 
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use colored::Colorize;
-
-const WIRE: &str = "│   ";
-const CONNECTOR: &str = "├── ";
-const CAP: &str = "└── ";
-const GAP: &str = "    ";
 
 /// Create a String that represents the file system akin to the output of the program "tree"
 pub fn format_content_tree(files: &[RecipeItem]) -> String {
@@ -33,55 +27,55 @@ pub fn format_content_tree(files: &[RecipeItem]) -> String {
     format_tree(&tree, "".into())
 }
 
+const GAP: &str = "    ";
+const WIRE: &str = "│   ";
+const CONNECTOR: &str = "├── ";
+const CAP: &str = "└── ";
+
 /// Displays a tree structure.
-fn format_tree(cont: &[TreeContent], prefix: String) -> String {
+fn format_tree<T>(contents: &[T], prefix: String) -> String
+where
+    T: AsRef<TreeContent>,
+{
+    let mut contents: Vec<&TreeContent> = contents.iter().map(AsRef::as_ref).collect();
+    contents.sort_by_key(|&c| (c.is_file, &c.name));
+
+    let mut rec_iter = contents.iter().peekable();
     let mut out = String::new();
-    let mut rec_iter = cont.iter().peekable();
 
-    while let Some(file) = rec_iter.next() {
-        use TreeContent::*;
+    while let Some(content) = rec_iter.next() {
+        // Like `ls`, we use blue to differentiate directories from files.
+        let name = if content.is_file {
+            content.name.normal()
+        } else {
+            content.name.blue()
+        };
 
-        // If this is the last item we need to cap off our prefix with a symbol that shows it,
-        // otherwise we just continue connecting it with previous lines
+        // If this content is the last of its group, the line reflects that by not appearing to
+        // continue downwards.
         let is_last = rec_iter.peek().is_none();
         let line = if is_last { CAP } else { CONNECTOR };
 
-        match file {
-            // Trivial case, just display the whole prefix and the file
-            Leaf { name, empty_dir } => {
-                #[rustfmt::skip]
-                let name = if *empty_dir { name.blue() } else { name.normal() };
-                let new_line = format!(
-                    "{}{}{}\n",
-                    prefix.truecolor(128, 128, 128),
-                    line.truecolor(128, 128, 128),
-                    name
-                );
-                out.push_str(&new_line);
-            }
-            HasChildren { name, contents } => {
-                // Display directory's name
-                let new_line = format!(
-                    "{}{}{}\n",
-                    prefix.truecolor(128, 128, 128),
-                    line.truecolor(128, 128, 128),
-                    name.blue()
-                );
+        // Format the current recipe item's name into the buffer.
+        let new_line = format!(
+            "{}{}{}\n",
+            prefix.truecolor(128, 128, 128),
+            line.truecolor(128, 128, 128),
+            name
+        );
+        out.push_str(&new_line);
 
-                // Pad the new prefix with indentation if this directory is the last item, of the
-                // current iteration otherwise use a line that continues down and connects the
-                // structure
-                let new_prefix = format!("{}{}", prefix, if is_last { GAP } else { WIRE });
+        // If this item has children, recursively add those as well.
+        if !content.children.is_empty() {
+            // If this is the last item, its children's prefix is just indentation. Otherwise, a
+            // line visually represents that there are more entries after this recursion.
+            let new_prefix = format!("{}{}", prefix, if is_last { GAP } else { WIRE });
 
-                // Recurse through this sub-directory
-                let rec = format_tree(contents, new_prefix);
-
-                out.push_str(&new_line);
-                out.push_str(&rec);
-            }
+            // Recurse.
+            let rec = format_tree(content.values().as_slice(), new_prefix);
+            out.push_str(&rec);
         }
     }
-
     out
 }
 
@@ -89,7 +83,7 @@ fn format_tree(cont: &[TreeContent], prefix: String) -> String {
 fn build_content_tree(files: &[RecipeItem]) -> Vec<TreeContent> {
     use RecipeItem::*;
     // Create an intermediate tree
-    let mut root = TreeNode::new();
+    let mut root = TreeContent::default();
 
     // Insert each file into the tree
     for file in files {
@@ -103,111 +97,57 @@ fn build_content_tree(files: &[RecipeItem]) -> Vec<TreeContent> {
         }
     }
 
-    // Convert sub-components of the tree to a more fully-featured recursive representation
-    let mut out: Vec<_> = root
-        .children
-        .into_iter()
-        .map(|(name, node)| node.into_tree_content(name))
-        .collect();
-
-    out.sort_unstable();
-    out
+    root.children.into_values().collect()
 }
 
 /// Intermediate representation of the file tree
-struct TreeNode {
-    children: BTreeMap<String, TreeNode>,
+#[derive(Debug, Clone, Default)]
+struct TreeContent {
+    /// What should be printed to represent this [`RecipeItem`].
+    name: String,
+    /// Whether the content is a file.
     is_file: bool,
+    /// Children of this directory, if it is a directory.
+    children: BTreeMap<String, TreeContent>,
 }
 
-impl TreeNode {
-    fn new() -> Self {
-        TreeNode {
-            children: BTreeMap::new(),
+impl TreeContent {
+    /// Create a new [`TreeContent`] node.
+    fn new(name: String) -> Self {
+        TreeContent {
             is_file: false,
+            name,
+            children: BTreeMap::new(),
         }
     }
 
     /// Insert a path into the tree by breaking it into its components.
     fn insert(&mut self, path: &Path, is_file: bool) {
         let mut current = self;
-        // Break the path into its components, and at them one-by-one to the tree
+
+        // Break the path into its components, and insert them one-by-one.
         for comp in path.components() {
             let name = comp.as_os_str().to_string_lossy().into_owned();
-            current = current.children.entry(name).or_insert_with(TreeNode::new)
+            current = current
+                .children
+                .entry(name.clone())
+                .or_insert_with(|| TreeContent::new(name));
         }
-        // Once we have reached the end of the recursion, mark it as a file if it is one.
+
+        // Note whether the leaf node is a file.
         if is_file {
             current.is_file = true;
         }
     }
 
-    /// Convert this node and all children into a `TreeContent`.
-    fn into_tree_content(self, name: String) -> TreeContent {
-        use TreeContent::*;
-        if self.children.is_empty() {
-            Leaf {
-                name,
-                empty_dir: !self.is_file,
-            }
-        } else {
-            let mut contents: Vec<_> = self
-                .children
-                .into_iter()
-                .map(|(name, node)| node.into_tree_content(name))
-                .collect();
-
-            contents.sort_unstable();
-
-            HasChildren {
-                name,
-                // Represent the child nodes
-                contents,
-            }
-        }
+    /// Get a vector of references to this node's children.
+    fn values(&self) -> Vec<&TreeContent> {
+        self.children.values().collect()
     }
 }
 
-/// Internal Data Type to represent a recursive file tree
-enum TreeContent {
-    Leaf {
-        name: String,
-        empty_dir: bool,
-    },
-    HasChildren {
-        name: String,
-        contents: Vec<TreeContent>,
-    },
-}
-
-impl PartialEq for TreeContent {
-    fn eq(&self, other: &Self) -> bool {
-        self.cmp(other) == std::cmp::Ordering::Equal
-    }
-}
-
-impl Eq for TreeContent {}
-
-impl PartialOrd for TreeContent {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for TreeContent {
-    fn cmp(&self, other: &Self) -> Ordering {
-        use TreeContent::*;
-
-        /// Convert to a tuple key of (is_file, name)
-        fn key(t: &TreeContent) -> (bool, &str) {
-            match t {
-                Leaf { name, empty_dir } => (!*empty_dir, name.as_str()),
-                HasChildren { name, .. } => (false, name.as_str()),
-            }
-        }
-
-        // Sorts directories before standalone files, and then sorts by content name if ambiguity
-        // arises.
-        key(self).cmp(&key(other))
+impl AsRef<TreeContent> for TreeContent {
+    fn as_ref(&self) -> &TreeContent {
+        self
     }
 }

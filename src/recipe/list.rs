@@ -107,7 +107,7 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
     match output_type {
         Default => print!("{}", recipe.display_contents()),
         Debug => println!("{:#?}", recipe),
-        Plain => print!("{}", recipe.display_contents_plain("\n")),
+        Plain => println!("{}", recipe.display_contents_plain("\n")),
         Print0 => print!("{}", recipe.display_contents_plain("\0")),
         Json => println!(
             "{}",
