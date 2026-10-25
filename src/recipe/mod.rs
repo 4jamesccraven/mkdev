@@ -40,6 +40,7 @@ use tempfile::TempDir;
 
 impl Recipe {
     /// Generate a breakdown of the languages in a directory.
+    // TODO: reimplement in memory with linguist crate.
     pub fn languages<P>(dir: P) -> Vec<Language>
     where
         P: AsRef<Path>,
@@ -68,7 +69,6 @@ impl Recipe {
     /// Variable substitution does not occur. This is esentially an out-of-memory representation of
     /// the recipe's `contents` field.
     // TODO: refactor to avoid `Option` parameter.
-    #[expect(unused)]
     pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {
         let maybe_temp = match maybe_dir {
             Some(ref dir) => tempfile::tempdir_in(dir),
@@ -96,7 +96,6 @@ impl Recipe {
     ///
     /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
     /// preserving the metadata associated with the potentially non-canonical self.
-    #[expect(unused)]
     pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
         let contents = capture::capture_contents(temp_dir.path())?;

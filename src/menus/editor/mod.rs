@@ -70,6 +70,9 @@ pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
                         continue;
                     }
 
+                    // TODO: this should be the store's responsibility
+                    let recipe = recipe.to_canonical()?;
+
                     // Store the recipe's new path.
                     store.replace(&original_recipe, recipe)?;
                     break;
