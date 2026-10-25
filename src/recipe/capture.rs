@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Utilties for constructing and manipulating the contents of a mkdev recipe.
+
+//! Functions for capturing recipes from the local environment.
 use ignore::overrides::OverrideBuilder;
 
 use crate::error::Context;
@@ -76,7 +77,7 @@ pub fn capture_contents_with(opts: CaptureOpts) -> Result<Vec<RecipeItem>, Error
                 }
                 // The only possibilities are is_dir, is_file, or is_symlink; and is_symlink is
                 // filtered out by this point.
-                // see: https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html
+                // see: <https://doc.rust-lang.org/nightly/std/fs/struct.FileType.html>
                 _ => unreachable!(),
             }
         })

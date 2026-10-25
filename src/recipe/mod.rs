@@ -81,10 +81,12 @@ impl Recipe {
         })?;
 
         instantiate_contents(
-            temp_dir.path(),
             &self.contents,
-            OnConflict::Overwrite,
-            false,
+            instantiate::InstantiateOpts {
+                root_dir: temp_dir.path().to_path_buf(),
+                on_conflict: OnConflict::Overwrite,
+                verbose: false,
+            },
         )?;
 
         Ok(temp_dir)

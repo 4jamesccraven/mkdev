@@ -13,38 +13,26 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! ...
+//! Functions for instantiating recipes in the local environment.
 use super::RecipeItem;
 
 use crate::error::{Context, Error};
 use crate::fs;
 
-use std::path::Path;
-
-/// What should happen if a file already exists in the target directory during evocation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OnConflict {
-    Overwrite,
-    Guard,
-}
+use std::path::PathBuf;
 
 /// Builds a single recipe by taking in its contents and writing them to disk.
 ///
 /// If a file in the target directory already exists and the conflict resolution strategy is not
 /// `Overwrite`, a Destruction error is returned.
-pub fn instantiate_contents(
-    dir: &Path,
-    contents: &[RecipeItem],
-    on_conflict: OnConflict,
-    verbose: bool,
-) -> Result<(), Error> {
+pub fn instantiate_contents(contents: &[RecipeItem], opts: InstantiateOpts) -> Result<(), Error> {
     contents.iter().try_for_each(|content| {
-        let dest = dir.join(content.as_path());
+        let dest = opts.root_dir.join(content.as_path());
         if let Some(parent) = &dest.parent() {
             fs::create_dir_all(parent, Context::Evoke)?;
         }
 
-        if verbose {
+        if opts.verbose {
             eprintln!("{}", dest.display());
         }
 
@@ -52,7 +40,7 @@ pub fn instantiate_contents(
             RecipeItem::File(file) => {
                 // Stop if a file would be overwritten unless the user has explicitly suppressed
                 // it.
-                match on_conflict {
+                match opts.on_conflict {
                     OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
                         name: dest.to_string_lossy().into(),
                     }),
@@ -62,4 +50,35 @@ pub fn instantiate_contents(
             RecipeItem::Directory(_) => fs::create_dir_all(&dest, Context::Evoke),
         }
     })
+}
+
+/// What should happen if a file already exists in the target directory during evocation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OnConflict {
+    Overwrite,
+    Guard,
+}
+
+/// Options for instantiating [`RecipeItem`]s.
+#[derive(Clone, Debug)]
+pub struct InstantiateOpts {
+    /// The root directory where contents are placed.
+    /// Default: "."
+    pub root_dir: PathBuf,
+    /// The conflict resolution strategy.
+    /// Default: `Guard`
+    pub on_conflict: OnConflict,
+    /// Whether to print verbose construction info.
+    /// Default: false
+    pub verbose: bool,
+}
+
+impl Default for InstantiateOpts {
+    fn default() -> Self {
+        Self {
+            root_dir: PathBuf::from("."),
+            on_conflict: OnConflict::Guard,
+            verbose: false,
+        }
+    }
 }

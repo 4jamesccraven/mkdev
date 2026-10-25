@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Format for the declarative contents of a mkdev [`super::Recipe`]
+//! Schema for the declarative contents of a [`Recipe`].
 //!
 //! ## Comparison
 //!
@@ -29,6 +29,11 @@
 //! k1 == k2 -> hash(k1) == hash(k2)
 //! ```
 //! See [`Hash` and `Eq`](std::hash::Hash#hash-and-eq).
+
+// Docs-only
+#[expect(unused)]
+use super::Recipe;
+
 use std::cmp::Ordering;
 use std::hash::Hash;
 use std::path::{Display, Path, PathBuf};

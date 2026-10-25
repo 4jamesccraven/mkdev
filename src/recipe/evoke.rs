@@ -29,6 +29,7 @@ use crate::error::{
 };
 use crate::fs;
 use crate::menus;
+use crate::recipe::instantiate::InstantiateOpts;
 use crate::recipe::{OnConflict, RecipeStore, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
@@ -113,17 +114,18 @@ impl EvocationCtx {
 
     /// Perform evocation as defined by the context.
     pub fn evoke(&mut self) -> Result<(), Error> {
-        let on_conflict = match self.args.suppress_warnings {
-            true => OnConflict::Overwrite,
-            false => OnConflict::Guard,
-        };
-
         self.resolved_recipes.iter().try_for_each(|recipe| {
             instantiate_contents(
-                &self.target_dir,
                 &recipe.contents,
-                on_conflict,
-                self.args.verbose,
+                InstantiateOpts {
+                    root_dir: self.target_dir.to_path_buf(),
+                    on_conflict: if self.args.suppress_warnings {
+                        OnConflict::Overwrite
+                    } else {
+                        OnConflict::Guard
+                    },
+                    verbose: self.args.verbose,
+                },
             )
             .inspect_err(|_| {
                 warning!(
