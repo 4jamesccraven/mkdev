@@ -17,8 +17,8 @@
 use super::{Recipe, RecipeId};
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};
-use crate::fs;
 use crate::recipe::version::deserialise_recipe;
+use crate::{fs, warning};
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -46,11 +46,28 @@ impl RecipeStore {
     //  Store Initialisation
     // ------------------------------------------------------------
 
-    /// Creates a [`RecipeStore`] from the standard store locations
+    /// Creates a [`RecipeStore`] from the standard store paths.
+    ///
+    /// At present, the only directory indexed is the user-configured default recipe directory. This
+    /// directory, if unspecified by the user, typically resolves to `$XDG_DATA_HOME/mkdev`.
+    ///
+    /// For detailed information on the default location, see: [`dirs::data_dir`]
     //
     // TODO: add more index locations, namely `/usr/share/mkdev`
     pub fn from_default_indices() -> Result<Self, Error> {
-        let (store, _) = Self::from_indices(&[Self::default_index()?])?;
+        let (store, errs) = Self::from_indices(&[Self::default_index()?])?;
+
+        // Log warnings about paths that couldn't be indexed.
+        errs.into_iter().for_each(|p| {
+            warning!(
+                "{}",
+                Error::FsDenied {
+                    which: p,
+                    context: Context::Gather
+                }
+            );
+        });
+
         Ok(store)
     }
 
@@ -151,27 +168,50 @@ impl RecipeStore {
     }
 
     // ------------------------------------------------------------
-    // Query Construction
+    // ID Resolution and Querying
     // ------------------------------------------------------------
 
-    /// Get all information associated with a recipe ID.
+    /// Resolves a potentially incomplete [`RecipeId`] against the manifest, returning a reference
+    /// to the canonical key in the manifest.
+    ///
+    /// If no [`ManifestEntry`] matches the key, an [`Error::Invalid`] is returned. If more than one
+    /// is a match, [`Error::AmbiguousShortRecipe`] is returned.
+    ///
+    /// ## Resolution Order
+    /// The `recipe_id` argument does not have to be an exact match---the recipe store tries several
+    /// strategies to match the key it receives, choosing the first to succeed:
+    /// 1. An exact match always succeeds.
+    /// 2. The input is interpreted as a namespace, and the default is returned if it exists (e.g.,
+    ///    "foo" is interpreted as "foo::default").
+    /// 3. Any recipe that's shortname matches is marked as a candidate (candidate examples for
+    ///    input "foo": "python::foo", "my_stuff::foo", etc.).
+    ///
+    /// If the input contains both a namespace _and_ a recipe name, and the exact match fails, the
+    /// other strategies are not employed, and an error is immediately returned.
     fn pick_raw(&self, recipe_id: &RecipeId) -> Result<&RecipeId, Error> {
         // Always prefer an exact match.
         if let Some((key, _)) = self.manifest.get_key_value(recipe_id) {
             return Ok(key);
         }
 
-        // Failing that see if the ID is referring to the default recipe by only specifying its
-        // namespace.
+        // If the exact match failed with both parts specified, that recipe does not exist.
+        if recipe_id.namespace.is_some() {
+            return Err(Error::Invalid {
+                subject: Subject::Recipe,
+                examples: Some(vec![recipe_id.to_string()]),
+            });
+        }
+
+        // See if the remainder part was intended as namespace:
         let remainder_as_namespace = RecipeId {
-            namespace: recipe_id.namespace.clone(),
+            namespace: Some(recipe_id.shortname.clone()),
             shortname: "default".into(),
         };
         if let Some((key, _)) = self.manifest.get_key_value(&remainder_as_namespace) {
             return Ok(key);
         }
 
-        // As a last resort, see if the remaineder alone uniquely identifies a recipe.
+        // As a last resort, see if the remainder alone uniquely identifies a recipe.
         let potential_matches: Vec<_> = self
             .manifest
             .keys()
@@ -197,7 +237,7 @@ impl RecipeStore {
         }
     }
 
-    /// Query the store for a single manifest entries.
+    /// Query the store for a single manifest entry.
     pub fn pick_one<K>(&self, recipe_id: K) -> Result<&ManifestEntry, Error>
     where
         K: Into<RecipeId>,
@@ -206,6 +246,7 @@ impl RecipeStore {
         self.pick_raw(&key).map(|id| &self.manifest[id])
     }
 
+    /// Query the store for a reference to the canonical key matching the input key.
     pub fn pick_id<K>(&self, recipe_id: K) -> Result<&RecipeId, Error>
     where
         K: Into<RecipeId>,
@@ -248,10 +289,6 @@ impl RecipeStore {
             .collect()
     }
 
-    // ------------------------------------------------------------
-    // Query Operations
-    // ------------------------------------------------------------
-
     /// Query the store to see if an ID exists.
     pub fn recipe_exists<K>(&self, recipe_id: K) -> bool
     where
@@ -261,8 +298,26 @@ impl RecipeStore {
         self.pick_raw(&key).is_ok()
     }
 
+    /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)
+    /// by determining whether or not the store path is a symlink.
+    ///
+    /// Assuming the path exists, `true` is returned for a store path that is a symlink, otherwise
+    /// `false` is returned. If the symlink metadata cannot be determined, this function's return
+    /// value is inconclusive and `None` is returned.
+    ///
+    /// None is also returned for recipes not part of the store. Do not use unverified IDs when
+    /// calling this method.
+    pub fn is_external(&self, recipe_id: &RecipeId) -> Option<bool> {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let store_path = &self.manifest.get(key).unwrap().store_path;
+
+        std::fs::symlink_metadata(store_path)
+            .ok()
+            .map(|s| s.is_symlink())
+    }
+
     // ------------------------------------------------------------
-    // Filesystem Operations
+    // Store Modification
     // ------------------------------------------------------------
 
     /// Add a recipe to the store, using the default save location.
@@ -393,24 +448,6 @@ impl RecipeStore {
     // Path Helpers
     // ------------------------------------------------------------
 
-    /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)
-    /// by determining whether or not the store path is a symlink.
-    ///
-    /// Assuming the path exists, `true` is returned for a store path that is a symlink, otherwise
-    /// `false` is returned. If the symlink metadata cannot be determined, this function's return
-    /// value is inconclusive and `None` is returned.
-    ///
-    /// None is also returned for recipes not part of the store. Do not use unverified IDs when
-    /// calling this method.
-    pub fn is_external(&self, recipe_id: &RecipeId) -> Option<bool> {
-        let key = self.pick_raw(recipe_id).ok()?;
-        let store_path = &self.manifest.get(key).unwrap().store_path;
-
-        std::fs::symlink_metadata(store_path)
-            .ok()
-            .map(|s| s.is_symlink())
-    }
-
     /// Returns the default index for new recipes.
     fn default_index() -> Result<PathBuf, Error> {
         let data_dir = Config::get()?.recipe_dir.clone();
@@ -436,26 +473,30 @@ impl RecipeStore {
 
 /// Iterator over references to store manifest entries.
 ///
-/// Implements convenience methods for common operations.
+/// Implements convenience methods for common transformations of [`ManifestEntry`].
 pub struct PickResults<'a> {
     entries: std::vec::IntoIter<&'a ManifestEntry>,
 }
 
 impl<'a> PickResults<'a> {
     #[expect(unused)]
+    /// Creates an iterator over the store paths resulting from the pick.
     pub fn paths(self) -> impl Iterator<Item = &'a Path> {
         self.map(|m| m.store_path.as_path())
     }
 
+    /// Creates an iterator over the recipes resulting from the pick.
     pub fn recipes(self) -> impl Iterator<Item = &'a Recipe> {
         self.map(|m| &m.recipe)
     }
 
+    /// Creates an iterator over the IDs resulting from the pick.
     pub fn ids(self) -> impl Iterator<Item = RecipeId> {
         self.map(|m| m.recipe.as_id())
     }
 
-    pub fn id_strs(self) -> impl Iterator<Item = String> {
+    /// Creates an iterator over the IDs resulting from the pick, converted to Strings.
+    pub fn id_strings(self) -> impl Iterator<Item = String> {
         self.ids().map(|r| r.to_string())
     }
 }
