@@ -64,8 +64,7 @@ impl EvocationCtx {
         }
 
         // Validate & store the name of the requested recipes.
-        let query = store.pick_many(&args.recipes)?;
-        let target_recipes: Vec<Recipe> = store.select(&query).map(|m| m.recipe.clone()).collect();
+        let target_recipes: Vec<_> = store.pick_many(&args.recipes)?.recipes().cloned().collect();
 
         // User specified target or default to CWD.
         let target_dir = match &args.dir_name {

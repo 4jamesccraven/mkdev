@@ -72,7 +72,7 @@ pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error
     //
     // This allows, e.g., home-manager users to know that the file was only changed locally instead
     // of in the source of whatever program externally manages it.
-    let is_external = store.is_external(&new.name) == Some(true);
+    let is_external = store.is_external(&new.as_id()) == Some(true);
     if destructive && is_external {
         warning!("{}", t!("recipes.external"));
     }

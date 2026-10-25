@@ -46,7 +46,7 @@
 //! ```
 use super::{Language, RecipeItem};
 
-use std::path::Path;
+use std::{fmt::Display, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -74,6 +74,7 @@ impl Recipe {
     }
 
     /// Get the recipe's short name with no namespace component.
+    #[expect(unused)]
     pub fn shortname(&self) -> &str {
         destructure_id_str(&self.name).1
     }
@@ -122,14 +123,6 @@ pub struct RecipeId {
 }
 
 impl RecipeId {
-    /// Provides the full ID as a [`String`].
-    pub fn to_str(&self) -> String {
-        match &self.namespace {
-            Some(ns) => format!("{}::{}", ns, self.shortname),
-            None => self.shortname.clone(),
-        }
-    }
-
     /// Destructure the ID into its constituent parts.
     pub fn into_parts(self) -> (Option<String>, String) {
         (self.namespace, self.shortname)
@@ -140,6 +133,15 @@ impl RecipeId {
     pub fn into_parts_infallibe(self) -> (String, String) {
         let (maybe_ns, shortname) = self.into_parts();
         (maybe_ns.unwrap_or_else(String::new), shortname)
+    }
+}
+
+impl Display for RecipeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.namespace {
+            Some(ns) => write!(f, "{}::{}", ns, self.shortname),
+            None => write!(f, "{}", self.shortname),
+        }
     }
 }
 

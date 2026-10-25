@@ -40,10 +40,8 @@ use strum::IntoEnumIterator;
 pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     _ = Config::get()?;
-    let query = store.pick_one(&args.recipe)?;
-    let query_result = store.select(&query).next().unwrap().clone();
+    let original_recipe = store.pick_one(&args.recipe)?.recipe.clone();
 
-    let (_, original_recipe) = query_result.into_parts();
     let external_msg = format!(
         "{} - {}?",
         t!("recipes.external", name => &original_recipe.name),
@@ -63,8 +61,8 @@ pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
                 ExitAction::Save => {
                     // Give the user the opportunity to quit if the recipe is or was externally
                     // managed.
-                    if (store.is_external(&recipe) == Some(true)
-                        || store.is_external(&original_recipe) == Some(true))
+                    if (store.is_external(&recipe.as_id()) == Some(true)
+                        || store.is_external(&original_recipe.as_id()) == Some(true))
                         && !confirm_action(&external_msg, true)?
                     {
                         continue;

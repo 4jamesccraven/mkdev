@@ -25,9 +25,9 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     if let Some(current) = current.to_str()
         && let Ok(store) = RecipeStore::from_default_indices()
     {
-        let query = store.pick_all();
-        query
-            .into_strs()
+        store
+            .pick_all()
+            .id_strs()
             .filter(|c| c.starts_with(current))
             .for_each(|c: String| {
                 completions.push(CompletionCandidate::new(c));

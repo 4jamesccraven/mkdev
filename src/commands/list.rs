@@ -18,7 +18,7 @@
 //! Supports printing single recipes or all known recipes in various formats.
 use crate::cli::List;
 use crate::config::Config;
-use crate::error::{Error, Subject};
+use crate::error::Error;
 use crate::output_type::OutputType::{self, *};
 use crate::presentation::{format_recipe_list, recipe_treefmt};
 use crate::recipe::Recipe;
@@ -30,27 +30,15 @@ use rust_i18n::t;
 pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
-    let query = match args.recipe {
-        Some(ref id) => store.pick_one(id)?,
-        None => store.pick_all(),
-    };
-
-    let mut selection: Vec<_> = store.select(&query).map(|m| &m.recipe).collect();
-    selection.sort_by_key(|&r| (r.namespace(), r.shortname()));
-
-    if let Some(id) = args.recipe {
-        match selection.len() {
-            1 => display_one(selection[0], output_type),
-            0 => {
-                return Err(Error::Invalid {
-                    subject: Subject::Recipe,
-                    examples: Some(vec![id]),
-                });
-            }
-            _ => unreachable!(),
+    match args.recipe {
+        Some(ref id) => {
+            let recipe = &store.pick_one(id)?.recipe;
+            display_one(recipe, output_type);
         }
-    } else {
-        display_all(selection, output_type, !args.no_description);
+        None => {
+            let recipes: Vec<_> = store.pick_all().recipes().collect();
+            display_all(recipes, output_type, !args.no_description);
+        }
     }
 
     Ok(())

@@ -34,6 +34,7 @@ pub struct ManifestEntry {
 
 impl ManifestEntry {
     /// Destructure the entry into its parts.
+    #[expect(unused)]
     pub fn into_parts(self) -> (PathBuf, Recipe) {
         (self.store_path, self.recipe)
     }
@@ -162,44 +163,40 @@ impl RecipeStore {
     // ------------------------------------------------------------
 
     /// Get all information associated with a recipe ID.
-    fn pick_raw<K>(&self, recipe_id: K) -> Result<RecipeId, Error>
-    where
-        K: Into<RecipeId>,
-    {
+    fn pick_raw(&self, recipe_id: &RecipeId) -> Result<&RecipeId, Error> {
         // Always prefer an exact match.
-        let key = recipe_id.into();
-        if self.manifest.contains_key(&key) {
+        if let Some((key, _)) = self.manifest.get_key_value(recipe_id) {
             return Ok(key);
         }
 
         // Failing that see if the ID is referring to the default recipe by only specifying its
         // namespace.
         let remainder_as_namespace = RecipeId {
-            namespace: key.namespace.clone(),
+            namespace: recipe_id.namespace.clone(),
             shortname: "default".into(),
         };
-        if self.manifest.contains_key(&remainder_as_namespace) {
-            return Ok(remainder_as_namespace);
+        if let Some((key, _)) = self.manifest.get_key_value(&remainder_as_namespace) {
+            return Ok(key);
         }
 
         // As a last resort, see if the remaineder alone uniquely identifies a recipe.
         let potential_matches: Vec<_> = self
             .manifest
             .keys()
-            .filter(|k| k.shortname == key.shortname)
+            .filter(|k| k.shortname == recipe_id.shortname)
             .collect();
 
         match potential_matches.len() {
             0 => Err(Error::Invalid {
                 subject: Subject::Recipe,
-                examples: Some(vec![key.to_str()]),
+                examples: Some(vec![recipe_id.to_string()]),
             }),
             1 => {
                 let entry = potential_matches.into_iter().next().unwrap();
-                Ok(entry.clone())
+                Ok(entry)
             }
             2.. => Err(Error::AmbiguousShortRecipe {
-                query: key.to_str(),
+                query: recipe_id.to_string(),
                 possibilities: potential_matches
                     .into_iter()
                     .map(|k| self.manifest.get(k).unwrap().recipe.name.clone())
@@ -209,65 +206,67 @@ impl RecipeStore {
     }
 
     /// Query the store for a single manifest entries.
-    pub fn pick_one<K>(&self, recipe_id: K) -> Result<StoreQuery, Error>
+    pub fn pick_one<K>(&self, recipe_id: K) -> Result<&ManifestEntry, Error>
     where
         K: Into<RecipeId>,
     {
-        self.pick_raw(recipe_id).map(StoreQuery::from)
+        let key = recipe_id.into();
+        self.pick_raw(&key).map(|id| &self.manifest[id])
+    }
+
+    pub fn pick_id<K>(&self, recipe_id: K) -> Result<&RecipeId, Error>
+    where
+        K: Into<RecipeId>,
+    {
+        let recipe_id = recipe_id.into();
+        self.pick_raw(&recipe_id)
     }
 
     /// Query the store for several manifest entries.
-    pub fn pick_many<I, K>(&self, recipe_ids: I) -> Result<StoreQuery, Error>
+    pub fn pick_many<I, K>(&self, recipe_ids: I) -> Result<PickResults<'_>, Error>
     where
         I: IntoIterator<Item = K>,
         K: Into<RecipeId>,
     {
-        recipe_ids
+        Ok(recipe_ids
             .into_iter()
-            .map(|id| self.pick_raw(id))
-            .collect::<Result<_, _>>()
-            .map(StoreQuery)
+            .map(|id| id.into())
+            .map(|id| self.pick_raw(&id))
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .map(|id| &self.manifest[id])
+            .collect())
     }
 
     /// Query the store for all manifest entries.
-    pub fn pick_all(&self) -> StoreQuery {
-        StoreQuery(self.manifest.keys().cloned().collect())
+    pub fn pick_all(&self) -> PickResults<'_> {
+        self.manifest.values().collect()
     }
 
     /// Query the store for all manifest entries in the namespace.
-    pub fn pick_namespace(&self, namespace_id: &str) -> StoreQuery {
-        let matches: Vec<_> = self
-            .manifest
-            .keys()
-            .filter(|k| k.namespace.as_ref().is_some_and(|ns| ns == namespace_id))
-            .cloned()
-            .collect();
-
-        StoreQuery(matches)
+    pub fn pick_namespace(&self, namespace_id: &str) -> PickResults<'_> {
+        self.manifest
+            .iter()
+            .filter(|(k, _)| {
+                k.namespace
+                    .as_ref()
+                    .is_some_and(|ns| ns == &namespace_id.to_owned())
+            })
+            .map(|(_, v)| v)
+            .collect()
     }
 
     // ------------------------------------------------------------
     // Query Operations
     // ------------------------------------------------------------
 
-    /// Get the entries associated with a raw query.
-    pub fn select<'a>(
-        &'a self,
-        query: &'a StoreQuery,
-    ) -> impl Iterator<Item = &'a ManifestEntry> + 'a {
-        query.0.iter().map(|k| {
-            self.manifest
-                .get(k)
-                .expect("`StoreQuery` referencing non-existent entries")
-        })
-    }
-
     /// Query the store to see if an ID exists.
     pub fn recipe_exists<K>(&self, recipe_id: K) -> bool
     where
         K: Into<RecipeId>,
     {
-        self.pick_raw(recipe_id).is_ok()
+        let key = recipe_id.into();
+        self.pick_raw(&key).is_ok()
     }
 
     // ------------------------------------------------------------
@@ -327,10 +326,11 @@ impl RecipeStore {
     /// from the manifest. If it can't be removed from disk it remains in the manifest.
     pub fn delete<K>(&mut self, recipe_id: K) -> Result<PathBuf, Error>
     where
-        K: Into<RecipeId> + Clone,
+        K: Into<RecipeId>,
     {
+        let key = recipe_id.into();
         // Query the manifest for the given entry.
-        let query = self.pick_raw(recipe_id.clone())?;
+        let query = self.pick_raw(&key)?.clone();
 
         // Convert that ID into a store_path to remove.
         let entry_path = self
@@ -347,7 +347,6 @@ impl RecipeStore {
         self.manifest
             .remove(&query)
             .expect("manifest guaranteed to contain this id.");
-
         Ok(entry_path)
     }
 
@@ -361,7 +360,7 @@ impl RecipeStore {
         K: Into<RecipeId>,
     {
         // Verify that the ID exists in the first place.
-        let key = self.pick_raw(recipe_id)?;
+        let key = self.pick_raw(&recipe_id.into())?.clone();
 
         // Get the store paths associated with the current and updated values.
         let current_store_path = self
@@ -411,12 +410,9 @@ impl RecipeStore {
     ///
     /// None is also returned for recipes not part of the store. Do not use unverified IDs when
     /// calling this method.
-    pub fn is_external<K>(&self, recipe_id: K) -> Option<bool>
-    where
-        K: Into<RecipeId>,
-    {
+    pub fn is_external(&self, recipe_id: &RecipeId) -> Option<bool> {
         let key = self.pick_raw(recipe_id).ok()?;
-        let store_path = &self.manifest.get(&key).unwrap().store_path;
+        let store_path = &self.manifest.get(key).unwrap().store_path;
 
         std::fs::symlink_metadata(store_path)
             .ok()
@@ -446,24 +442,44 @@ impl RecipeStore {
     }
 }
 
-/// A list of keys returned by the store after a successful Query
-#[derive(Clone, Debug)]
-pub struct StoreQuery(Vec<RecipeId>);
+/// Iterator over references to store manifest entries.
+///
+/// Implements convenience methods for common operations.
+pub struct PickResults<'a> {
+    entries: std::vec::IntoIter<&'a ManifestEntry>,
+}
 
-impl From<RecipeId> for StoreQuery {
-    fn from(key: RecipeId) -> Self {
-        Self(vec![key])
+impl<'a> PickResults<'a> {
+    #[expect(unused)]
+    pub fn paths(self) -> impl Iterator<Item = &'a Path> {
+        self.map(|m| m.store_path.as_path())
+    }
+
+    pub fn recipes(self) -> impl Iterator<Item = &'a Recipe> {
+        self.map(|m| &m.recipe)
+    }
+
+    pub fn ids(self) -> impl Iterator<Item = RecipeId> {
+        self.map(|m| m.recipe.as_id())
+    }
+
+    pub fn id_strs(self) -> impl Iterator<Item = String> {
+        self.ids().map(|r| r.to_string())
     }
 }
 
-impl StoreQuery {
-    /// Convert the query results into [`RecipeId`]s.
-    pub fn into_ids(self) -> impl Iterator<Item = RecipeId> {
-        self.0.into_iter()
+impl<'a> FromIterator<&'a ManifestEntry> for PickResults<'a> {
+    fn from_iter<T: IntoIterator<Item = &'a ManifestEntry>>(iter: T) -> Self {
+        Self {
+            entries: iter.into_iter().collect::<Vec<_>>().into_iter(),
+        }
     }
+}
 
-    /// Convert the query results into their string IDs.
-    pub fn into_strs(self) -> impl Iterator<Item = String> {
-        self.into_ids().map(|k| k.to_str())
+impl<'a> Iterator for PickResults<'a> {
+    type Item = &'a ManifestEntry;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.entries.next()
     }
 }

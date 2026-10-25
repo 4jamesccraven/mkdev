@@ -41,10 +41,11 @@ pub fn delete_recipe(args: Delete, mut store: RecipeStore) -> Result<(), Error> 
     }
 
     // Warn the user if the store_path is a symlink.
-    warn_if_external!(&args.recipe, store);
+    let id = store.pick_id(&args.recipe)?.clone();
+    warn_if_external!(&id, store);
 
     // Delete and confirm the path deleted.
-    let deleted_file = store.delete(&args.recipe)?;
+    let deleted_file = store.delete(id)?;
     println!(
         "{}",
         t!("recipes.delete_msg", path => &deleted_file.display())
@@ -55,13 +56,9 @@ pub fn delete_recipe(args: Delete, mut store: RecipeStore) -> Result<(), Error> 
 
 /// Deletes every recipe in a namespace.
 fn delete_namespace(store: &mut RecipeStore, namespace: &str) -> Result<(), Error> {
-    let query = store.pick_namespace(namespace);
-    let recipe_ids: Vec<_> = store
-        .select(&query)
-        .map(|m| m.recipe.name.clone())
-        .collect();
+    let recipe_ids: Vec<_> = store.pick_namespace(namespace).ids().collect();
 
-    for id in recipe_ids {
+    recipe_ids.into_iter().try_for_each(|id| {
         warn_if_external!(&id, store);
 
         let deleted_file = store.delete(id)?;
@@ -69,6 +66,6 @@ fn delete_namespace(store: &mut RecipeStore, namespace: &str) -> Result<(), Erro
             "{}",
             t!("recipes.delete_msg", path => &deleted_file.display())
         );
-    }
-    Ok(())
+        Ok(())
+    })
 }
