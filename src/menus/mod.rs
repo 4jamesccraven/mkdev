@@ -26,6 +26,7 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::fs::current_dir;
 use crate::recipe::Recipe;
+use crate::recipe::RecipeId;
 use crate::recipe::RecipeItem;
 use crate::recipe::capture::capture_contents;
 
@@ -88,16 +89,13 @@ fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
-// TODO: re-evaluate inclusion later
-#[expect(unused)]
-fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
+pub fn select_recipes(recipes: Vec<RecipeId>) -> InquireResult<Vec<RecipeId>> {
     let vim = Config::get().unwrap().vim;
 
     MultiSelect::new(&t!("menus.evoke.pick"), recipes)
         .with_help_message(&t!("menus.multiselect_help"))
         .with_vim_mode(vim)
         .prompt()
-        .map(|xs| xs.iter().map(|x| x.to_string()).collect())
 }
 
 fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {

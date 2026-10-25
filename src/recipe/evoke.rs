@@ -28,6 +28,7 @@ use crate::error::{
     Subject,
 };
 use crate::fs;
+use crate::menus;
 use crate::recipe::{OnConflict, RecipeStore, instantiate_contents};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 use crate::warning;
@@ -56,6 +57,10 @@ pub struct EvocationCtx {
 impl EvocationCtx {
     /// Generate the context for evocation from a collection of command line arguments.
     pub fn from_args(args: Evoke, store: RecipeStore) -> Result<Self, Error> {
+        if args.interactive {
+            return Self::from_prompt(args, store);
+        }
+
         // There is an error if no recipes are provided
         if args.recipes.is_empty() {
             return Err(NoneSpecified {
@@ -71,6 +76,28 @@ impl EvocationCtx {
             Some(dir) => PathBuf::from(dir),
             None => fs::current_dir()?,
         };
+
+        let mut ctx = Self {
+            name: Self::unwrap_name(&args),
+            args,
+            target_dir,
+            resolved_recipes: Vec::with_capacity(target_recipes.len()),
+            target_recipes,
+        };
+        ctx.resolve_targets()?;
+
+        Ok(ctx)
+    }
+
+    pub fn from_prompt(args: Evoke, store: RecipeStore) -> Result<Self, Error> {
+        let all_ids = store.pick_all().ids().collect();
+        let target_ids: Vec<_> = menus::select_recipes(all_ids)?
+            .into_iter()
+            .map(|id| id.to_string())
+            .collect();
+
+        let target_recipes: Vec<_> = store.pick_many(&target_ids)?.recipes().cloned().collect();
+        let target_dir = fs::current_dir()?;
 
         let mut ctx = Self {
             name: Self::unwrap_name(&args),
