@@ -15,11 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The command line interface for mkdev.
 #![deny(missing_docs)]
-use crate::commands::{delete_recipe, imprint_recipe, list_recipe};
+use crate::commands::*;
 use crate::error::Error;
 use crate::menus::editor;
 use crate::output_type::OutputType;
-use crate::recipe::EvocationCtx;
 use crate::recipe::RecipeStore;
 use crate::recipe_completer::recipe_completer;
 
@@ -36,8 +35,8 @@ use clap_complete::engine::ArgValueCompleter;
     version = crate_version!(),
     long_version = concat!(
         crate_version!(), " — ", crate_description!(),
-        "\n© 2026 ", crate_authors!(),
-        ".\nThis program is free software and comes with ABSOLUTELY NO WARRANTY.",
+        "\n© 2026 ", crate_authors!(), ".",
+        "\nThis program is free software and comes with ABSOLUTELY NO WARRANTY.",
         "\nYou are welcome to redistribute this software under certain conditions.",
         "\nSee <https://github.com/4jamesccraven/mkdev/blob/main/LICENSE> for more details."
     ),
@@ -77,9 +76,7 @@ impl Cli {
     pub fn dispatch(self, store: RecipeStore) -> Result<(), Error> {
         match self.command {
             Some(command) => match command {
-                Commands::Evoke(sub_args) => {
-                    EvocationCtx::from_args(sub_args, store).and_then(|mut ctx| ctx.evoke())
-                }
+                Commands::Evoke(sub_args) => evoke_recipe(sub_args, store),
                 Commands::Imprint(sub_args) => imprint_recipe(sub_args, store),
                 Commands::Delete(sub_args) => delete_recipe(sub_args, store),
                 Commands::List(sub_args) => list_recipe(sub_args, store),

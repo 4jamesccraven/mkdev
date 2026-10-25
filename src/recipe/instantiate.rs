@@ -25,7 +25,7 @@ use std::path::PathBuf;
 ///
 /// If a file in the target directory already exists and the conflict resolution strategy is not
 /// `Overwrite`, a Destruction error is returned.
-pub fn instantiate_contents(contents: &[RecipeItem], opts: InstantiateOpts) -> Result<(), Error> {
+pub fn instantiate_contents(contents: &[RecipeItem], opts: &InstantiateOpts) -> Result<(), Error> {
     contents.iter().try_for_each(|content| {
         let dest = opts.root_dir.join(content.as_path());
         if let Some(parent) = &dest.parent() {
@@ -52,11 +52,21 @@ pub fn instantiate_contents(contents: &[RecipeItem], opts: InstantiateOpts) -> R
     })
 }
 
-/// What should happen if a file already exists in the target directory during evocation.
+/// Defines how existing files should be handled.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OnConflict {
+    /// Replace existing files.
     Overwrite,
+    /// Preserve existing files, refusing to overwrite.
     Guard,
+}
+
+impl OnConflict {
+    /// Returns [`OnConflict::Overwrite`] if `yes` is `true`, or [`OnConflict::Guard`] otherwise.
+    #[inline]
+    pub fn allow_overwrite(yes: bool) -> Self {
+        if yes { Self::Overwrite } else { Self::Guard }
+    }
 }
 
 /// Options for instantiating [`RecipeItem`]s.

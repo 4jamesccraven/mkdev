@@ -17,7 +17,6 @@
 //! created, and the most fundamental operations to be done with them.
 pub mod capture;
 pub mod content;
-mod evoke;
 pub mod instantiate;
 pub mod language;
 mod model;
@@ -25,7 +24,6 @@ mod store;
 mod version;
 
 pub use content::RecipeItem;
-pub use evoke::*;
 pub use language::Language;
 pub use model::{Recipe, RecipeId};
 pub use store::RecipeStore;
@@ -82,7 +80,7 @@ impl Recipe {
 
         instantiate_contents(
             &self.contents,
-            instantiate::InstantiateOpts {
+            &instantiate::InstantiateOpts {
                 root_dir: temp_dir.path().to_path_buf(),
                 on_conflict: OnConflict::Overwrite,
                 verbose: false,
