@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! The interface to mkdev's central recipe repository.
-use super::Recipe;
-use super::model::RecipeId;
+use super::{Recipe, RecipeId};
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};
 use crate::fs;

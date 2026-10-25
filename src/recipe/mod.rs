@@ -20,21 +20,19 @@ pub mod content;
 mod evoke;
 pub mod instantiate;
 pub mod language;
-pub mod model;
+mod model;
 mod store;
 mod version;
-
-// TODO: remove this.
-use instantiate::{OnConflict, instantiate_contents};
 
 pub use content::RecipeItem;
 pub use evoke::*;
 pub use language::Language;
-pub use model::Recipe;
+pub use model::{Recipe, RecipeId};
 pub use store::RecipeStore;
 
+// TODO: remove this.
 use crate::error::{Context, Error};
-
+use instantiate::{OnConflict, instantiate_contents};
 use std::path::Path;
 use tempfile::TempDir;
 
