@@ -32,14 +32,6 @@ pub struct ManifestEntry {
     pub recipe: Recipe,
 }
 
-impl ManifestEntry {
-    /// Destructure the entry into its parts.
-    #[expect(unused)]
-    pub fn into_parts(self) -> (PathBuf, Recipe) {
-        (self.store_path, self.recipe)
-    }
-}
-
 /// Mkdev's recipe repository.
 #[derive(Clone, Debug)]
 pub struct RecipeStore {
