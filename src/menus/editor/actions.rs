@@ -92,7 +92,7 @@ impl EditorAction {
                     "menus.editor.content_name_required"
                 )))
                 .with_validator(|i: &str| {
-                    if recipe.contents.iter().any(|item| item.name() == i) {
+                    if recipe.contents.iter().any(|item| item.as_path() == i) {
                         Ok(Validation::Invalid(
                             t!("menus.editor.invalid_content_name").into(),
                         ))

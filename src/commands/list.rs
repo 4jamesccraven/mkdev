@@ -124,8 +124,11 @@ fn display_one(recipe: &Recipe, output_type: OutputType) {
 }
 
 fn content_names_joined(recipe: &Recipe, sep: &str) -> String {
-    let mut names = recipe.contents.iter().map(|c| c.name()).collect::<Vec<_>>();
+    let mut names = recipe.contents.iter().collect::<Vec<_>>();
     names.sort();
-
-    names.join(sep)
+    names
+        .into_iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<_>>()
+        .join(sep)
 }

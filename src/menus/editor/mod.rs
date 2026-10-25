@@ -199,7 +199,7 @@ fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Opti
             "menus.editor.content_name_required"
         )))
         .with_validator(|i: &str| {
-            if i == current || !existing.iter().any(|item| item.name() == i) {
+            if i == current || !existing.iter().any(|item| item.as_path() == i) {
                 Ok(Validation::Valid)
             } else {
                 Ok(Validation::Invalid(
