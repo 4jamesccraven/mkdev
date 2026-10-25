@@ -16,7 +16,7 @@
 //
 //
 // Portions of this file are derived from the `inquire` crate:
-// https://github.com/mikaelmello/inquire
+// <https://github.com/mikaelmello/inquire>
 //
 // Original work licensed under the MIT License.
 // Copyright (c) 2021 Mikael Mello
@@ -24,10 +24,10 @@
 // See inquire.MIT.txt for the full license text.
 
 //! Support for opening the editor.
-//!
-//! Why not use the one the one from `inquire`? It strips newlines from the user's "input," meaning
-//! that genuinely desired newlines do not make it into the final recipe, and thus silently changes
-//! user data.
+//
+// Why not use the one the one from `inquire`? It strips newlines from the user's "input," meaning
+// that genuinely desired newlines do not make it into the final recipe, and thus silently changes
+// user data.
 use std::io::Write;
 use std::path::Path;
 use std::{env, process};
