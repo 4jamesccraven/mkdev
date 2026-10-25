@@ -67,7 +67,7 @@ fn format_recipe_name(recipe: &Recipe, config: &FormatConfig) -> String {
         }
     };
 
-    let (namespace, shortname) = recipe.as_id().into_parts_infallibe();
+    let (namespace, shortname) = recipe.as_id().into_strings();
 
     let subs = HashMap::from([
         ("name".to_string(), do_cond_fmt(&recipe.name)),

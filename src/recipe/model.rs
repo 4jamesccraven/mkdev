@@ -130,7 +130,7 @@ impl RecipeId {
 
     /// Destrucutre the ID into its constituent parts, converting the [`Option`] namespace to an
     /// empty [`String`] on [`None`].
-    pub fn into_parts_infallibe(self) -> (String, String) {
+    pub fn into_strings(self) -> (String, String) {
         let (maybe_ns, shortname) = self.into_parts();
         (maybe_ns.unwrap_or_else(String::new), shortname)
     }
