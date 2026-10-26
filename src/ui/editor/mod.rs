@@ -17,37 +17,21 @@
 mod actions;
 mod file_editor;
 
-use super::confirm_action;
-
-use crate::cli::Alter;
 use crate::config::Config;
-use crate::error::Error;
 use crate::presentation::recipe_treefmt;
-use crate::recipe::{Recipe, RecipeItem, RecipeStore};
+use crate::recipe::Recipe;
 
 use colored::Colorize;
+use inquire::Select;
 use inquire::error::InquireResult;
-use inquire::validator::{Validation, ValueRequiredValidator};
-use inquire::{Select, Text};
 use rust_i18n::t;
 use strum::IntoEnumIterator;
 
-/// Invoke an editor that continuously allows inspection and editing of various data within the
-/// recipe.
+/// Runs the interactive editor for a recipe, returning the modified recipe if the user saves their
+/// changes, or [`None`] otherwise.
 ///
-/// On exit, the user may choose to save the recipe, at which point it is canonicalised and then
-/// saved to the recipe directory.
-pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
-    // Ensure the config is loaded in memory before proceeding.
-    _ = Config::get()?;
-    let original_recipe = store.pick_one(&args.recipe)?.recipe.clone();
-
-    let external_msg = format!(
-        "{} - {}?",
-        t!("recipes.external", name => &original_recipe.name),
-        t!("general.proceed")
-    );
-
+/// The original recipe is left unchanged; edits are made to an in-memory copy.
+pub fn run_editor(original_recipe: &Recipe) -> InquireResult<Option<Recipe>> {
     let mut recipe = original_recipe.clone();
     let mut recipe_altered = false;
 
@@ -59,21 +43,7 @@ pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
         if matches!(action, EditorAction::Quit) {
             match EditorAction::quit_menu(recipe_altered)? {
                 ExitAction::Save => {
-                    // Give the user the opportunity to quit if the recipe is or was externally
-                    // managed.
-                    if (store.is_external(&recipe.as_id()) == Some(true)
-                        || store.is_external(&original_recipe.as_id()) == Some(true))
-                        && !confirm_action(&external_msg, true)?
-                    {
-                        continue;
-                    }
-
-                    // TODO: this should be the store's responsibility
-                    let recipe = recipe.to_canonical()?;
-
-                    // Store the recipe's new path.
-                    store.replace(&original_recipe, recipe)?;
-                    break;
+                    return Ok(Some(recipe));
                 }
                 ExitAction::Exit => break,
                 ExitAction::Cancel => continue,
@@ -86,7 +56,7 @@ pub fn editor(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
         println!();
     }
 
-    Ok(())
+    Ok(None)
 }
 
 /// Actions that the editor can take
@@ -118,7 +88,7 @@ impl EditorAction {
     /// If the editor should close, `Ok(true)` is returned. `altered` informs whether or not a recipe has
     /// been altered. If it hasn't the editor simply closes. If the recipe has been altered, the user
     /// is presented with the choice to save and exit, exit without saving, or cancel (not exit).
-    fn quit_menu(altered: bool) -> Result<ExitAction, Error> {
+    fn quit_menu(altered: bool) -> InquireResult<ExitAction> {
         if !altered {
             Ok(ExitAction::Exit)
         } else {
@@ -192,26 +162,6 @@ impl std::fmt::Display for EditorAction {
     }
 }
 
-/// Prompts a name for new content item.
-fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Option<String>> {
-    let msg = &t!("menus.editor.get_content_name");
-    Text::new(msg)
-        .with_validator(ValueRequiredValidator::new(t!(
-            "menus.editor.content_name_required"
-        )))
-        .with_validator(|i: &str| {
-            if i == current || !existing.iter().any(|item| item.as_path() == i) {
-                Ok(Validation::Valid)
-            } else {
-                Ok(Validation::Invalid(
-                    t!("menus.editor.invalid_content_name").into(),
-                ))
-            }
-        })
-        .with_initial_value(current)
-        .prompt_skippable()
-}
-
 /// Strategy enum that dictates what happens when a user tries to exit with unsaved changes.
 #[derive(Clone, Copy, Debug, strum::EnumIter)]
 enum ExitAction {
@@ -229,25 +179,6 @@ impl std::fmt::Display for ExitAction {
                 Self::Save => t!("editor.exit.save"),
                 Self::Exit => t!("editor.exit.exit"),
                 Self::Cancel => t!("editor.exit.cancel"),
-            }
-        )
-    }
-}
-
-#[derive(Clone, Copy, Debug, strum::EnumIter)]
-enum ContentKind {
-    File,
-    Directory,
-}
-
-impl std::fmt::Display for ContentKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::File => t!("general.file"),
-                Self::Directory => t!("general.directory"),
             }
         )
     }

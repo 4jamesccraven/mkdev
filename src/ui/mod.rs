@@ -19,7 +19,7 @@ mod locale;
 
 use std::fmt::Display;
 
-pub use editor::editor;
+pub use editor::run_editor;
 use locale::*;
 
 use crate::config::Config;

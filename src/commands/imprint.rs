@@ -25,9 +25,9 @@ use crate::cli::Imprint;
 use crate::error::Context;
 use crate::error::Error;
 use crate::fs;
-use crate::menus::{self, confirm_recipe_overwrite};
 use crate::recipe::capture::{CaptureOpts, capture_contents_with};
 use crate::recipe::{Recipe, RecipeStore};
+use crate::ui::{self, confirm_recipe_overwrite};
 use crate::warning;
 
 use rust_i18n::t;
@@ -36,7 +36,7 @@ use rust_i18n::t;
 pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
     // Generate the new recipe
     let new = if args.interactive {
-        menus::imprint()?
+        ui::imprint()?
     } else {
         // Capture the current directory with filters (unless the user disables them) and with any
         // additional exclusion globs the user provides.

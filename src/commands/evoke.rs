@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! The implementation of `mk evoke`.
+//! Implementation of `mk evoke`.
 //!
 //! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
 //! are systematically loaded, formatted with custom substitutions, and copied into the target
@@ -25,7 +25,8 @@ use crate::recipe::content::{File, RecipeItem};
 use crate::recipe::instantiate::{InstantiateOpts, OnConflict, instantiate_contents};
 use crate::recipe::{Recipe, RecipeStore};
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
-use crate::{menus, warning};
+use crate::ui;
+use crate::warning;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -45,7 +46,7 @@ pub fn evoke_recipe(args: Evoke, store: RecipeStore) -> Result<(), Error> {
         &args.recipes
     } else {
         let choices = store.pick_all().id_strings().collect();
-        &menus::select_recipes(choices)?
+        &ui::select_recipes(choices)?
     };
 
     // Validate the user selection and configure instantiation.

@@ -17,7 +17,6 @@
 #![deny(missing_docs)]
 use crate::commands::*;
 use crate::error::Error;
-use crate::menus::editor;
 use crate::output_type::OutputType;
 use crate::recipe::RecipeStore;
 use crate::recipe_completer::recipe_completer;
@@ -80,8 +79,9 @@ impl Cli {
                 Commands::Imprint(sub_args) => imprint_recipe(sub_args, store),
                 Commands::Delete(sub_args) => delete_recipe(sub_args, store),
                 Commands::List(sub_args) => list_recipe(sub_args, store),
-                Commands::Alter(sub_args) => editor(sub_args, store),
+                Commands::Alter(sub_args) => alter_recipe(sub_args, store),
             },
+            // Handle `mk -i` alias
             None if self.interactive => {
                 let fake_args = Imprint {
                     interactive: true,

@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //! Implementation for editing specific attributes in the editor.
 use crate::config::Config;
-use crate::menus::multiselect_truncate_formatter;
 use crate::recipe::Recipe;
 use crate::recipe::RecipeItem;
+use crate::ui::multiselect_truncate_formatter;
 
+use super::EditorAction;
 use super::file_editor::FileEditor;
-use super::{ContentKind, EditorAction, prompt_new_name};
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -45,6 +45,7 @@ macro_rules! try_prompt {
 /// Assigns a value with a new one if that new value is different.
 ///
 /// Returns `true` if the value was changed.
+// Move somewhere more neutral
 #[macro_export]
 macro_rules! set_if_changed {
     ($l_val:expr, $r_val:expr) => {
@@ -202,5 +203,45 @@ impl EditorAction {
         let paths_to_remove: HashSet<_> = contents.into_iter().collect();
         recipe.contents.retain(|r| !paths_to_remove.contains(r));
         Ok(true)
+    }
+}
+
+/// Prompts a name for new content item.
+fn prompt_new_name(current: &str, existing: &[RecipeItem]) -> InquireResult<Option<String>> {
+    let msg = &t!("menus.editor.get_content_name");
+    Text::new(msg)
+        .with_validator(ValueRequiredValidator::new(t!(
+            "menus.editor.content_name_required"
+        )))
+        .with_validator(|i: &str| {
+            if i == current || !existing.iter().any(|item| item.as_path() == i) {
+                Ok(Validation::Valid)
+            } else {
+                Ok(Validation::Invalid(
+                    t!("menus.editor.invalid_content_name").into(),
+                ))
+            }
+        })
+        .with_initial_value(current)
+        .prompt_skippable()
+}
+
+/// The kind of [`RecipeItem`] to add.
+#[derive(Clone, Copy, Debug, strum::EnumIter)]
+enum ContentKind {
+    File,
+    Directory,
+}
+
+impl std::fmt::Display for ContentKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::File => t!("general.file"),
+                Self::Directory => t!("general.directory"),
+            }
+        )
     }
 }
