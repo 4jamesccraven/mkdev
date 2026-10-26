@@ -16,13 +16,16 @@
 //! Implementation of `mk delete`.
 //!
 //! Used to delete recipes from their default location.
-use crate::cli::Delete;
+use crate::cli::recipe_completer;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
 use crate::warning;
 
+use clap::Parser;
+use clap_complete::ArgValueCompleter;
 use rust_i18n::t;
 
+// TODO: consider relocating
 macro_rules! warn_if_external {
     ($id:expr, $store:ident) => {{
         if let Some(is_external) = $store.is_external($id)
@@ -31,6 +34,17 @@ macro_rules! warn_if_external {
             warning!("{}", t!("recipes.external"));
         }
     }};
+}
+
+#[derive(Parser, Debug)]
+pub struct Delete {
+    /// The recipe/namespace to delete
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipe: String,
+
+    /// Delete an entire namespace.
+    #[arg(long)]
+    pub namespace: bool,
 }
 
 /// Deletes a recipe based on command line arguments.

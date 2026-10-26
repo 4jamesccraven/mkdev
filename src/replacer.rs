@@ -17,7 +17,6 @@
 //!
 //! This module is used to implement mkdev's recipe substitutions during `mk evoke` as well as
 //! formatting recipes for the default `mk list` behaviour.
-#![allow(dead_code)]
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},

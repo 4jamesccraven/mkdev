@@ -21,8 +21,8 @@ mod evoke;
 mod imprint;
 mod list;
 
-pub use alter::alter_recipe;
-pub use delete::delete_recipe;
-pub use evoke::evoke_recipe;
-pub use imprint::imprint_recipe;
-pub use list::list_recipe;
+pub use alter::*;
+pub use delete::*;
+pub use evoke::*;
+pub use imprint::*;
+pub use list::*;

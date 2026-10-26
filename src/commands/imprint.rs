@@ -21,7 +21,6 @@
 //! recipe struct and stored to the recipe directory.
 use std::path::PathBuf;
 
-use crate::cli::Imprint;
 use crate::error::Context;
 use crate::error::Error;
 use crate::fs;
@@ -30,7 +29,39 @@ use crate::recipe::{Recipe, RecipeStore};
 use crate::ui::{self, confirm_recipe_overwrite};
 use crate::warning;
 
+use clap::{ArgAction, Parser};
 use rust_i18n::t;
+
+#[derive(Parser, Debug, Default)]
+pub struct Imprint {
+    /// The name of the recipe to imprint.
+    #[arg(default_value = "", required_unless_present = "interactive")]
+    pub recipe: String,
+
+    /// Create the recipe in interactive mode.
+    #[arg(short, long)]
+    pub interactive: bool,
+
+    /// Description to be associated with recipe
+    #[arg(short, long)]
+    pub description: Option<String>,
+
+    /// Supress warnings about destructive actions
+    #[arg(short, long)]
+    pub suppress_warnings: bool,
+
+    /// Write the recipe as a Nix expression & save it to FILE
+    #[arg(short = 'n', long, value_name = "FILE")]
+    pub to_nix: Option<PathBuf>,
+
+    /// Paths/globs to exclude from the recipe
+    #[arg(short, long, value_name = "FILE/GLOB", action = ArgAction::Append)]
+    pub exclude: Vec<String>,
+
+    /// Disable default filters (e.g., .gitignore files)
+    #[arg(long)]
+    pub no_filter: bool,
+}
 
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
 pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {

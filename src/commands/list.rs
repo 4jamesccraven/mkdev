@@ -16,15 +16,31 @@
 //! Implementation of `mk list`.
 //!
 //! Supports printing single recipes or all known recipes in various formats.
-use crate::cli::List;
+use crate::cli::{OutputType, recipe_completer};
 use crate::config::Config;
 use crate::error::Error;
-use crate::output_type::OutputType::{self, *};
 use crate::presentation::{format_recipe_list, recipe_treefmt};
 use crate::recipe::Recipe;
 use crate::recipe::RecipeStore;
 
+use clap::Parser;
+use clap_complete::ArgValueCompleter;
 use rust_i18n::t;
+
+#[derive(Parser, Debug)]
+pub struct List {
+    /// Specific recipe
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipe: Option<String>,
+
+    /// Style of output
+    #[arg(short, long)]
+    pub r#type: Option<OutputType>,
+
+    /// Hide description (note: only only applies default style)
+    #[arg(long)]
+    pub no_description: bool,
+}
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
 pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
@@ -50,6 +66,7 @@ const SER_EXISTING_RECIPE: &str = //.
 
 /// Displays all recipes.
 fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
+    use OutputType::*;
     match output_type {
         Default => {
             let mut display_cfg = Config::get()
@@ -91,6 +108,7 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
 }
 
 fn display_one(recipe: &Recipe, output_type: OutputType) {
+    use OutputType::*;
     match output_type {
         Default => print!("{}", recipe_treefmt(recipe)),
         Debug => println!("{:#?}", recipe),

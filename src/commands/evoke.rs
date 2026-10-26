@@ -18,7 +18,7 @@
 //! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
 //! are systematically loaded, formatted with custom substitutions, and copied into the target
 //! directory.
-use crate::cli::Evoke;
+use crate::cli::recipe_completer;
 use crate::config::Config;
 use crate::error::Error;
 use crate::recipe::content::{File, RecipeItem};
@@ -32,7 +32,37 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use clap::Parser;
+use clap_complete::ArgValueCompleter;
 use rust_i18n::t;
+
+#[derive(Parser, Clone, Debug)]
+pub struct Evoke {
+    /// The recipe(s) to build
+    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    pub recipes: Vec<String>,
+
+    /// Evoke recipes in interactive mode
+    #[arg(short, long)]
+    pub interactive: bool,
+
+    /// Target directory for recipe output
+    #[arg(last = true)]
+    pub dir_name: Option<String>,
+
+    /// The 'name' of the instantiated recipe. This replaces substitutions that evaluate to
+    /// mk::name
+    #[arg(short, long)]
+    pub name: Option<String>,
+
+    /// Print debug info during build
+    #[arg(short, long)]
+    pub verbose: bool,
+
+    /// Supress warnings about destructive actions
+    #[arg(short, long)]
+    pub suppress_warnings: bool,
+}
 
 pub fn evoke_recipe(args: Evoke, store: RecipeStore) -> Result<(), Error> {
     // Determine what goes in the `mk::name` substitution.

@@ -15,14 +15,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Implementation of `mk alter`.
-use crate::cli::Alter;
 use crate::config::Config;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
 use crate::ui::run_editor;
 use crate::warning;
 
+use clap::Parser;
 use rust_i18n::t;
+
+#[derive(Parser, Debug)]
+pub struct Alter {
+    /// The recipe to edit
+    pub recipe: String,
+}
 
 pub fn alter_recipe(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
