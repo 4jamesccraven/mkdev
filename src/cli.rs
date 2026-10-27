@@ -68,25 +68,24 @@ pub struct Cli {
 }
 
 impl Cli {
-    /// Determine main logic based on the given arguments.
-    pub fn dispatch(self, store: RecipeStore) -> Result<(), Error> {
+    /// Execute the parsed subcommand.
+    pub fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        use crate::commands::StoreCommand;
+
         match self.command {
             Some(command) => match command {
-                Commands::Evoke(sub_args) => evoke_recipe(sub_args, store),
-                Commands::Imprint(sub_args) => imprint_recipe(sub_args, store),
-                Commands::Delete(sub_args) => delete_recipe(sub_args, store),
-                Commands::List(sub_args) => list_recipe(sub_args, store),
-                Commands::Alter(sub_args) => alter_recipe(sub_args, store),
+                Commands::Evoke(args) => args.execute(store),
+                Commands::Imprint(args) => args.execute(store),
+                Commands::Delete(args) => args.execute(store),
+                Commands::List(args) => args.execute(store),
+                Commands::Alter(args) => args.execute(store),
             },
             // Handle `mk -i` alias
-            None if self.interactive => {
-                let fake_args = Imprint {
-                    interactive: true,
-                    ..Default::default()
-                };
-
-                imprint_recipe(fake_args, store)
+            None if self.interactive => Imprint {
+                interactive: true,
+                ..Default::default()
             }
+            .execute(store),
             None => {
                 // Print help and exit if no action is provided
                 Cli::command().print_help().unwrap();

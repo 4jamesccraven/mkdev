@@ -18,6 +18,8 @@
 //! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
 //! are systematically loaded, formatted with custom substitutions, and copied into the target
 //! directory.
+use super::StoreCommand;
+
 use crate::cli::recipe_completer;
 use crate::config::Config;
 use crate::error::Error;
@@ -64,7 +66,13 @@ pub struct Evoke {
     pub suppress_warnings: bool,
 }
 
-pub fn evoke_recipe(args: Evoke, store: RecipeStore) -> Result<(), Error> {
+impl StoreCommand for Evoke {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        evoke_command(self, store)
+    }
+}
+
+pub fn evoke_command(args: Evoke, store: RecipeStore) -> Result<(), Error> {
     // Determine what goes in the `mk::name` substitution.
     let project_name = match args.name {
         Some(ref name) => name.clone(),

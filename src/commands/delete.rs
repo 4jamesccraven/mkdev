@@ -16,6 +16,8 @@
 //! Implementation of `mk delete`.
 //!
 //! Used to delete recipes from their default location.
+use super::StoreCommand;
+
 use crate::cli::recipe_completer;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
@@ -47,8 +49,14 @@ pub struct Delete {
     pub namespace: bool,
 }
 
+impl StoreCommand for Delete {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        delete_command(self, store)
+    }
+}
+
 /// Deletes a recipe based on command line arguments.
-pub fn delete_recipe(args: Delete, mut store: RecipeStore) -> Result<(), Error> {
+pub fn delete_command(args: Delete, mut store: RecipeStore) -> Result<(), Error> {
     // Handle namespace deletion
     if args.namespace {
         return delete_namespace(&mut store, &args.recipe);

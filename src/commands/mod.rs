@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! CLI subcommands for `mk`.
+//! High level operations on the store.
+//!
+//! These operations are expected to be consumed as CLI subcommands, but they are also conceptual.
+//! They bridge the gap between what the user specifies and low-level implementation details.
 mod alter;
 mod delete;
 mod evoke;
@@ -26,3 +29,12 @@ pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
 pub use list::*;
+
+use crate::{error::Error, recipe::RecipeStore};
+
+/// A trait that represents a command to be run against a [`RecipeStore`].
+///
+/// This enforces the type signature of the command, ensuring uniformity.
+pub trait StoreCommand {
+    fn execute(self, store: RecipeStore) -> Result<(), Error>;
+}

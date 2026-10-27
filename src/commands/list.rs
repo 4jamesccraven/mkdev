@@ -16,6 +16,8 @@
 //! Implementation of `mk list`.
 //!
 //! Supports printing single recipes or all known recipes in various formats.
+use super::StoreCommand;
+
 use crate::cli::{OutputType, recipe_completer};
 use crate::config::Config;
 use crate::error::Error;
@@ -42,8 +44,14 @@ pub struct List {
     pub no_description: bool,
 }
 
+impl StoreCommand for List {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        list_command(self, store)
+    }
+}
+
 /// List a recipe/recipes in accordance to the provide command line arguments.
-pub fn list_recipe(args: List, store: RecipeStore) -> Result<(), Error> {
+pub fn list_command(args: List, store: RecipeStore) -> Result<(), Error> {
     let output_type = args.r#type.unwrap_or_default();
 
     match args.recipe {

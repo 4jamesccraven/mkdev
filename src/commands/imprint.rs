@@ -19,7 +19,7 @@
 //! the current directory recursively and stores the relative path and contents of all text files
 //! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
 //! recipe struct and stored to the recipe directory.
-use std::path::PathBuf;
+use super::StoreCommand;
 
 use crate::error::Context;
 use crate::error::Error;
@@ -28,6 +28,8 @@ use crate::recipe::capture::{CaptureOpts, capture_contents_with};
 use crate::recipe::{Recipe, RecipeStore};
 use crate::ui::{self, confirm_recipe_overwrite};
 use crate::warning;
+
+use std::path::PathBuf;
 
 use clap::{ArgAction, Parser};
 use rust_i18n::t;
@@ -63,8 +65,14 @@ pub struct Imprint {
     pub no_filter: bool,
 }
 
+impl StoreCommand for Imprint {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        imprint_command(self, store)
+    }
+}
+
 /// Imprints a recipe using arguments from the command line, and post processes it accordingly.
-pub fn imprint_recipe(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
+pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
     // Generate the new recipe
     let new = if args.interactive {
         ui::imprint()?

@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Implementation of `mk alter`.
+use super::StoreCommand;
+
 use crate::config::Config;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
@@ -30,7 +32,13 @@ pub struct Alter {
     pub recipe: String,
 }
 
-pub fn alter_recipe(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
+impl StoreCommand for Alter {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        alter_command(self, store)
+    }
+}
+
+pub fn alter_command(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
     // Ensure the config is loaded in memory before proceeding.
     // TODO: see about getting `config.vim` here instead.
     _ = Config::get()?;
