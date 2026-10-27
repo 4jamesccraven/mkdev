@@ -65,7 +65,7 @@ impl Recipe {
 
     /// Creates a temporary directory with all the files in the recipe instantiated on disk.
     ///
-    /// Variable substitution does not occur. This is esentially an out-of-memory representation of
+    /// Variable substitution does not occur. This is essentially an out-of-memory representation of
     /// the recipe's `contents` field.
     // TODO: refactor to avoid `Option` parameter.
     pub fn materialise(&self, maybe_dir: Option<&Path>) -> Result<TempDir, Error> {

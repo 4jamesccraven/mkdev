@@ -22,7 +22,7 @@
 //! - `[global namespace]::foo`
 //! - `python::foo`
 //!
-//! The namespace in an id is everything, including colon characters, preceeding the **last** double
+//! The namespace in an id is everything, including colon characters, preceding the **last** double
 //! colon. Below is a typical example of a valid ID.
 //! ```text
 //! foo_namespace::bar_recipe

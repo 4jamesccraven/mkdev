@@ -246,14 +246,14 @@ mod tests {
     fn make_fmt(
         subs: &[(&str, &str)],
         delims: (&str, &str),
-        strat: InvalidTokenStrategy,
+        strategy: InvalidTokenStrategy,
     ) -> ReplaceFmt {
         ReplaceFmt::new(
             subs.iter()
                 .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
             delims,
-            strat,
+            strategy,
         )
     }
 

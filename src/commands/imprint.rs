@@ -47,7 +47,7 @@ pub struct Imprint {
     #[arg(short, long)]
     pub description: Option<String>,
 
-    /// Supress warnings about destructive actions
+    /// Suppress warnings about destructive actions
     #[arg(short, long)]
     pub suppress_warnings: bool,
 

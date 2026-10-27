@@ -29,7 +29,7 @@ use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
 // There should only ever be one instance of the config to prevent
-// multiple intialisations
+// multiple initialisations
 static CONFIG: OnceLock<Config> = OnceLock::new();
 static CONFIG_PATH_OVERRIDE: OnceLock<PathBuf> = OnceLock::new();
 
@@ -88,7 +88,7 @@ impl Config {
     pub fn override_path(path: PathBuf) {
         CONFIG_PATH_OVERRIDE
             .set(path)
-            .expect("double initiaisation of config path override");
+            .expect("double initialisation of config path override");
     }
 
     /// Private api for loading the config if it is not already loaded.

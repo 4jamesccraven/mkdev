@@ -61,7 +61,7 @@ pub struct Evoke {
     #[arg(short, long)]
     pub verbose: bool,
 
-    /// Supress warnings about destructive actions
+    /// Suppress warnings about destructive actions
     #[arg(short, long)]
     pub suppress_warnings: bool,
 }
