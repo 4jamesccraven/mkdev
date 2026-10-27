@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Display formats for `mk list`
+
+//! Output formats for displaying recipe information.
 use clap::ValueEnum;
 
 #[derive(Debug, Clone, ValueEnum, Default)]

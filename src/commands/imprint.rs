@@ -13,12 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! Implementation of `mk imprint`.
 //!
-//! Imprinting is the intended way of making a new recipe. When a recipe is imprinted, mkdev walks
-//! the current directory recursively and stores the relative path and contents of all text files
-//! and subdirectories. Upon completion of this recursive walk, the contents are packed into a
-//! recipe struct and stored to the recipe directory.
+//! Imprinting creates a recipe from the current directory by recursively capturing its files and
+//! subdirectories. The resulting paths and file contents are collected into a [`Recipe`] and
+//! saved to the recipe directory.
 use super::StoreCommand;
 
 use crate::error::Context;

@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! Metadata schema for languages/file formats present in a [`Recipe`]
 //!
 //! Interfaces with hyperpolyglot to store the name and colour of a programming language.

@@ -1,3 +1,23 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//! Formatting and displaying lists of recipes.
+//!
+//! Recipes are formatted according to a [`FormatConfig`], which controls their names, descriptions,
+//! languages, namespace dividers, and overall layout.
 use super::FormatConfig;
 use crate::recipe::Recipe;
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};

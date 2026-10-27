@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! Configuration struct for formatting a list of recipes.
 //!
 //! See [`crate::presentation::format_recipe_list`] for more info on using this struct.

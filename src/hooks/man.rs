@@ -13,10 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! A hook that generates man pages for mkdev.
-//!
-//! Generates a page in section 1 for each subcommand as well as a page in section 5 that describes
-//! the config struct.
+
+//! Runtime manpage generation for mkdev and its configuration file.
 use crate::cli::Cli;
 use crate::config::Config;
 use crate::error::Context;

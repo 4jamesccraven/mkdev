@@ -13,7 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Functions that are tangential to or mutually exclusive with recipe logic.
+
+//! Hooks that run immediately after command line parsing and immediately before any store
+//! operations.
 mod cfg;
 mod i18n;
 mod man;

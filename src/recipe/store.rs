@@ -13,7 +13,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! The interface to mkdev's central recipe repository.
+
+//! The mkdev store.
+//!
+//! The store is a central repository that manages [`Recipe`] discovery and modification. The store
+//! controls saving, deletion, and editing of recipes during the lifetime of the program, and
+//! provides methods for querying its data.
+//!
+//! ## Example Usage
+//! ```no_run
+//! // Standard initialisation.
+//! let store = RecipeStore::from_default_indices().unwrap();
+//!
+//! // Get all recipes.
+//! let all_recipes: Vec<_> = store.pick_all().recipes().collect();
+//!
+//! // Get one.
+//! let my_recipe_foo = store.pick_one("foo").unwrap().recipe.clone();
+//! ```
 use super::{Recipe, RecipeId};
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};

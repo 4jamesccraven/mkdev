@@ -13,7 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! A hook that sets up internationalisation for mkdev.
+
+//! Internationalisation initialisation.
+//!
+//! (Try saying _that_ ten times fast!)
 use std::collections::HashSet;
 
 use rust_i18n::{available_locales, set_locale};

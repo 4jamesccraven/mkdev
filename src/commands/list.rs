@@ -13,9 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! Implementation of `mk list`.
 //!
-//! Supports printing single recipes or all known recipes in various formats.
+//! Lists the recipes available in the recipe store, displaying their names and other information
+//! in the selected output format.
 use super::StoreCommand;
 
 use crate::cli::completion::recipe_completer;

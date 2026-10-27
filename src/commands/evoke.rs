@@ -13,11 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! Implementation of `mk evoke`.
 //!
-//! Evoking is the "build" step for a recipe; when a recipe is selected to be evoked, its contents
-//! are systematically loaded, formatted with custom substitutions, and copied into the target
-//! directory.
+//! Evoking a recipe instantiates its contents in the target directory, resolving custom
+//! substitutions along the way.
 use super::StoreCommand;
 
 use crate::cli::completion::recipe_completer;

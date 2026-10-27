@@ -13,8 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! mkdev's core library. Defines Recipes, how they are discovered and
-//! created, and the most fundamental operations to be done with them.
+
+//! The core library for mkdev.
+//!
+//! This module defines the Recipe Schema and its components, as well as the most fundamental
+//! operations on them.
 pub mod capture;
 pub mod content;
 pub mod instantiate;

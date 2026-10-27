@@ -16,8 +16,8 @@
 
 //! High level operations on the store.
 //!
-//! These operations are expected to be consumed as CLI subcommands, but they are also conceptual.
-//! They bridge the gap between what the user specifies and low-level implementation details.
+//! These operations are expected to be consumed as CLI subcommands, but in general they are the
+//! bridge between some user interface and low-level store operations.
 mod alter;
 mod delete;
 mod evoke;
