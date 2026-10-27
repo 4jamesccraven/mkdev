@@ -17,8 +17,7 @@
 //! Runtime manpage generation for mkdev and its configuration file.
 use crate::cli::Cli;
 use crate::config::Config;
-use crate::error::Context;
-use crate::error::Error;
+use crate::error::{Context, Error};
 use crate::fs;
 
 use std::io::{BufWriter, ErrorKind};

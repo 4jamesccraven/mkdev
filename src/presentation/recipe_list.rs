@@ -19,6 +19,7 @@
 //! Recipes are formatted according to a [`FormatConfig`], which controls their names, descriptions,
 //! languages, namespace dividers, and overall layout.
 use super::FormatConfig;
+
 use crate::recipe::Recipe;
 use crate::replacer::{InvalidTokenStrategy, ReplaceFmt};
 

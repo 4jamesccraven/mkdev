@@ -21,8 +21,7 @@
 //! saved to the recipe directory.
 use super::StoreCommand;
 
-use crate::error::Context;
-use crate::error::Error;
+use crate::error::{Context, Error};
 use crate::fs;
 use crate::recipe::capture::{CaptureOpts, capture_contents_with};
 use crate::recipe::{Recipe, RecipeStore};

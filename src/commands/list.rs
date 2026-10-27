@@ -24,8 +24,7 @@ use crate::cli::completion::recipe_completer;
 use crate::config::Config;
 use crate::error::Error;
 use crate::presentation::{OutputFormat, format_recipe_list, recipe_treefmt};
-use crate::recipe::Recipe;
-use crate::recipe::RecipeStore;
+use crate::recipe::{Recipe, RecipeStore};
 
 use clap::Parser;
 use clap_complete::ArgValueCompleter;

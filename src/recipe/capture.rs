@@ -15,16 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Functions for capturing recipes from the local environment.
-use ignore::overrides::OverrideBuilder;
-
-use crate::error::Context;
-use crate::error::Error;
+use crate::error::{Context, Error};
 use crate::fs;
 use crate::recipe::RecipeItem;
 use crate::warning;
 
 use std::path::{Path, PathBuf};
 
+use ignore::overrides::OverrideBuilder;
 use ignore::{Walk, WalkBuilder};
 
 /// Create a [`Vec`] of [`RecipeItem`] based on the contents of the provided path.

@@ -32,10 +32,12 @@
 //! let my_recipe_foo = store.pick_one("foo").unwrap().recipe.clone();
 //! ```
 use super::{Recipe, RecipeId};
+
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};
+use crate::fs;
 use crate::recipe::version::deserialise_recipe;
-use crate::{fs, warning};
+use crate::warning;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};

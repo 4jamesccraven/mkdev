@@ -15,10 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! A simple parser and formatter for format-string-like behaviour.
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// The primary interface for the formatter.
 ///

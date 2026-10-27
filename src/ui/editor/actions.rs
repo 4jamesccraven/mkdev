@@ -15,14 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Individual edit workflows.
-use crate::config::Config;
-use crate::recipe::Recipe;
-use crate::recipe::RecipeItem;
-use crate::set_if_changed;
-use crate::ui::prompts::multiselect_truncate_formatter;
-
 use super::EditorAction;
 use super::file_editor::FileEditor;
+
+use crate::config::Config;
+use crate::recipe::{Recipe, RecipeItem};
+use crate::set_if_changed;
+use crate::ui::prompts::multiselect_truncate_formatter;
 
 use std::collections::HashSet;
 use std::path::PathBuf;
