@@ -22,11 +22,11 @@
 use super::StoreCommand;
 
 use crate::error::{Context, Error};
-use crate::fs;
 use crate::recipe::capture::{CaptureOpts, capture_contents_with};
 use crate::recipe::{Recipe, RecipeStore};
 use crate::ui::{self, confirm_recipe_overwrite};
 use crate::warning;
+use crate::{fs, recipe};
 
 use std::path::PathBuf;
 
@@ -87,7 +87,7 @@ pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Erro
         Recipe {
             name: args.recipe,
             description: args.description.unwrap_or("".into()),
-            languages: Recipe::languages("."),
+            languages: recipe::language::languages_for(&contents),
             contents,
         }
     };
