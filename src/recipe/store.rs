@@ -22,6 +22,8 @@
 //!
 //! ## Example Usage
 //! ```no_run
+//! use mkdev::recipe::RecipeStore;
+//!
 //! // Standard initialisation.
 //! let store = RecipeStore::from_default_indices().unwrap();
 //!
