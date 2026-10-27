@@ -61,7 +61,8 @@ pub fn list_command(args: List, store: RecipeStore) -> Result<(), Error> {
             display_one(recipe, output_type);
         }
         None => {
-            let recipes: Vec<_> = store.pick_all().recipes().collect();
+            let mut recipes: Vec<_> = store.pick_all().recipes().collect();
+            recipes.sort_by_key(|&recipe| (recipe.namespace().is_some(), recipe.shortname()));
             display_all(recipes, output_type, !args.no_description);
         }
     }
