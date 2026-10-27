@@ -46,7 +46,8 @@
 //! ```
 use super::{Language, RecipeItem};
 
-use std::{fmt::Display, path::Path};
+use std::fmt::Display;
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 

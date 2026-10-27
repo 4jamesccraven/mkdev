@@ -20,6 +20,7 @@
 //! operations on them.
 pub mod capture;
 pub mod content;
+mod detection;
 pub mod instantiate;
 pub mod language;
 mod model;
@@ -32,35 +33,19 @@ pub use model::{Recipe, RecipeId};
 pub use store::RecipeStore;
 
 // TODO: remove this.
-use crate::error::{Context, Error};
+use crate::{
+    error::{Context, Error},
+    recipe::detection::languages_for,
+};
 use instantiate::{OnConflict, instantiate_contents};
 use std::path::Path;
 use tempfile::TempDir;
 
 impl Recipe {
-    /// Generate a breakdown of the languages in a directory.
-    // TODO: reimplement in memory with linguist crate.
-    pub fn languages<P>(dir: P) -> Vec<Language>
-    where
-        P: AsRef<Path>,
-    {
-        let mut breakdown: Vec<_> = hyperpolyglot::get_language_breakdown(dir)
-            .iter()
-            .map(|(lang, files)| (*lang, files.len()))
-            .collect();
-
-        // Sort languages by number of matching files
-        breakdown.sort_by_key(|b| std::cmp::Reverse(b.1));
-
-        breakdown
-            .iter()
-            // Discard the count, as we only needed it to sort
-            .map(|(lang, _)| {
-                hyperpolyglot::Language::try_from(*lang)
-                    .expect("detected language come pre-validated.")
-            })
-            .map(Language::from)
-            .collect()
+    /// Updates the recipe's language metadata to reflect its contents.
+    pub fn canonicalise_languages(&mut self) {
+        let new_langs = languages_for(&self.contents);
+        self.languages = new_langs;
     }
 
     /// Creates a temporary directory with all the files in the recipe instantiated on disk.
@@ -100,7 +85,7 @@ impl Recipe {
     pub fn to_canonical(&self) -> Result<Self, Error> {
         let temp_dir = self.materialise(None)?;
         let contents = capture::capture_contents(temp_dir.path())?;
-        let languages = Recipe::languages(temp_dir.path());
+        let languages = languages_for(&self.contents);
 
         Ok(Self {
             contents,

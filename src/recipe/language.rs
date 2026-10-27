@@ -27,7 +27,10 @@ use std::fmt::Display;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+// Re-export these here because `detection` doesn't mean much out of context.
+pub use super::detection::{language_for, languages_for};
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Language {
     pub name: String,
     pub colour: Option<(u8, u8, u8)>,
@@ -39,23 +42,6 @@ impl Display for Language {
             Some((r, g, b)) => write!(f, "{}", self.name.truecolor(r, g, b)),
             None => write!(f, "{}", self.name),
         }
-    }
-}
-
-impl From<hyperpolyglot::Language> for Language {
-    fn from(value: hyperpolyglot::Language) -> Self {
-        let name = value.name.to_string();
-
-        let colour = value.color.and_then(|s| {
-            let s = s.strip_prefix('#')?;
-            Some((
-                u8::from_str_radix(&s[0..2], 16).ok()?,
-                u8::from_str_radix(&s[2..4], 16).ok()?,
-                u8::from_str_radix(&s[4..6], 16).ok()?,
-            ))
-        });
-
-        Language { name, colour }
     }
 }
 
