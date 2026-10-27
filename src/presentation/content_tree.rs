@@ -15,25 +15,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Tree-like output for the contents of a mkdev recipe.
-use crate::recipe::{Recipe, RecipeItem};
-
-use std::collections::BTreeMap;
-use std::path::Path;
+use crate::recipe::{Recipe, tree::RecipeItemTree};
 
 use colored::Colorize;
 
+/// Display a Recipe and its contents in a tree-like format.
 pub fn recipe_treefmt(recipe: &Recipe) -> String {
     let mut out = format!("{}\n", recipe.name.bold().blue());
-    let contents = format_content_tree(&recipe.contents);
-    out.push_str(&contents);
+    let roots: Vec<_> = RecipeItemTree::from_iter(recipe.contents.as_slice()).into_roots();
 
+    out.push_str(format_tree(&roots, "".into()).as_str());
     out
-}
-
-/// Create a String that represents the file system akin to the output of the program "tree"
-fn format_content_tree(files: &[RecipeItem]) -> String {
-    let tree = build_content_tree(files);
-    format_tree(&tree, "".into())
 }
 
 const GAP: &str = "    ";
@@ -41,12 +33,12 @@ const WIRE: &str = "│   ";
 const CONNECTOR: &str = "├── ";
 const CAP: &str = "└── ";
 
-/// Displays a tree structure.
+/// Formats a content tree.
 fn format_tree<T>(contents: &[T], prefix: String) -> String
 where
-    T: AsRef<TreeContent>,
+    T: AsRef<RecipeItemTree>,
 {
-    let mut contents: Vec<&TreeContent> = contents.iter().map(AsRef::as_ref).collect();
+    let mut contents: Vec<&RecipeItemTree> = contents.iter().map(AsRef::as_ref).collect();
     contents.sort_by_key(|&c| (c.is_file, &c.name));
 
     let mut rec_iter = contents.iter().peekable();
@@ -81,82 +73,9 @@ where
             let new_prefix = format!("{}{}", prefix, if is_last { GAP } else { WIRE });
 
             // Recurse.
-            let rec = format_tree(content.values().as_slice(), new_prefix);
+            let rec = format_tree(content.as_roots().as_slice(), new_prefix);
             out.push_str(&rec);
         }
     }
     out
-}
-
-/// Nests the default, flat recipe content structure into a recursive tree.
-fn build_content_tree(files: &[RecipeItem]) -> Vec<TreeContent> {
-    use RecipeItem::*;
-    // Create an intermediate tree
-    let mut root = TreeContent::default();
-
-    // Insert each file into the tree
-    for file in files {
-        match file {
-            File(file) => {
-                root.insert(file.name.as_path(), true);
-            }
-            Directory(name) => {
-                root.insert(name, false);
-            }
-        }
-    }
-
-    root.children.into_values().collect()
-}
-
-/// Intermediate representation of the file tree
-#[derive(Debug, Clone, Default)]
-struct TreeContent {
-    /// What should be printed to represent this [`RecipeItem`].
-    name: String,
-    /// Whether the content is a file.
-    is_file: bool,
-    /// Children of this directory, if it is a directory.
-    children: BTreeMap<String, TreeContent>,
-}
-
-impl TreeContent {
-    /// Create a new [`TreeContent`] node.
-    fn new(name: String) -> Self {
-        TreeContent {
-            is_file: false,
-            name,
-            children: BTreeMap::new(),
-        }
-    }
-
-    /// Insert a path into the tree by breaking it into its components.
-    fn insert(&mut self, path: &Path, is_file: bool) {
-        let mut current = self;
-
-        // Break the path into its components, and insert them one-by-one.
-        for comp in path.components() {
-            let name = comp.as_os_str().to_string_lossy().into_owned();
-            current = current
-                .children
-                .entry(name.clone())
-                .or_insert_with(|| TreeContent::new(name));
-        }
-
-        // Note whether the leaf node is a file.
-        if is_file {
-            current.is_file = true;
-        }
-    }
-
-    /// Get a vector of references to this node's children.
-    fn values(&self) -> Vec<&TreeContent> {
-        self.children.values().collect()
-    }
-}
-
-impl AsRef<TreeContent> for TreeContent {
-    fn as_ref(&self) -> &TreeContent {
-        self
-    }
 }

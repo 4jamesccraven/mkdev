@@ -25,6 +25,7 @@ pub mod instantiate;
 pub mod language;
 mod model;
 mod store;
+pub mod tree;
 mod version;
 
 pub use content::RecipeItem;
