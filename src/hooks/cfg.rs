@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Hook that does basic config operations such as printing, overrides, etc.
+
+//! Hooks related to the configuration file.
 use crate::cli::Cli;
 use crate::config::Config;
 use crate::{die, warning};

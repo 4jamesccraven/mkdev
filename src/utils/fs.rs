@@ -13,8 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! std::fs functions wrapped to return mkdev Errors instead of IO Errors.
-use crate::mkdev_error::{Context, Error};
+
+//! Wrappers for several functions from [`std`] that return some kind of io error.
+//!
+//! Each wrapped function takes additional context about what mkdev was doing when the error
+//! occurred, and returns a mkdev [`Error`] instead of its normal [`std::io`] one.
+use crate::error::{Context, Error};
 
 use std::fs;
 use std::io::ErrorKind;
@@ -22,7 +26,7 @@ use std::path::{Path, PathBuf};
 
 use rust_i18n::t;
 
-/// See std::fs::write.
+/// See [`std::fs::write`].
 ///
 /// Handles permission and storage errors only. The caller must ensure parents exist to prevent a
 /// panic.
@@ -52,7 +56,7 @@ where
     Ok(())
 }
 
-/// See std::fs::File::create.
+/// See [`std::fs::File::create`].
 ///
 /// Treats all errors as permission errors (because it is the only kind that should be able to
 /// arise).
@@ -66,7 +70,7 @@ where
     })
 }
 
-/// See std::fs::create_dir_all.
+/// See [`std::fs::create_dir_all`].
 ///
 /// Handles permission errors. Panics if the path is ill-formed (e.g., contains file components).
 pub fn create_dir_all<P>(path: P, ctx: Context) -> Result<(), Error>
@@ -79,7 +83,7 @@ where
     })
 }
 
-/// See std::fs::read_to_string.
+/// See [`std::fs::read_to_string`].
 ///
 /// Handles permission errors and UTF-8 errors only. The caller must ensure parents exist to
 /// prevent a panic.
@@ -97,17 +101,20 @@ where
     })
 }
 
+/// See [`std::fs::read_dir`].
+///
+/// Converts any error to a generic [`Error::FsDenied`].
 pub fn read_dir<P>(path: P, ctx: Context) -> Result<fs::ReadDir, Error>
 where
-    P: AsRef<Path> + Into<PathBuf>,
+    P: AsRef<Path>,
 {
     fs::read_dir(&path).map_err(|_| Error::FsDenied {
-        which: path.into(),
+        which: path.as_ref().to_owned(),
         context: ctx,
     })
 }
 
-/// See std::fs::remove_file.
+/// See [`std::fs::remove_file`].
 pub fn remove_file<P>(path: P, ctx: Context) -> Result<(), Error>
 where
     P: AsRef<Path> + Into<PathBuf>,
@@ -121,7 +128,7 @@ where
     })
 }
 
-/// See std::env::current_dir.
+/// See [`std::env::current_dir`].
 ///
 /// Returns handles permission errors. Immediately exits the program if the cwd is not found.
 pub fn current_dir() -> Result<PathBuf, Error> {

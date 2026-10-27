@@ -13,7 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Provides locale-aware formatters and parsers to be used with interactive mode menus.
+
+//! Provides locale-aware formatters and parsers to be used with UI components.
 use rust_i18n::t;
 
 /// Locale-aware boolean formatter for Inquire

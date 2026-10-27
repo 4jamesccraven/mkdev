@@ -13,25 +13,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! An internal function that allows shell completions to detect the user's recipes.
-use crate::recipe::Recipe;
 
-use clap_complete::engine::CompletionCandidate;
+//! Utilities for displaying recipes on the command line.
+mod content_tree;
+mod format_config;
+mod output_format;
+mod recipe_list;
 
-/// An argument completer for the CLI that returns matching recipe names.
-pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
-    let mut completions = vec![];
-
-    if let Some(current) = current.to_str()
-        && let Ok(recipes) = Recipe::gather()
-    {
-        recipes
-            .keys()
-            .filter(|&c| c.starts_with(current))
-            .for_each(|c: &String| {
-                completions.push(CompletionCandidate::new(c));
-            });
-    }
-
-    completions
-}
+pub use content_tree::recipe_treefmt;
+pub use format_config::FormatConfig;
+pub use output_format::OutputFormat;
+pub use recipe_list::format_recipe_list;

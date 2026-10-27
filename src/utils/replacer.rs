@@ -13,15 +13,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 //! A simple parser and formatter for format-string-like behaviour.
-//!
-//! This module is used to implement mkdev's recipe substitutions during `mk evoke` as well as
-//! formatting recipes for the default `mk list` behaviour.
-#![allow(dead_code)]
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// The primary interface for the formatter.
 ///

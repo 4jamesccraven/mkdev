@@ -13,15 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! A hook that generates man pages for mkdev.
-//!
-//! Generates a page in section 1 for each subcommand as well as a page in section 5 that describes
-//! the config struct.
+
+//! Runtime manpage generation for mkdev and its configuration file.
 use crate::cli::Cli;
 use crate::config::Config;
-use crate::fs_wrappers;
-use crate::mkdev_error::Context;
-use crate::mkdev_error::Error;
+use crate::error::{Context, Error};
+use crate::fs;
 
 use std::io::{BufWriter, ErrorKind};
 use std::path::{Path, PathBuf};
@@ -40,7 +37,7 @@ pub fn hook(args: &Cli) -> Result<(), Error> {
         let command = Cli::command();
 
         let out_dir = Path::new("mkdev-man");
-        fs_wrappers::create_dir_all(out_dir, Context::Man)?;
+        fs::create_dir_all(out_dir, Context::Man)?;
 
         // Get all commands as a Vec<Command>
         let to_render: Vec<(clap::Command, Option<&str>)> = vec![(command.clone(), None)]
@@ -69,7 +66,7 @@ pub fn hook(args: &Cli) -> Result<(), Error> {
                 let path = out_dir.join(&filename);
 
                 // Create the file and open it for writing
-                let file = fs_wrappers::file_create(&path, Context::Man)?;
+                let file = fs::file_create(&path, Context::Man)?;
                 let mut writer = BufWriter::new(file);
 
                 // Write the contents of the page into the file
@@ -151,7 +148,7 @@ fn man5() -> Result<(), Error> {
     let path = "mkdev-man/mkdev-config.5";
 
     // Create the man page file.
-    let man5_file = fs_wrappers::file_create(path, Context::Man)?;
+    let man5_file = fs::file_create(path, Context::Man)?;
 
     // Create a write buffer.
     let mut w = BufWriter::new(man5_file);

@@ -13,12 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! The configuration for displaying a single recipe.
+
+//! Configuration struct for formatting a list of recipes.
+//!
+//! See [`crate::presentation::format_recipe_list`] for more info on using this struct.
 use confique::Config as Confique;
 use serde::{Deserialize, Serialize};
 
 #[derive(Confique, Serialize, Deserialize, Clone, Debug)]
-pub struct DisplayConfig {
+pub struct FormatConfig {
     // --- Top Level ---
     /// Text that joins (comes between) formatted recipes.
     ///
@@ -79,7 +82,7 @@ pub struct DisplayConfig {
     pub name_bold: bool,
 
     // --- Description ---
-    /// How to format the description of the recipe. (use "{name}" to reference the raw
+    /// How to format the description of the recipe. (use "{desc}" to reference the raw
     /// description).
     ///
     /// Default:
@@ -109,7 +112,7 @@ pub struct DisplayConfig {
     pub langs_join: String,
 }
 
-impl Default for DisplayConfig {
+impl Default for FormatConfig {
     fn default() -> Self {
         Self {
             recipes_join: default_recipes_join(),

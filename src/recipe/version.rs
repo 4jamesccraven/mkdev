@@ -13,15 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Backwards compatibility layer for older recipe versions.
-//!
-//! Recipes used to store their data differently; this allows for them to be converted as
-//! losslessly as possible to the newer format with no user intervention.
-use crate::content::File;
-use crate::content::RecipeItem;
 
-use super::Language;
-use super::Recipe;
+//! Backwards compatibility layer for older recipe versions.
+use super::{Language, Recipe, RecipeItem, content::File};
 
 use serde::{Deserialize, Serialize};
 

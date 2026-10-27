@@ -13,200 +13,33 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! mkdev's core library. Defines the recipe schema and provides tools for working with them.
-mod delete;
-mod evoke;
-mod imprint;
-mod lang;
-mod list;
+
+//! The core library for mkdev.
+//!
+//! This module defines the Recipe Schema and its components, as well as the most fundamental
+//! operations on them.
+pub mod capture;
+pub mod content;
+pub mod instantiate;
+pub mod language;
+mod model;
+mod store;
 mod version;
 
-pub use delete::*;
-pub use evoke::*;
-pub use imprint::*;
-pub use lang::Language;
-pub use list::*;
-use version::*;
+pub use content::RecipeItem;
+pub use language::Language;
+pub use model::{Recipe, RecipeId};
+pub use store::RecipeStore;
 
-use crate::config::Config;
-use crate::content::RecipeItem;
-use crate::fs_wrappers;
-use crate::mkdev_error::{Context, Error, Subject};
-use crate::warning;
-
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
-use dirs::data_dir;
-use rust_i18n::t;
-use serde::{Deserialize, Serialize};
+// TODO: remove this.
+use crate::error::{Context, Error};
+use instantiate::{OnConflict, instantiate_contents};
+use std::path::Path;
 use tempfile::TempDir;
 
-/// A mkdev recipe (v2).
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Recipe {
-    /// A unique identifier for the recipe.
-    ///
-    /// Determines both the name of the file the recipe is stored in as well as how mkdev will
-    /// display information about it.
-    pub name: String,
-    /// A description of the recipe (Optional)
-    #[serde(default = "String::new")]
-    pub description: String,
-    /// The programming languages (or file formats) found in the recipe's contents.
-    pub languages: Vec<Language>,
-    /// The contents the recipe holds.
-    pub contents: Vec<RecipeItem>,
-}
-
 impl Recipe {
-    /// Get the recipe's short name with no namespace component.
-    pub fn shortname(&self) -> &str {
-        self.name
-            .rsplit_once("::")
-            .map(|(_, sn)| sn)
-            .unwrap_or(&self.name)
-    }
-
-    /// Get the recipe's namespace.
-    ///
-    /// Returns `Some(namespace)` if it belongs to a named namespace, or `None` if it belongs to the
-    /// global namespace.
-    pub fn namespace(&self) -> Option<&str> {
-        self.name.rsplit_once("::").map(|(ns, _)| ns)
-    }
-
-    /// Gathers all recipes from the user directory.
-    ///
-    /// Only files with the .toml extension are checked. An invalid recipe gives a warning.
-    pub fn gather() -> Result<HashMap<String, Recipe>, Error> {
-        let data_dir = recipe_dir()?;
-        let files = fs_wrappers::read_dir(data_dir, Context::Gather)?;
-        let mut recipes: Vec<Recipe> = Vec::new();
-
-        for file in files {
-            let path = file.map_err(|e| crate::borked!(e)).unwrap().path();
-            let is_toml = path.is_file() && path.extension().is_some_and(|ext| ext == "toml");
-
-            if is_toml {
-                let file_contents = fs_wrappers::read_to_string(&path, Context::Gather)?;
-                let recipe = deserialise_recipe(&file_contents);
-
-                match recipe {
-                    Some(recipe) => {
-                        recipes.push(recipe);
-                    }
-                    None => {
-                        warning!("{}", t!("warnings.invalid_recipe", path => path.display()));
-                    }
-                }
-            }
-        }
-
-        let recipes = recipes
-            .iter()
-            .map(|r| (r.name.clone(), r.to_owned()))
-            .collect();
-
-        Ok(recipes)
-    }
-
-    /// Validates and returns a reference to one recipe in a map of many.
-    ///
-    /// Returns `Error::Invalid` if there is no such recipe, or `Error::AmbiguousShortRecipe` if
-    /// multiple recipes match the query.
-    pub fn pick<'recipes>(
-        map: &'recipes HashMap<String, Recipe>,
-        name: &str,
-    ) -> Result<&'recipes Recipe, Error> {
-        if let Some(exact) = map.get(name) {
-            return Ok(exact);
-        }
-
-        if let Some(ns_default) = map.get(&format!("{name}::default")) {
-            return Ok(ns_default);
-        }
-
-        let potential_matches: Vec<_> = map.values().filter(|r| r.shortname() == name).collect();
-
-        if potential_matches.len() > 1 {
-            return Err(Error::AmbiguousShortRecipe {
-                query: name.to_string(),
-                possibilities: potential_matches
-                    .into_iter()
-                    .map(|r| r.name.clone())
-                    .collect(),
-            });
-        }
-
-        potential_matches
-            .into_iter()
-            .next()
-            .ok_or_else(|| Error::Invalid {
-                subject: Subject::Recipe,
-                examples: Some(vec![name.into()]),
-            })
-    }
-
-    /// Validates and returns a list of reference to several recipes from a map of them.
-    ///
-    /// Returns `Error::Invalid` if there are no such recipe(s).
-    pub fn pick_many<'recipes, S>(
-        map: &'recipes HashMap<String, Recipe>,
-        names: &[S],
-    ) -> Result<Vec<&'recipes Recipe>, Error>
-    where
-        S: AsRef<str>,
-    {
-        let mut out = Vec::with_capacity(names.len());
-        let mut invalid = Vec::new();
-
-        for name in names {
-            match Self::pick(map, name.as_ref()) {
-                Ok(r) => out.push(r),
-                Err(Error::Invalid { .. }) => {
-                    invalid.push(name.as_ref().to_string());
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
-        if !invalid.is_empty() {
-            return Err(Error::Invalid {
-                subject: Subject::from_count(invalid.len()),
-                examples: Some(invalid),
-            });
-        }
-
-        Ok(out)
-    }
-
-    /// Replaces a specific item in a recipe with a new one.
-    ///
-    /// Returns `true` if the value was successfully found and replaced. Returns `false` if no matching
-    /// item was found or if the item was a different type (i.e., setting a File to a Directory and vice
-    /// versa)
-    pub fn replace_content(&mut self, old_name: &Path, new_item: RecipeItem) -> bool {
-        use crate::set_if_changed;
-        match self
-            .contents
-            .iter_mut()
-            .find(|item| &item.name() == old_name)
-        {
-            Some(item) => match (item, new_item) {
-                (RecipeItem::File(f), RecipeItem::File(other)) => {
-                    set_if_changed!(f.name, other.name) || set_if_changed!(f.content, other.content)
-                }
-                (RecipeItem::Directory(d), RecipeItem::Directory(other)) => {
-                    set_if_changed!(*d, other)
-                }
-                _ => false,
-            },
-            None => false,
-        }
-    }
-
     /// Generate a breakdown of the languages in a directory.
+    // TODO: reimplement in memory with linguist crate.
     pub fn languages<P>(dir: P) -> Vec<Language>
     where
         P: AsRef<Path>,
@@ -249,94 +82,30 @@ impl Recipe {
         })?;
 
         instantiate_contents(
-            temp_dir.path(),
             &self.contents,
-            OnConflict::Overwrite,
-            false,
+            &instantiate::InstantiateOpts {
+                root_dir: temp_dir.path().to_path_buf(),
+                on_conflict: OnConflict::Overwrite,
+                verbose: false,
+            },
         )?;
 
         Ok(temp_dir)
     }
 
-    /// The location on disk where a recipe should live.
+    /// Ensures that a recipe's data is canonical.
     ///
-    /// Returns `Err` if the user's data directory cannot be determined.
-    pub fn dwelling(&self) -> Result<PathBuf, Error> {
-        Ok(recipe_dir()?.join(format!("{}.toml", self.name)))
+    /// `canonicalise` builds the recipe in a temporary directory, and imprints that directory,
+    /// preserving the metadata associated with the potentially non-canonical self.
+    pub fn to_canonical(&self) -> Result<Self, Error> {
+        let temp_dir = self.materialise(None)?;
+        let contents = capture::capture_contents(temp_dir.path())?;
+        let languages = Recipe::languages(temp_dir.path());
+
+        Ok(Self {
+            contents,
+            languages,
+            ..self.clone()
+        })
     }
-}
-
-/// Builds a single recipe by taking in its contents and writing them to disk.
-///
-/// If a file in the target directory already exists and the conflict resolution strategy is not
-/// `Overwrite`, a Destruction error is returned.
-pub fn instantiate_contents(
-    dir: &Path,
-    contents: &[RecipeItem],
-    on_conflict: OnConflict,
-    verbose: bool,
-) -> Result<(), Error> {
-    contents.iter().try_for_each(|content| {
-        let dest = dir.join(content.name());
-        ensure_parent(&dest)?;
-
-        if verbose {
-            eprintln!("{}", dest.display());
-        }
-
-        match content {
-            RecipeItem::File(file) => {
-                // Stop if a file would be overwritten unless the user has explicitly suppressed
-                // it.
-                match on_conflict {
-                    OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
-                        name: dest.to_string_lossy().into(),
-                    }),
-                    _ => fs_wrappers::write(&dest, &file.content, Context::Evoke),
-                }
-            }
-            RecipeItem::Directory(_) => fs_wrappers::create_dir_all(&dest, Context::Evoke),
-        }
-    })
-}
-
-/// What should happen if a file already exists in the target directory during evocation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum OnConflict {
-    Overwrite,
-    Guard,
-}
-
-/// Ensures that all parent directories of a file exist.
-fn ensure_parent(path: &Path) -> Result<(), Error> {
-    let parent = match path.parent() {
-        Some(p) => p,
-        None => return Ok(()),
-    };
-
-    if !parent.is_dir() {
-        fs_wrappers::create_dir_all(parent, Context::Evoke)?;
-    }
-
-    Ok(())
-}
-
-/// Gets the user's preferred data dir, or uses the default XDG_DATA_DIR.
-fn recipe_dir() -> Result<PathBuf, Error> {
-    let cfg = Config::get()?;
-
-    let data_dir = match &cfg.recipe_dir {
-        Some(dir) => dir.clone(),
-        None => {
-            let mut temp = data_dir().expect("$HOME is not set; cannot determine data directory.");
-            temp.push("mkdev");
-            temp
-        }
-    };
-
-    if !data_dir.is_dir() {
-        fs_wrappers::create_dir_all(&data_dir, Context::Gather)?;
-    }
-
-    Ok(data_dir)
 }

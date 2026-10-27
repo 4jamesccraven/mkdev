@@ -13,23 +13,19 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Interactive menus for mkdev.
-mod editor;
-mod locale;
 
-use std::collections::HashMap;
-use std::fmt::Display;
+//! Generic prompts to power interactive workflows.
+use super::locale::*;
 
-pub use editor::editor;
-use locale::*;
-
-use crate::config::Config;
-use crate::content::{RecipeItem, make_contents};
-use crate::fs_wrappers::current_dir;
-use crate::mkdev_error::Error;
+// Docs-only
+#[expect(unused)]
 use crate::recipe::Recipe;
 
-use ignore::Walk;
+use crate::config::Config;
+use crate::recipe::RecipeItem;
+
+use std::fmt::Display;
+
 use inquire::error::InquireResult;
 use inquire::formatter::{BoolFormatter, MultiOptionFormatter};
 use inquire::list_option::ListOption;
@@ -38,35 +34,7 @@ use inquire::validator::ValueRequiredValidator;
 use inquire::{Confirm, MultiSelect, Text};
 use rust_i18n::t;
 
-/// Interactively imprint a recipe from the current working directory.
-pub fn imprint() -> Result<Recipe, Error> {
-    // Ensure the config is loaded in memory before proceeding.
-    let _config = Config::get()?;
-    let mut recipe = Recipe::default();
-    let cwd = current_dir()?;
-
-    let name = get_recipe_name()?;
-    recipe.name = name;
-
-    let description = get_recipe_description()?;
-    recipe.description = description;
-
-    let walk = Walk::new(&cwd);
-    let default_contents = make_contents(walk, &cwd)?;
-    recipe.contents = select_contents(default_contents)?;
-
-    Ok(recipe)
-}
-
-/// Interactively select recipes to evoke.
-pub fn evoke(recipes: &HashMap<String, Recipe>) -> Result<Vec<String>, Error> {
-    let _config = Config::get()?;
-    let selection = select_recipes(recipes.keys().collect())?;
-
-    Ok(selection)
-}
-
-/// Prompt the user to confirm something.
+/// Prompt the user for a confirmation. The message informs the user what is being confirmed.
 pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
     let parser: BoolParser = &locale_bool_parser;
     let formatter: BoolFormatter = &locale_bool_formatter;
@@ -81,7 +49,15 @@ pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
         .prompt()
 }
 
-fn get_recipe_name() -> InquireResult<String> {
+/// Prompt the user to determine if a recipe can be overwritten.
+pub fn confirm_recipe_overwrite(recipe_name: &str) -> InquireResult<bool> {
+    confirm_action(&t!("menus.recipe_overwrite", recipe => recipe_name), false)
+}
+
+/// Prompt a recipe name.
+///
+/// Ensures the name is non-empty.
+pub(super) fn get_recipe_name() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_name"))
         .with_validator(ValueRequiredValidator::new(t!(
             "menus.imprint.name_required"
@@ -89,21 +65,25 @@ fn get_recipe_name() -> InquireResult<String> {
         .prompt()
 }
 
-fn get_recipe_description() -> InquireResult<String> {
+/// Prompt a recipe description.
+pub(super) fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
-fn select_recipes(recipes: Vec<&String>) -> InquireResult<Vec<String>> {
+/// Have the user select one or more [`Recipe`]s by their ID.
+///
+/// The IDs are accepted and returned as [`String`] for simplicity
+pub fn select_recipes(recipes: Vec<String>) -> InquireResult<Vec<String>> {
     let vim = Config::get().unwrap().vim;
 
     MultiSelect::new(&t!("menus.evoke.pick"), recipes)
         .with_help_message(&t!("menus.multiselect_help"))
         .with_vim_mode(vim)
         .prompt()
-        .map(|xs| xs.iter().map(|x| x.to_string()).collect())
 }
 
-fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {
+/// Have the user select one or more [`RecipeItem`]s.
+pub(super) fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {
     let formatter: MultiOptionFormatter<RecipeItem> = &multiselect_truncate_formatter;
     let vim = Config::get().unwrap().vim;
 
@@ -115,7 +95,11 @@ fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> 
         .prompt()
 }
 
-fn multiselect_truncate_formatter<T>(opts: &[ListOption<&T>]) -> String
+/// A truncating formatter for [`inquire::MultiSelect`].
+///
+/// Takes at most three items from the list and displays them comma-separated. If more than three
+/// are present, `"..."` is displayed as the "fourth element", and the rest are hidden.
+pub(super) fn multiselect_truncate_formatter<T>(opts: &[ListOption<&T>]) -> String
 where
     T: Display,
 {

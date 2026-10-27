@@ -1,0 +1,134 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//! Implementation of `mk imprint`.
+//!
+//! Imprinting creates a recipe from the current directory by recursively capturing its files and
+//! subdirectories. The resulting paths and file contents are collected into a [`Recipe`] and
+//! saved to the recipe directory.
+use super::StoreCommand;
+
+use crate::error::{Context, Error};
+use crate::fs;
+use crate::recipe::capture::{CaptureOpts, capture_contents_with};
+use crate::recipe::{Recipe, RecipeStore};
+use crate::ui::{self, confirm_recipe_overwrite};
+use crate::warning;
+
+use std::path::PathBuf;
+
+use clap::{ArgAction, Parser};
+use rust_i18n::t;
+
+#[derive(Parser, Debug, Default)]
+pub struct Imprint {
+    /// The name of the recipe to imprint.
+    #[arg(default_value = "", required_unless_present = "interactive")]
+    pub recipe: String,
+
+    /// Create the recipe in interactive mode.
+    #[arg(short, long)]
+    pub interactive: bool,
+
+    /// Description to be associated with recipe
+    #[arg(short, long)]
+    pub description: Option<String>,
+
+    /// Supress warnings about destructive actions
+    #[arg(short, long)]
+    pub suppress_warnings: bool,
+
+    /// Write the recipe as a Nix expression & save it to FILE
+    #[arg(short = 'n', long, value_name = "FILE")]
+    pub to_nix: Option<PathBuf>,
+
+    /// Paths/globs to exclude from the recipe
+    #[arg(short, long, value_name = "FILE/GLOB", action = ArgAction::Append)]
+    pub exclude: Vec<String>,
+
+    /// Disable default filters (e.g., .gitignore files)
+    #[arg(long)]
+    pub no_filter: bool,
+}
+
+impl StoreCommand for Imprint {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        imprint_command(self, store)
+    }
+}
+
+/// Imprints a recipe using arguments from the command line, and post processes it accordingly.
+pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
+    // Generate the new recipe
+    let new = if args.interactive {
+        ui::run_imprinter()?
+    } else {
+        // Capture the current directory with filters (unless the user disables them) and with any
+        // additional exclusion globs the user provides.
+        let contents = capture_contents_with(CaptureOpts {
+            filtered: !args.no_filter,
+            overrides: args.exclude,
+            ..Default::default()
+        })?;
+
+        Recipe {
+            name: args.recipe,
+            description: args.description.unwrap_or("".into()),
+            languages: Recipe::languages("."),
+            contents,
+        }
+    };
+
+    // If the user wants a nix expression, we write that file and bail early.
+    if let Some(path) = args.to_nix {
+        return write_to_nix(path, new);
+    }
+
+    // Is the action going to overwrite an existing recipe?
+    let destructive = store.recipe_exists(&new.name);
+
+    // We can proceed if no data will be overwritten...
+    let can_proceed = !destructive
+        // ... or if the user overrides safety warnings.
+        || args.suppress_warnings
+        || (args.interactive && confirm_recipe_overwrite(&new.name)?);
+
+    // Warn the user if the original source was a symlink instead of a file.
+    //
+    // This allows, e.g., home-manager users to know that the file was only changed locally instead
+    // of in the source of whatever program externally manages it.
+    let is_external = store.is_external(&new.as_id()) == Some(true);
+    if destructive && is_external {
+        warning!("{}", t!("recipes.external"));
+    }
+
+    if !can_proceed {
+        return Err(Error::DestructiveAction { name: new.name });
+    }
+
+    let save_location = store.save(new)?;
+    println!("{}", save_location.display());
+
+    Ok(())
+}
+
+/// Writes a recipe to a Nix file.
+fn write_to_nix(path: PathBuf, recipe: Recipe) -> Result<(), Error> {
+    let recipe_as_nix = ser_nix::to_string(&recipe)
+        .expect("ser_nix's serialisation is infallible with non-path types.");
+
+    fs::write(path, recipe_as_nix, Context::Imprint)
+}

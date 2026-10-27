@@ -13,9 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Data type that represents a programming language or file format.
+
+//! Metadata schema for languages/file formats present in a [`Recipe`]
 //!
 //! Interfaces with hyperpolyglot to store the name and colour of a programming language.
+
+// Docs-only
+#[expect(unused)]
+use super::Recipe;
+
 use std::fmt::Display;
 
 use colored::Colorize;
