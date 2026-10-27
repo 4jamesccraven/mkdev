@@ -498,7 +498,6 @@ pub struct PickResults<'a> {
 }
 
 impl<'a> PickResults<'a> {
-    #[expect(unused)]
     /// Creates an iterator over the store paths resulting from the pick.
     pub fn paths(self) -> impl Iterator<Item = &'a Path> {
         self.map(|m| m.store_path.as_path())

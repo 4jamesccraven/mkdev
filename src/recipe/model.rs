@@ -74,7 +74,6 @@ impl Recipe {
     }
 
     /// Get the recipe's short name with no namespace component.
-    #[expect(unused)]
     pub fn shortname(&self) -> &str {
         destructure_id_str(&self.name).1
     }

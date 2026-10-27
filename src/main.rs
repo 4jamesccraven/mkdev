@@ -13,24 +13,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-mod cli;
-mod commands;
-mod hooks;
-mod presentation;
-mod recipe;
-mod ui;
-mod utils;
-
-pub use utils::*;
-
-use cli::Cli;
-use hooks::hooks;
-use recipe::RecipeStore;
+use mkdev::cli::Cli;
+use mkdev::die;
+use mkdev::hooks::hooks;
+use mkdev::recipe::RecipeStore;
 
 use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
-
-rust_i18n::i18n!("locales", fallback = "en");
 
 fn main() {
     // Produce completion scripts using clap_complete.
