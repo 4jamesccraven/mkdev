@@ -15,14 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 mod cli;
 mod commands;
-mod config;
-mod error;
-mod fs;
 mod hooks;
 mod presentation;
 mod recipe;
-mod replacer;
 mod ui;
+mod utils;
+
+pub use utils::*;
 
 use cli::Cli;
 use hooks::hooks;

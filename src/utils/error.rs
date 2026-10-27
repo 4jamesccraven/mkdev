@@ -13,8 +13,8 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Implements a unified error type, a unified logging interface, and conversions from common
-//! error types.
+
+//! The error type for mkdev.
 use std::path::PathBuf;
 
 use rust_i18n::t;
