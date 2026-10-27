@@ -209,7 +209,7 @@ impl std::fmt::Display for Subject {
     }
 }
 
-/// Print a warning to the stderr.
+/// Print a warning to stderr.
 #[macro_export]
 macro_rules! warning {
     ($($arg:tt)*) => {{
@@ -234,14 +234,6 @@ macro_rules! borked {
     ($err:expr) => {{
         $crate::die!("{} unexpected error: please make an issue at https://github.com/4jamesccraven/mkdev !!\n{}", $crate::ctx!(""), $err);
     }};
-}
-
-/// Formats the current file and line number.
-#[macro_export]
-macro_rules! ctx {
-    ($msg:literal) => {
-        concat!("[", file!(), ":", line!(), "] ", $msg)
-    };
 }
 
 impl From<ignore::Error> for Error {

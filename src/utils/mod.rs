@@ -19,3 +19,41 @@ pub mod config;
 pub mod error;
 pub mod fs;
 pub mod replacer;
+
+/// Assigns a value with a new one if that new value is different.
+///
+/// Returns `true` if the value was changed.
+#[macro_export]
+macro_rules! set_if_changed {
+    ($l_val:expr, $r_val:expr) => {
+        if $l_val != $r_val {
+            $l_val = $r_val;
+            true
+        } else {
+            false
+        }
+    };
+}
+
+/// Given a [`RecipeId`] and a [`RecipeStore`], determine if said recipe is externally managed
+/// (i.e., is a symlink).
+#[macro_export]
+macro_rules! warn_if_external {
+    ($id:expr, $store:ident) => {{
+        use crate::warning;
+        use rust_i18n::t;
+        if let Some(is_external) = $store.is_external($id)
+            && is_external
+        {
+            warning!("{}", t!("recipes.external"));
+        }
+    }};
+}
+
+/// Formats the current file and line number.
+#[macro_export]
+macro_rules! ctx {
+    ($msg:literal) => {
+        concat!("[", file!(), ":", line!(), "] ", $msg)
+    };
+}

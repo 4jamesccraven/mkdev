@@ -21,22 +21,11 @@ use super::StoreCommand;
 use crate::cli::completion::recipe_completer;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
-use crate::warning;
+use crate::warn_if_external;
 
 use clap::Parser;
 use clap_complete::ArgValueCompleter;
 use rust_i18n::t;
-
-// TODO: consider relocating
-macro_rules! warn_if_external {
-    ($id:expr, $store:ident) => {{
-        if let Some(is_external) = $store.is_external($id)
-            && is_external
-        {
-            warning!("{}", t!("recipes.external"));
-        }
-    }};
-}
 
 #[derive(Parser, Debug)]
 pub struct Delete {

@@ -18,6 +18,7 @@
 use crate::config::Config;
 use crate::recipe::Recipe;
 use crate::recipe::RecipeItem;
+use crate::set_if_changed;
 use crate::ui::prompts::multiselect_truncate_formatter;
 
 use super::EditorAction;
@@ -39,22 +40,6 @@ macro_rules! try_prompt {
         match $expr? {
             Some(val) => val,
             None => return Ok(false),
-        }
-    };
-}
-
-/// Assigns a value with a new one if that new value is different.
-///
-/// Returns `true` if the value was changed.
-// Move somewhere more neutral
-#[macro_export]
-macro_rules! set_if_changed {
-    ($l_val:expr, $r_val:expr) => {
-        if $l_val != $r_val {
-            $l_val = $r_val;
-            true
-        } else {
-            false
         }
     };
 }
