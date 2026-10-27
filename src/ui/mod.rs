@@ -13,121 +13,13 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Interactive menus for mkdev.
-mod editor;
-mod locale;
 
-use std::fmt::Display;
+//! Interactive UI components and workflows for mkdev.
+mod editor;
+mod imprint;
+mod locale;
+mod prompts;
 
 pub use editor::run_editor;
-use locale::*;
-
-use crate::config::Config;
-use crate::error::Error;
-use crate::fs::current_dir;
-use crate::recipe::Recipe;
-use crate::recipe::RecipeItem;
-use crate::recipe::capture::capture_contents;
-
-use inquire::error::InquireResult;
-use inquire::formatter::{BoolFormatter, MultiOptionFormatter};
-use inquire::list_option::ListOption;
-use inquire::parser::BoolParser;
-use inquire::validator::ValueRequiredValidator;
-use inquire::{Confirm, MultiSelect, Text};
-use rust_i18n::t;
-
-/// Interactively imprint a recipe from the current working directory.
-pub fn imprint() -> Result<Recipe, Error> {
-    // Ensure the config is loaded in memory before proceeding.
-    let _config = Config::get()?;
-    let mut recipe = Recipe::default();
-    let cwd = current_dir()?;
-
-    let name = get_recipe_name()?;
-    recipe.name = name;
-
-    let description = get_recipe_description()?;
-    recipe.description = description;
-
-    let default_contents = capture_contents(&cwd)?;
-    recipe.contents = select_contents(default_contents)?;
-
-    Ok(recipe)
-}
-
-/// Prompt the user to confirm something.
-pub fn confirm_action(message: &str, default: bool) -> InquireResult<bool> {
-    let parser: BoolParser = &locale_bool_parser;
-    let formatter: BoolFormatter = &locale_bool_formatter;
-    let default_formatter: BoolFormatter = &locale_bool_default_formatter;
-
-    Confirm::new(message)
-        .with_default(default)
-        .with_parser(parser)
-        .with_formatter(formatter)
-        .with_error_message(&t!("menus.imprint.invalid_yn"))
-        .with_default_value_formatter(default_formatter)
-        .prompt()
-}
-
-/// Confirms that it's okay to overwrite a given recipe.
-pub fn confirm_recipe_overwrite(recipe_name: &str) -> InquireResult<bool> {
-    confirm_action(&t!("menus.recipe_overwrite", recipe => recipe_name), false)
-}
-
-fn get_recipe_name() -> InquireResult<String> {
-    Text::new(&t!("menus.imprint.get_name"))
-        .with_validator(ValueRequiredValidator::new(t!(
-            "menus.imprint.name_required"
-        )))
-        .prompt()
-}
-
-fn get_recipe_description() -> InquireResult<String> {
-    Text::new(&t!("menus.imprint.get_desc")).prompt()
-}
-
-pub fn select_recipes(recipes: Vec<String>) -> InquireResult<Vec<String>> {
-    let vim = Config::get().unwrap().vim;
-
-    MultiSelect::new(&t!("menus.evoke.pick"), recipes)
-        .with_help_message(&t!("menus.multiselect_help"))
-        .with_vim_mode(vim)
-        .prompt()
-}
-
-fn select_contents(contents: Vec<RecipeItem>) -> InquireResult<Vec<RecipeItem>> {
-    let formatter: MultiOptionFormatter<RecipeItem> = &multiselect_truncate_formatter;
-    let vim = Config::get().unwrap().vim;
-
-    MultiSelect::new(&t!("menus.imprint.filter_rec"), contents)
-        .with_all_selected_by_default()
-        .with_formatter(formatter)
-        .with_help_message(&t!("menus.multiselect_help"))
-        .with_vim_mode(vim)
-        .prompt()
-}
-
-fn multiselect_truncate_formatter<T>(opts: &[ListOption<&T>]) -> String
-where
-    T: Display,
-{
-    let len = opts.len();
-    let examples: Vec<_> = opts[0..len.min(3)].iter().map(|s| s.to_string()).collect();
-    let example_string = examples.join(", ");
-
-    match len {
-        0 => format!("{}", t!("menus.imprint.selected_count", count => 0)),
-        1..=3 => format!(
-            "{}: {}",
-            t!("menus.imprint.selected_count", count => len),
-            example_string
-        ),
-        4.. => format!(
-            "{}: {}, ...",
-            t!("menus.imprint.selected_count", count => len),
-            example_string
-        ),
-    }
-}
+pub use imprint::run_imprinter;
+pub use prompts::{confirm_recipe_overwrite, select_recipes};

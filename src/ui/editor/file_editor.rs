@@ -13,8 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-//
+// -----------------------------------------------------------------------------------------------
 // Portions of this file are derived from the `inquire` crate:
 // <https://github.com/mikaelmello/inquire>
 //
@@ -23,7 +22,7 @@
 //
 // See inquire.MIT.txt for the full license text.
 
-//! Support for opening the editor.
+//! Temporary directory based file editor, adapted from the one in [`inquire`].
 //
 // Why not use the one the one from `inquire`? It strips newlines from the user's "input," meaning
 // that genuinely desired newlines do not make it into the final recipe, and thus silently changes

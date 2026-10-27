@@ -75,7 +75,7 @@ impl StoreCommand for Imprint {
 pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Error> {
     // Generate the new recipe
     let new = if args.interactive {
-        ui::imprint()?
+        ui::run_imprinter()?
     } else {
         // Capture the current directory with filters (unless the user disables them) and with any
         // additional exclusion globs the user provides.

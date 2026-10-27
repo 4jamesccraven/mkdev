@@ -13,11 +13,12 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Implementation for editing specific attributes in the editor.
+
+//! Individual edit workflows.
 use crate::config::Config;
 use crate::recipe::Recipe;
 use crate::recipe::RecipeItem;
-use crate::ui::multiselect_truncate_formatter;
+use crate::ui::prompts::multiselect_truncate_formatter;
 
 use super::EditorAction;
 use super::file_editor::FileEditor;
