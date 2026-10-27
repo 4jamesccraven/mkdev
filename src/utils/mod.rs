@@ -40,12 +40,11 @@ macro_rules! set_if_changed {
 #[macro_export]
 macro_rules! warn_if_external {
     ($id:expr, $store:ident) => {{
-        use crate::warning;
         use rust_i18n::t;
         if let Some(is_external) = $store.is_external($id)
             && is_external
         {
-            warning!("{}", t!("recipes.external"));
+            $crate::warning!("{}", t!("recipes.external"));
         }
     }};
 }
