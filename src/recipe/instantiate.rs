@@ -41,7 +41,7 @@ pub fn instantiate_contents(contents: &[RecipeItem], opts: &InstantiateOpts) -> 
                 // Stop if a file would be overwritten unless the user has explicitly suppressed
                 // it.
                 match opts.on_conflict {
-                    OnConflict::Guard if dest.is_file() => Err(Error::DestructionWarning {
+                    OnConflict::Guard if dest.is_file() => Err(Error::DestructiveAction {
                         name: dest.to_string_lossy().into(),
                     }),
                     _ => fs::write(&dest, &file.content, Context::Evoke),

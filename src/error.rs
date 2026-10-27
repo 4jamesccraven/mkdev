@@ -37,7 +37,7 @@ pub enum Error {
     },
 
     /// The action would be destructive.
-    DestructionWarning { name: String },
+    DestructiveAction { name: String },
 
     /// The user-defined exclude arguments were malformed.
     ///
@@ -117,7 +117,7 @@ impl std::fmt::Display for Error {
             ),
             Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
             Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
-            Error::DestructionWarning { name } => {
+            Error::DestructiveAction { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
             Error::Serialisation {

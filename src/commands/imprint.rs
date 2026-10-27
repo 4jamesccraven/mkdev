@@ -117,7 +117,7 @@ pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Erro
     }
 
     if !can_proceed {
-        return Err(Error::DestructionWarning { name: new.name });
+        return Err(Error::DestructiveAction { name: new.name });
     }
 
     let save_location = store.save(new)?;
