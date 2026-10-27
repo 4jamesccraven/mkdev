@@ -13,13 +13,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! The command line interface for mkdev.
+
+//! Top-level parser for all of mkdev's commands.
 use crate::commands::*;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
-
-pub use crate::output_type::OutputType;
-pub use crate::recipe_completer::recipe_completer;
 
 use std::path::PathBuf;
 

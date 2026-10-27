@@ -18,10 +18,10 @@
 //! Supports printing single recipes or all known recipes in various formats.
 use super::StoreCommand;
 
-use crate::cli::{OutputType, recipe_completer};
+use crate::cli::completion::recipe_completer;
 use crate::config::Config;
 use crate::error::Error;
-use crate::presentation::{format_recipe_list, recipe_treefmt};
+use crate::presentation::{OutputFormat, format_recipe_list, recipe_treefmt};
 use crate::recipe::Recipe;
 use crate::recipe::RecipeStore;
 
@@ -37,7 +37,7 @@ pub struct List {
 
     /// Style of output
     #[arg(short, long)]
-    pub r#type: Option<OutputType>,
+    pub r#type: Option<OutputFormat>,
 
     /// Hide description (note: only only applies default style)
     #[arg(long)]
@@ -73,8 +73,8 @@ const SER_EXISTING_RECIPE: &str = //.
      and if they deserialised, they'll serialise back.";
 
 /// Displays all recipes.
-fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description: bool) {
-    use OutputType::*;
+fn display_all(recipes: Vec<&Recipe>, output_type: OutputFormat, show_description: bool) {
+    use OutputFormat::*;
     match output_type {
         Default => {
             let mut display_cfg = Config::get()
@@ -115,8 +115,8 @@ fn display_all(recipes: Vec<&Recipe>, output_type: OutputType, show_description:
     }
 }
 
-fn display_one(recipe: &Recipe, output_type: OutputType) {
-    use OutputType::*;
+fn display_one(recipe: &Recipe, output_type: OutputFormat) {
+    use OutputFormat::*;
     match output_type {
         Default => print!("{}", recipe_treefmt(recipe)),
         Debug => println!("{:#?}", recipe),

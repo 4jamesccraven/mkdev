@@ -18,7 +18,7 @@
 //! Used to delete recipes from their default location.
 use super::StoreCommand;
 
-use crate::cli::recipe_completer;
+use crate::cli::completion::recipe_completer;
 use crate::error::Error;
 use crate::recipe::RecipeStore;
 use crate::warning;

@@ -13,19 +13,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! Display formats for `mk list`
-use clap::ValueEnum;
 
-#[derive(Debug, Clone, ValueEnum, Default)]
-#[non_exhaustive]
-/// The style of output desired by the user. Used by the --type flag
-pub enum OutputType {
-    #[default]
-    Default,
-    Debug,
-    Plain,
-    Json,
-    Toml,
-    Nix,
-    Print0,
-}
+//! Interface for `mk`, the CLI to mkdev.
+mod args;
+pub mod completion;
+
+pub use args::*;

@@ -20,7 +20,7 @@
 //! directory.
 use super::StoreCommand;
 
-use crate::cli::recipe_completer;
+use crate::cli::completion::recipe_completer;
 use crate::config::Config;
 use crate::error::Error;
 use crate::recipe::content::{File, RecipeItem};

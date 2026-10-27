@@ -19,10 +19,8 @@ mod config;
 mod error;
 mod fs;
 mod hooks;
-mod output_type;
 mod presentation;
 mod recipe;
-mod recipe_completer;
 mod replacer;
 mod ui;
 

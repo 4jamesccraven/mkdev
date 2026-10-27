@@ -13,26 +13,26 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//! An internal function that allows shell completions to detect the user's recipes.
-use crate::recipe::RecipeStore;
+//! Display formats for `mk list`
+use clap::ValueEnum;
 
-use clap_complete::engine::CompletionCandidate;
-
-/// An argument completer for the CLI that returns matching recipe names.
-pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
-    let mut completions = vec![];
-
-    if let Some(current) = current.to_str()
-        && let Ok(store) = RecipeStore::from_default_indices()
-    {
-        store
-            .pick_all()
-            .id_strings()
-            .filter(|c| c.starts_with(current))
-            .for_each(|c: String| {
-                completions.push(CompletionCandidate::new(c));
-            });
-    }
-
-    completions
+#[derive(Debug, Clone, ValueEnum, Default)]
+#[non_exhaustive]
+/// The style of output desired by the user. Used by the --type flag
+pub enum OutputFormat {
+    /// Use the default format, controlled by user configuration.
+    #[default]
+    Default,
+    /// Display a debug representation.
+    Debug,
+    /// Display plain text separated by newlines.
+    Plain,
+    /// Serialise output as JSON
+    Json,
+    /// Serialise output as TOML.
+    Toml,
+    /// Represent output as Nix expressions.
+    Nix,
+    /// Display plain text separated by null bytes.
+    Print0,
 }
