@@ -46,6 +46,8 @@
 //! ```
 use super::{Language, RecipeItem};
 
+use crate::recipe::detection::languages_for;
+
 use std::fmt::Display;
 use std::path::Path;
 
@@ -69,6 +71,10 @@ pub struct Recipe {
 }
 
 impl Recipe {
+    // ------------------------------------------------------------
+    // Identity
+    // ------------------------------------------------------------
+
     /// Get `self.name` as structured data.
     pub fn as_id(&self) -> RecipeId {
         self.into()
@@ -86,6 +92,10 @@ impl Recipe {
     pub fn namespace(&self) -> Option<&str> {
         destructure_id_str(&self.name).0
     }
+
+    // ------------------------------------------------------------
+    // Content alteration
+    // ------------------------------------------------------------
 
     /// Replaces a specific item in a recipe with a new one.
     ///
@@ -109,6 +119,65 @@ impl Recipe {
                 _ => false,
             },
             None => false,
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Canonicalisation
+    // ------------------------------------------------------------
+
+    /// Takes a partially canonical recipe and enforces canonicalisation.
+    ///
+    /// A recipe is canonical when:
+    /// - The language metadata accurately reflects the languages present in the recipe's contents.
+    /// - The contents model all file paths, including intermediate directories.
+    ///
+    /// This concept is important specifically for editing recipes that already exist. When a recipe
+    /// is first imprinted, all of these things are inherently true. But, in particular, if a user
+    /// deletes a content item, it may be the only one containing one of the detected languages, or
+    /// it may be a directory that has children.
+    ///
+    /// These distinctions often don't matter in practice---most functionality is programmed
+    /// defensively (e.g., checking for parent directories), or in the case of language metadata it
+    /// is just that, metadata.
+    pub fn canonicalise(&mut self) {
+        self.canonicalise_languages();
+        self.canonicalise_contents();
+    }
+
+    /// Updates the recipe's language metadata to reflect its contents.
+    pub fn canonicalise_languages(&mut self) {
+        let new_langs = languages_for(&self.contents);
+        self.languages = new_langs;
+    }
+
+    /// Updates the recipe's contents with missing intermediate values.
+    pub fn canonicalise_contents(&mut self) {
+        let new_contents = canonicalise_with_tree(&self.contents);
+        self.contents = new_contents;
+    }
+
+    /// Converts a [`Recipe`] to an owned, canonical clone.
+    pub fn to_canonical(&self) -> Self {
+        let languages = languages_for(&self.contents);
+        let contents = canonicalise_with_tree(&self.contents);
+
+        Self {
+            contents,
+            languages,
+            ..self.clone()
+        }
+    }
+
+    /// Converts this [`Recipe`] into its canonical representation, consuming the original.
+    pub fn into_canonical(self) -> Self {
+        let languages = languages_for(&self.contents);
+        let contents = canonicalise_with_tree(&self.contents);
+
+        Self {
+            contents,
+            languages,
+            ..self
         }
     }
 }
@@ -170,4 +239,8 @@ fn destructure_id_str(id: &str) -> (Option<&str>, &str) {
         Some((namespace, shortname)) => (Some(namespace), shortname),
         None => (None, id),
     }
+}
+
+fn canonicalise_with_tree(contents: &[RecipeItem]) -> Vec<RecipeItem> {
+    super::tree::RecipeItemTree::from_iter(contents).into_items()
 }

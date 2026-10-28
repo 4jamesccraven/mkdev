@@ -52,9 +52,6 @@ pub fn alter_command(args: Alter, mut store: RecipeStore) -> Result<(), Error> {
             warning!("{}", t!("recipes.external"));
         }
 
-        // TODO: this should be the store's responsibility
-        let new_recipe = new_recipe.to_canonical()?;
-
         // Store the recipe's new path.
         store.replace(&original_recipe, new_recipe)?;
     }

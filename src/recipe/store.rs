@@ -430,6 +430,9 @@ impl RecipeStore {
         // Verify that the ID exists in the first place.
         let key = self.pick_raw(&recipe_id.into())?.clone();
 
+        // Canonicalise the new recipe
+        let new_recipe = new_recipe.into_canonical();
+
         // Get the store paths associated with the current and updated values.
         let current_store_path = self
             .manifest
