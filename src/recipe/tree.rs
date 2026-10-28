@@ -17,47 +17,71 @@
 //! Tree-like representation for [`RecipeItem`]s.
 use super::RecipeItem;
 
+use crate::ctx;
+
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Recursive representation of a recipe's contents.
 #[derive(Debug, Clone, Default)]
 pub struct RecipeItemTree {
     /// What should be printed to represent this [`RecipeItem`].
     pub name: String,
-    /// Whether the content is a file.
-    pub is_file: bool,
+    /// The full path from the original item.
+    pub path: PathBuf,
+    /// File contents, if it is a file.
+    pub contents: Option<String>,
     /// Children of this directory, if it is a directory.
     pub children: BTreeMap<String, RecipeItemTree>,
 }
 
 impl RecipeItemTree {
     /// Create a new [`RecipeItemTree`] node.
-    pub fn new(name: String) -> Self {
+    pub fn new<P>(path: P) -> Self
+    where
+        P: AsRef<Path>,
+    {
+        let file_name = path
+            .as_ref()
+            .file_name()
+            .expect(ctx!("Tree received invalid node `..` (parent dir)"));
+
         RecipeItemTree {
-            is_file: false,
-            name,
+            name: format!("{}", file_name.display()),
+            path: path.as_ref().to_path_buf(),
+            contents: None,
             children: BTreeMap::new(),
         }
     }
 
+    /// Returns [`true`] if this node is a file.
+    pub fn is_file(&self) -> bool {
+        self.contents.is_some()
+    }
+
+    /// Returns [`true`] if this node is a directory.
+    pub fn is_dir(&self) -> bool {
+        self.contents.is_none()
+    }
+
     /// Insert a path into the tree by breaking it into its components.
-    pub fn insert(&mut self, path: &Path, is_file: bool) {
-        let mut current = self;
+    pub fn insert(&mut self, path: &Path, file_contents: Option<String>) {
+        let mut current_node = self;
+        let mut current_path = PathBuf::new();
 
         // Break the path into its components, and insert them one-by-one.
         for comp in path.components() {
-            let name = comp.as_os_str().to_string_lossy().into_owned();
-            current = current
+            let name = format!("{}", comp.as_os_str().display());
+            current_path.push(&comp);
+
+            current_node = current_node
                 .children
                 .entry(name.clone())
-                .or_insert_with(|| RecipeItemTree::new(name));
+                .or_insert_with(|| RecipeItemTree::new(current_path.clone()));
         }
 
-        // Note whether the leaf node is a file.
-        if is_file {
-            current.is_file = true;
-        }
+        // Add the optional file contents to determine if this is a file.
+        current_node.contents = file_contents;
     }
 
     /// Returns a vector of the tree's roots, consuming the tree.
@@ -98,10 +122,10 @@ impl<'a> FromIterator<&'a RecipeItem> for RecipeItemTree {
         for item in iter {
             match item {
                 File(file) => {
-                    root.insert(file.name.as_path(), true);
+                    root.insert(file.name.as_path(), Some(file.content.clone()));
                 }
                 Directory(name) => {
-                    root.insert(name, false);
+                    root.insert(name, None);
                 }
             }
         }

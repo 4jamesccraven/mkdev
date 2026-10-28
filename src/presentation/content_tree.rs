@@ -39,14 +39,14 @@ where
     T: AsRef<RecipeItemTree>,
 {
     let mut contents: Vec<&RecipeItemTree> = contents.iter().map(AsRef::as_ref).collect();
-    contents.sort_by_key(|&c| (c.is_file, &c.name));
+    contents.sort_by_key(|&c| (c.is_file(), &c.name));
 
     let mut rec_iter = contents.iter().peekable();
     let mut out = String::new();
 
     while let Some(content) = rec_iter.next() {
         // Like `ls`, we use blue to differentiate directories from files.
-        let name = if content.is_file {
+        let name = if content.is_file() {
             content.name.normal()
         } else {
             content.name.blue()
@@ -67,7 +67,7 @@ where
         out.push_str(&new_line);
 
         // If this item has children, recursively add those as well.
-        if !content.children.is_empty() {
+        if content.is_dir() && !content.children.is_empty() {
             // If this is the last item, its children's prefix is just indentation. Otherwise, a
             // line visually represents that there are more entries after this recursion.
             let new_prefix = format!("{}{}", prefix, if is_last { GAP } else { WIRE });
