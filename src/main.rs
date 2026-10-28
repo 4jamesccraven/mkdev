@@ -31,7 +31,7 @@ fn main() {
     let args = Cli::parse();
     let status = hooks(&args)
         .and_then(|_| RecipeStore::from_default_indices())
-        .and_then(|recipes| args.execute(recipes));
+        .and_then(|recipe_store| args.execute(recipe_store));
 
     // Inform user of error, then exit with fail code
     if let Err(why) = status {

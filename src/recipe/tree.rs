@@ -72,7 +72,7 @@ impl RecipeItemTree {
         // Break the path into its components, and insert them one-by-one.
         for comp in path.components() {
             let name = format!("{}", comp.as_os_str().display());
-            current_path.push(&comp);
+            current_path.push(comp);
 
             current_node = current_node
                 .children
@@ -97,6 +97,27 @@ impl RecipeItemTree {
     /// Returns an iterator over the tree's children.
     pub fn iter(&self) -> impl Iterator<Item = &RecipeItemTree> {
         self.children.values()
+    }
+
+    /// Flattens the recursive structure into standarad [`RecipeItem`]s, consuming the tree.
+    pub fn into_items(self) -> Vec<RecipeItem> {
+        let mut out: Vec<_> = self
+            .into_iter()
+            .flat_map(|node| {
+                if let Some(contents) = node.contents {
+                    vec![RecipeItem::file(node.path, contents)]
+                } else if !node.children.is_empty() {
+                    let mut items = vec![RecipeItem::dir(node.path.clone())];
+                    items.extend(node.into_items());
+                    items
+                } else {
+                    vec![RecipeItem::dir(node.path)]
+                }
+            })
+            .collect();
+
+        out.sort();
+        out
     }
 }
 
