@@ -99,7 +99,7 @@ impl RecipeItemTree {
         self.children.values()
     }
 
-    /// Flattens the recursive structure into standarad [`RecipeItem`]s, consuming the tree.
+    /// Flattens the recursive structure into standard [`RecipeItem`]s, consuming the tree.
     pub fn into_items(self) -> Vec<RecipeItem> {
         let mut out: Vec<_> = self
             .into_iter()

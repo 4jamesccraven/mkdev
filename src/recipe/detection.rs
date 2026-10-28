@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Functions for determing the language metadata of a recipe.
+//! Functions for determining the language metadata of a recipe.
 use super::RecipeItem;
 
 use crate::recipe::Language;
