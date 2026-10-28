@@ -35,33 +35,48 @@ use rust_i18n::t;
 
 #[derive(Parser, Debug, Default)]
 pub struct Imprint {
-    /// The name of the recipe to imprint.
+    /// Use <RECIPE> as the recipe ID.
+    ///
+    /// Everything to the left of the last "::" will be considered a namespace.
+    ///
+    /// Any valid UTF-8 characters are allowed (including emojis).
     #[arg(default_value = "", required_unless_present = "interactive")]
     pub recipe: String,
 
-    /// Create the recipe in interactive mode.
-    #[arg(short, long)]
-    pub interactive: bool,
-
-    /// Description to be associated with recipe
+    /// Use <DESCRIPTION> as the recipe's description.
     #[arg(short, long)]
     pub description: Option<String>,
 
-    /// Suppress warnings about destructive actions
+    /// Imprint the recipe in interactive mode.
     #[arg(short, long)]
-    pub suppress_warnings: bool,
+    pub interactive: bool,
 
-    /// Write the recipe as a Nix expression & save it to FILE
-    #[arg(short = 'n', long, value_name = "FILE")]
-    pub to_nix: Option<PathBuf>,
-
-    /// Paths/globs to exclude from the recipe
+    /// Paths/globs to exclude from the recipe.
     #[arg(short, long, value_name = "FILE/GLOB", action = ArgAction::Append)]
     pub exclude: Vec<String>,
 
-    /// Disable default filters (e.g., .gitignore files)
-    #[arg(long)]
+    /// Disable default filters.
+    ///
+    /// By default the following sources are ignored:
+    /// - Hidden files (beginning with .)
+    /// - The contents of .gitignore
+    /// - The contents of .ignore files
+    #[arg(long, verbatim_doc_comment)]
     pub no_filter: bool,
+
+    /// Forcibly allow destructive actions.
+    #[arg(
+        short = 'f',
+        long = "force",
+        // Retain -s for backwards compatibility.
+        short_alias = 's',
+        alias = "suppress-warnings"
+    )]
+    pub force_destructive: bool,
+
+    /// Write the recipe as a Nix expression & save it to <FILE>
+    #[arg(short = 'n', long, value_name = "FILE")]
+    pub to_nix: Option<PathBuf>,
 }
 
 impl StoreCommand for Imprint {
@@ -103,7 +118,7 @@ pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Erro
     // We can proceed if no data will be overwritten...
     let can_proceed = !destructive
         // ... or if the user overrides safety warnings.
-        || args.suppress_warnings
+        || args.force_destructive
         || (args.interactive && confirm_recipe_overwrite(&new.name)?);
 
     // Warn the user if the original source was a symlink instead of a file.

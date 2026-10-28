@@ -40,30 +40,39 @@ use rust_i18n::t;
 
 #[derive(Parser, Clone, Debug)]
 pub struct Evoke {
-    /// The recipe(s) to build
-    #[arg(add = ArgValueCompleter::new(recipe_completer))]
+    /// The recipe(s) to evoke.
+    #[arg(add = ArgValueCompleter::new(recipe_completer), required_unless_present = "interactive")]
     pub recipes: Vec<String>,
 
-    /// Evoke recipes in interactive mode
+    /// Select targets interactively.
     #[arg(short, long)]
     pub interactive: bool,
 
-    /// Target directory for recipe output
-    #[arg(last = true)]
-    pub dir_name: Option<String>,
+    /// Directory to contain evocation artifacts.
+    ///
+    /// Example usage: `mk evoke recipe1 recipe2 -- <DIRECTORY>`
+    #[arg(last = true, value_name = "DIRECTORY")]
+    pub dir_name: Option<PathBuf>,
 
-    /// The 'name' of the instantiated recipe. This replaces substitutions that evaluate to
-    /// mk::name
+    /// The name to assign the instantiated recipe.
+    ///
+    /// This value is only used by the substituter, and only if configured to do so.
     #[arg(short, long)]
     pub name: Option<String>,
 
-    /// Print debug info during build
+    /// Print the path to each artifact as it's constructed.
     #[arg(short, long)]
     pub verbose: bool,
 
-    /// Suppress warnings about destructive actions
-    #[arg(short, long)]
-    pub suppress_warnings: bool,
+    /// Forcibly allow destructive actions.
+    #[arg(
+        short = 'f',
+        long = "force",
+        // Retain -s for backwards compatibility.
+        short_alias = 's',
+        alias = "suppress-warnings"
+    )]
+    pub force_destructive: bool,
 }
 
 impl StoreCommand for Evoke {
@@ -187,11 +196,10 @@ where
 impl From<Evoke> for InstantiateOpts {
     fn from(args: Evoke) -> Self {
         Self {
-            on_conflict: OnConflict::allow_overwrite(args.suppress_warnings),
+            on_conflict: OnConflict::allow_overwrite(args.force_destructive),
             verbose: args.verbose,
             root_dir: args
                 .dir_name
-                .map(PathBuf::from)
                 .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))),
         }
     }

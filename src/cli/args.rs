@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Top-level parser for all of mkdev's commands.
-use crate::commands::*;
+#[expect(unused)]
+use crate::commands::{self, *};
 use crate::error::Error;
 use crate::recipe::RecipeStore;
 
@@ -26,10 +27,10 @@ use clap::{CommandFactory, Parser, Subcommand, crate_authors, crate_description,
 /// Command Line Interface for Mkdev
 #[derive(Parser, Debug)]
 #[command(
-    name = "mk",
+    name = "mkdev",
     version = crate_version!(),
     long_version = concat!(
-        crate_version!(), " — ", crate_description!(),
+        crate_version!(), " --- ", crate_description!(),
         "\n© 2026 ", crate_authors!(), ".",
         "\nThis program is free software and comes with ABSOLUTELY NO WARRANTY.",
         "\nYou are welcome to redistribute this software under certain conditions.",
@@ -40,29 +41,31 @@ use clap::{CommandFactory, Parser, Subcommand, crate_authors, crate_description,
     disable_help_subcommand = true,
 )]
 pub struct Cli {
-    /// Command to be passed
+    /// Subcommand.
     #[command(subcommand)]
     pub command: Option<Commands>,
 
-    /// Alias for `mk imprint --interactive`
+    /// Override the config path.
+    #[arg(short, long, env = "MKDEV_CONFIG")]
+    pub config: Option<PathBuf>,
+
+    /// Alias for `mk imprint --interactive`.
     #[arg(short, long)]
     pub interactive: bool,
 
-    /// Specify configuration file to load.
-    #[arg(short, long, env = "CONFIG")]
-    pub config: Option<PathBuf>,
+    /// Write man pages.
+    ///
+    /// Man pages are written to `./mkdev-man`
+    #[arg(long, env = "MANPAGE")]
+    pub man_page: bool,
 
-    /// Display default config to stdout
+    /// Print the default config.
     #[arg(short, long)]
     pub gen_config: bool,
 
-    /// Display current config to stdout
+    /// Print the current config.
     #[arg(short, long)]
     pub print_config: bool,
-
-    /// Displays the manpage
-    #[arg(long, hide = true, env = "MANPAGE")]
-    pub man_page: bool,
 }
 
 impl Cli {
@@ -93,22 +96,36 @@ impl Cli {
     }
 }
 
+/// CLI adaptor for each of the commands in [`commands`].
 #[derive(Subcommand, Debug)]
-/// Commands to be passed
 pub enum Commands {
-    /// Build a recipe/some recipes by name [Aliases: build | invoke]
-    #[command(aliases = ["build", "conjure", "invoke", "summon"])]
+    /// | Build recipes  |
+    ///
+    /// Evocation is the process of instantiating a recipe. Recipe contents are replicated in the
+    /// current directory (by default), and substitutions are applied.
+    #[command(visible_aliases = ["build"], aliases = [ "conjure", "invoke", "summon"])]
     Evoke(Evoke),
-    /// Create a recipe by cloning the contents of the current directory [Alias: clone]
-    #[command(aliases = ["clone"])]
+    /// | Define recipes |
+    ///
+    /// Imprinting is the process of defining a recipe. `mkdev` traverses the current directory to
+    /// collect files and directories, and serializes them in the mkdev store.
+    #[command(visible_aliases = ["clone"])]
     Imprint(Imprint),
-    /// Delete a recipe
-    #[command(aliases = ["remove", "rm"])]
+    /// | Delete recipes |
+    ///
+    /// Delete any number of recipes by ID or by namespace.
+    #[command(visible_aliases = ["remove", "rm"])]
     Delete(Delete),
-    /// List recipes, or the contents of a specific one [Alias: show]
-    #[command(aliases = ["show"])]
+    /// | List recipes   |
+    ///
+    /// Display stored recipes in various formats. By default, all recipes are listed with a short
+    /// summary, grouped by namespace. Listing a single recipe shows its contents instead.
+    #[command(visible_aliases = ["show", "ls"])]
     List(List),
-    /// Edit a recipe in-place. [Alias: edit]
-    #[command(aliases = ["edit"])]
+    /// | Edit recipes   |
+    ///
+    /// Launches an interactive editor for the provided recipe. File contents are edited in the
+    /// user's default $EDITOR.
+    #[command(visible_aliases = ["edit"])]
     Alter(Alter),
 }
