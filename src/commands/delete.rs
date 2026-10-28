@@ -16,7 +16,7 @@
 
 //! Implementation of `mk delete`.
 //!
-//! Used to delete recipes from their default location.
+//! Used to delete recipes.
 use super::StoreCommand;
 
 use crate::cli::completion::recipe_completer;
@@ -30,12 +30,12 @@ use rust_i18n::t;
 
 #[derive(Parser, Debug)]
 pub struct Delete {
-    /// The recipe/namespace to delete
+    /// The recipe(s) to delete, or namespace(s) if `--namespace` is specified.
     #[arg(add = ArgValueCompleter::new(recipe_completer))]
-    pub recipe: String,
+    pub targets: Vec<String>,
 
-    /// Delete an entire namespace.
-    #[arg(long)]
+    /// Delete an entire namespace. [alias: -r]
+    #[arg(short, short_alias = 'r', long)]
     pub namespace: bool,
 }
 
@@ -45,34 +45,22 @@ impl StoreCommand for Delete {
     }
 }
 
-/// Deletes a recipe based on command line arguments.
+/// Deletes recipes based on command line arguments.
 pub fn delete_command(args: Delete, mut store: RecipeStore) -> Result<(), Error> {
-    // Handle namespace deletion
-    if args.namespace {
-        return delete_namespace(&mut store, &args.recipe);
-    }
+    let ids: Vec<_> = if !args.namespace {
+        store.pick_many(&args.targets)?.ids().collect()
+    } else {
+        args.targets
+            .iter()
+            .flat_map(|ns_id| store.pick_namespace(ns_id).ids())
+            .collect()
+    };
 
-    // Warn the user if the store_path is a symlink.
-    let id = store.pick_id(&args.recipe)?.clone();
-    warn_if_external!(&id, store);
-
-    // Delete and confirm the path deleted.
-    let deleted_file = store.delete(id)?;
-    println!(
-        "{}",
-        t!("recipes.delete_msg", path => &deleted_file.display())
-    );
-
-    Ok(())
-}
-
-/// Deletes every recipe in a namespace.
-fn delete_namespace(store: &mut RecipeStore, namespace: &str) -> Result<(), Error> {
-    let recipe_ids: Vec<_> = store.pick_namespace(namespace).ids().collect();
-
-    recipe_ids.into_iter().try_for_each(|id| {
+    ids.into_iter().try_for_each(|id| {
+        // Warn the user if the store_path is a symlink.
         warn_if_external!(&id, store);
 
+        // Delete and confirm the path deleted.
         let deleted_file = store.delete(id)?;
         println!(
             "{}",
