@@ -76,6 +76,12 @@ pub struct Cli {
     /// equivalent to the contents of the config file itself.
     #[arg(short, long)]
     pub print_config: bool,
+
+    /// Print license (see SPDX License Identifier with '-L').
+    #[arg(long = "license")]
+    pub print_license: bool,
+    #[arg(short = 'L', hide = true)]
+    pub print_license_identifier: bool,
 }
 
 impl Cli {
@@ -84,6 +90,14 @@ impl Cli {
         use crate::commands::StoreCommand;
 
         match self.command {
+            None if self.print_license => {
+                println!("{}", include_str!("../../LICENSE"));
+                Ok(())
+            }
+            None if self.print_license_identifier => {
+                println!("{}", env!("LICENSE_IDENT"));
+                Ok(())
+            }
             Some(command) => match command {
                 Commands::Evoke(args) => args.execute(store),
                 Commands::Imprint(args) => args.execute(store),
@@ -91,7 +105,7 @@ impl Cli {
                 Commands::List(args) => args.execute(store),
                 Commands::Alter(args) => args.execute(store),
             },
-            // Handle `mk -i` alias
+            // Handle interactive imprint alias
             None if self.interactive => Imprint {
                 interactive: true,
                 ..Default::default()

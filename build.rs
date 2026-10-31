@@ -15,5 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 fn main() {
+    let manifest = std::fs::read_to_string("Cargo.toml").unwrap();
+    let manifest: toml::Value = toml::from_str(&manifest).unwrap();
+
+    let license = manifest["package"]["license"].as_str().unwrap();
+
+    println!("cargo:rustc-env=LICENSE_IDENT={license}");
     println!("cargo:rerun-if-changed=locales/");
 }

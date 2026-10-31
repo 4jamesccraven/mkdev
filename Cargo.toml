@@ -43,6 +43,9 @@ sys-locale = "0.3.2"
 tempfile = "3.27.0"
 toml = "0.8.19"
 
+[build-dependencies]
+toml = "0.8.19"
+
 [profile.release]
 codegen-units = 1
 lto = true
