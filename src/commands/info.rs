@@ -27,13 +27,13 @@ use crate::recipe::RecipeStore;
 use std::sync::OnceLock;
 
 use clap::builder::PossibleValue;
-use clap::{Parser, ValueEnum};
+use clap::{CommandFactory, Parser, ValueEnum};
 use strum::VariantArray;
 
 #[derive(Debug, Parser)]
 pub struct Info {
     /// Documentation to display.
-    pub item: InfoItem,
+    pub item: Option<InfoItem>,
 }
 
 impl StoreCommand for Info {
@@ -43,9 +43,15 @@ impl StoreCommand for Info {
 }
 
 pub fn info_command(args: Info, _: RecipeStore) -> Result<(), Error> {
-    match args.item {
-        InfoItem::Command(c) => MkdevMan::subcommand_discriminant(c).open(),
-        InfoItem::Config => MkdevMan::config().open(),
+    if let Some(item) = args.item {
+        match item {
+            InfoItem::Command(c) => MkdevMan::subcommand_discriminant(c).open(),
+            InfoItem::Config => MkdevMan::config().open(),
+        }
+    } else {
+        // Fallback to avoid confusion with `mk help` alias.
+        crate::cli::Cli::command().print_long_help().unwrap();
+        Ok(())
     }
 }
 
