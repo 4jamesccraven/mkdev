@@ -18,6 +18,7 @@
 pub mod config;
 pub mod error;
 pub mod fs;
+pub mod man;
 pub mod replacer;
 
 /// Assigns a value with a new one if that new value is different.
