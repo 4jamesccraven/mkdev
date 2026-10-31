@@ -99,21 +99,28 @@ impl MkdevMan {
     }
 
     /// Display the man page to the user.
+    ///
+    /// Panics if man is not installed, or if a broken pipe or similar OS-level issue occurs.
     pub fn open(&self) -> Result<(), Error> {
+        use std::process::{Command, Stdio};
+
         let bytes = self.to_bytes();
 
-        let mut file = tempfile::NamedTempFile::new().map_err(|_| Error::FsDenied {
-            which: "/tmp".into(),
-            context: Context::Tempfile,
-        })?;
-
-        file.write_all(&bytes).expect("idek");
-
-        std::process::Command::new("man")
+        let mut child = Command::new("man")
             .arg("-l")
-            .arg(file.path())
-            .status()
-            .expect("Could not run man!");
+            .arg("-")
+            .stdin(Stdio::piped())
+            .spawn()
+            .expect("could not run man");
+
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(&bytes)
+            .expect("could not pass stdin to man");
+
+        child.wait().expect("could not wait for man");
 
         Ok(())
     }
