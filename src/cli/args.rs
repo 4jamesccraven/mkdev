@@ -19,6 +19,7 @@ use super::style::mkdev_style;
 
 #[expect(unused)]
 use crate::commands::{self, *};
+use crate::config::Config;
 use crate::error::Error;
 use crate::man::MkdevMan;
 use crate::recipe::RecipeStore;
@@ -95,6 +96,8 @@ impl Cli {
 
         match self.command {
             None if self.man_page => MkdevMan::write_all("./mkdev-man"),
+            None if self.print_config => Config::get()?.print(),
+            None if self.gen_config => Config::default().print(),
             Some(command) => match command {
                 Commands::Evoke(args) => args.execute(store),
                 Commands::Imprint(args) => args.execute(store),

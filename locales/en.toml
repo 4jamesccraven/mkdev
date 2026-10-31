@@ -80,7 +80,7 @@ no_cwd = "the current directory does not exist"
 none_specified = "no %{subject} specified"
 not_tty = "the input device is not a TTY"
 not_utf8 = "%{file} is not valid UTF-8"
-serialise = "serialization error: could not serialize data to %{which} (while %{context})"
+serialise = "serialization error: could not serialize data (while %{context})"
 
 [warnings]
 child_failed = "could not run command '%{child}'"

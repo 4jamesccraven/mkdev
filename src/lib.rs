@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 pub mod cli;
 pub mod commands;
-pub mod hooks;
 pub mod presentation;
 pub mod recipe;
 pub mod ui;

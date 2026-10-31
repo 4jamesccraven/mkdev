@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 use mkdev::cli::Cli;
+use mkdev::config::Config;
 use mkdev::die;
-use mkdev::hooks::hooks;
 use mkdev::recipe::RecipeStore;
 
 use clap::{CommandFactory, Parser};
@@ -30,10 +30,14 @@ fn main() {
     // Initialise internationalisation.
     mkdev::init_i18n();
 
-    // Parse the command line, run hooks, and then dispatch main logic.
+    // Parse arguments, and override the config location if necessary.
     let args = Cli::parse();
-    let status = hooks(&args)
-        .and_then(|_| RecipeStore::from_default_indices())
+    if let Some(ref path) = args.config {
+        Config::override_path(path);
+    }
+
+    // Run main logic on the store.
+    let status = RecipeStore::from_default_indices() //.
         .and_then(|recipe_store| args.execute(recipe_store));
 
     // Inform user of error, then exit with fail code

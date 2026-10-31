@@ -57,12 +57,7 @@ pub enum Error {
     InteractiveCancelled,
 
     /// The value failed to serialise.
-    #[allow(unused)]
-    Serialisation {
-        which: PathBuf,
-        cause: String,
-        context: Context,
-    },
+    Serialisation { cause: String, context: Context },
 
     /// The value failed to deserialise.
     Deserialisation {
@@ -120,16 +115,8 @@ impl std::fmt::Display for Error {
             Error::DestructiveAction { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
-            Error::Serialisation {
-                which,
-                cause,
-                context,
-            } => {
-                write!(
-                    f,
-                    "{}\n{cause}",
-                    t!("errors.serialise", which => which.to_string_lossy(), context => context)
-                )
+            Error::Serialisation { cause, context } => {
+                write!(f, "{}\n{cause}", t!("errors.serialise", context => context))
             }
             Error::Deserialisation {
                 which,

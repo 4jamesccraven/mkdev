@@ -22,7 +22,7 @@ use crate::recipe::RecipeStore;
 
 use std::collections::HashMap;
 use std::default::Default;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use confique::Config as Confique;
@@ -85,10 +85,23 @@ impl Config {
     }
 
     /// Override the default config path.
-    pub fn override_path(path: PathBuf) {
+    pub fn override_path(path: impl AsRef<Path>) {
         CONFIG_PATH_OVERRIDE
-            .set(path)
+            .set(path.as_ref().to_path_buf())
             .expect("double initialisation of config path override");
+    }
+
+    /// Serialise and print `self`.
+    ///
+    /// Returns a [`Error::Serialisation`] if serialisation fails.
+    pub fn print(&self) -> Result<(), Error> {
+        let self_str = toml::to_string(&self).map_err(|e| Error::Serialisation {
+            cause: e.to_string(),
+            context: Context::Config,
+        })?;
+
+        println!("{self_str}");
+        Ok(())
     }
 
     /// Private api for loading the config if it is not already loaded.

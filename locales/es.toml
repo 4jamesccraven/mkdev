@@ -75,7 +75,7 @@ no_cwd = "el directorio de trabajo actual no existe"
 none_specified = "no se especificó ninguna(s) %{subject}"
 not_tty = "el dispositivo de entrada no es un teletipo"
 not_utf8 = "%{file} no contiene datos UTF-8 válidos"
-serialise = "error de serialización: no se pudo serializar datos a %{which} (%{context})"
+serialise = "error de serialización: no se pudo serializar datos (%{context})"
 
 [warnings]
 child_failed = "no se pudo ejecutar el comando '%{child}'"
