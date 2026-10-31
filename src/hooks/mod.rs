@@ -18,7 +18,6 @@
 //! operations.
 mod cfg;
 mod i18n;
-mod man;
 
 use crate::cli::Cli;
 use crate::error::Error;
@@ -30,10 +29,6 @@ pub fn hooks(args: &Cli) -> Result<(), Error> {
 
     // mkdev configuration overrides
     cfg::hook(args);
-
-    // man generation
-    // note: always exits program.
-    man::hook(args)?;
 
     Ok(())
 }

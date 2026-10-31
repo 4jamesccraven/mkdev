@@ -72,6 +72,24 @@ impl MkdevMan {
         }
     }
 
+    // Generate an iterator over all possible subcommands
+    //
+    // The full list consists of:
+    // - The top-level command `mk`
+    // - The config file
+    // - Every subcommand
+    pub fn all() -> impl Iterator<Item = Self> {
+        let sc_iter = std::iter::once(Cli::command()).flat_map(|cmd| {
+            cmd.get_subcommands()
+                .map(|sc| MkdevMan::subcommand(sc.get_name()))
+                .collect::<Vec<_>>()
+        });
+
+        [MkdevMan::command(), MkdevMan::config()]
+            .into_iter()
+            .chain(sc_iter)
+    }
+
     /// Write the man page as bytes.
     #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -81,6 +99,15 @@ impl MkdevMan {
         _ = self.write_to(&mut buf);
 
         buf
+    }
+
+    /// Writes all man pages to the provided directory.
+    pub fn write_all(dir: impl AsRef<Path>) -> Result<(), Error> {
+        // Ensure the path exists.
+        let path = dir.as_ref();
+        fs::create_dir_all(path, Context::Man)?;
+
+        Self::all().try_for_each(|manpage| manpage.write_in(path))
     }
 
     /// Write the man page to its default file in the provided directory.

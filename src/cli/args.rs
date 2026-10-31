@@ -20,6 +20,7 @@ use super::style::mkdev_style;
 #[expect(unused)]
 use crate::commands::{self, *};
 use crate::error::Error;
+use crate::man::MkdevMan;
 use crate::recipe::RecipeStore;
 
 use std::path::PathBuf;
@@ -90,6 +91,7 @@ impl Cli {
         use crate::commands::StoreCommand;
 
         match self.command {
+            None if self.man_page => MkdevMan::write_all("./mkdev-man"),
             Some(command) => match command {
                 Commands::Evoke(args) => args.execute(store),
                 Commands::Imprint(args) => args.execute(store),
@@ -108,6 +110,7 @@ impl Cli {
                 Ok(())
             }
             None if self.print_license_identifier => {
+                // Parsed from Cargo.toml at compile-time.
                 println!("{}", env!("LICENSE_IDENT"));
                 Ok(())
             }
