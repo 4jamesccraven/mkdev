@@ -29,7 +29,7 @@ use clap::builder::FalseyValueParser;
 use clap::{
     CommandFactory, Parser, Subcommand, ValueEnum, crate_authors, crate_description, crate_version,
 };
-use strum::EnumDiscriminants;
+use strum::{EnumDiscriminants, VariantArray};
 
 /// Command Line Interface for Mkdev
 #[derive(Parser, Debug)]
@@ -101,6 +101,7 @@ impl Cli {
                 Commands::Delete(args) => args.execute(store),
                 Commands::List(args) => args.execute(store),
                 Commands::Alter(args) => args.execute(store),
+                Commands::Info(args) => args.execute(store),
             },
             // Handle interactive imprint alias
             None if self.interactive => Imprint {
@@ -132,45 +133,59 @@ impl Cli {
 /// Each about string must be the same length so that the alias boxes are aligned. This makes it
 /// easier for the user to quickly parse what each subcommand is for.
 #[derive(Subcommand, Debug, EnumDiscriminants)]
-#[strum_discriminants(derive(ValueEnum))]
+#[strum_discriminants(derive(ValueEnum, VariantArray, strum::Display))]
 #[strum_discriminants(vis(pub))]
 #[strum_discriminants(name(SubcommandType))]
 #[strum_discriminants(doc = "The name of a subcommand")]
 pub enum Commands {
-    /// Evocation is the process of instantiating a recipe. Recipe contents are replicated in the
-    /// current directory (by default), and substitutions are applied.
     #[command(
-        about = "Build recipes  ",
+        about = "Build recipes   ",
+        long_about = "Evocation is the process of instantiating a recipe. Recipe contents are \
+            replicated in the current directory (by default), and substitutions are applied. ",
         visible_aliases = ["e", "build"],
         // Easter eggs
         aliases = ["conjure", "invoke", "summon"])
     ]
     Evoke(Evoke),
-    /// Imprinting is the process of defining a recipe. `mkdev` traverses the current directory to
-    /// collect files and directories, and serializes them in the mkdev store.
+
     #[command(
-        about = "Define recipes ",
+        about = "Define recipes  ",
+        long_about = "Imprinting is the process of defining a recipe. `mkdev` traverses the \
+            current directory to collect files and directories, and serializes them in the \
+            mkdev store. ",
         visible_aliases = ["clone"])
     ]
     Imprint(Imprint),
-    /// Delete any number of recipes by ID or by namespace.
+
     #[command(
-        about = "Delete recipes ",
+        about = "Delete recipes  ",
+        long_about = "Delete any number of recipes by ID or by namespace.",
         visible_aliases = ["remove", "rm"])
     ]
     Delete(Delete),
-    /// Display stored recipes in various formats. By default, all recipes are listed with a short
-    /// summary, grouped by namespace. Listing a single recipe shows its contents instead.
+
     #[command(
-        about = "List recipes   ",
+        about = "List recipes    ",
+        long_about = "Display stored recipes in various formats. By default, all recipes are \
+            listed with a short summary, grouped by namespace. Listing a single recipe shows its \
+            contents instead.",
         visible_aliases = ["ls", "show"])
     ]
     List(List),
-    /// Launches an interactive editor for the provided recipe. File contents are edited in the
-    /// user's default $EDITOR.
+
     #[command(
-        about = "Edit recipes   ",
+        about = "Edit recipes    ",
+        long_about = "Launches an interactive editor for the provided recipe. File contents are \
+            edited in the user's default $EDITOR.",
         visible_aliases = ["edit"])
     ]
     Alter(Alter),
+
+    #[command(
+        about = "Help & reference",
+        long_about = "Display man pages and other documentation. The man program is required for \
+            this functionality.",
+        visible_aliases = ["help"],
+    )]
+    Info(Info),
 }

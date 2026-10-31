@@ -17,7 +17,7 @@
 //! Man page generation.
 mod man5;
 
-use crate::cli::Cli;
+use crate::cli::{Cli, SubcommandType};
 use crate::error::{Context, Error};
 use crate::fs;
 
@@ -47,16 +47,24 @@ impl MkdevMan {
         }
     }
 
+    /// Generate the man page for one of mkdev's subcommands, using the [`SubcommandType`] enum.
+    pub fn subcommand_discriminant(value: SubcommandType) -> Self {
+        let value_str = value.to_string().to_lowercase();
+        Self::subcommand_name(&value_str)
+    }
+
     /// Generate the man page for one of mkdev's subcommands.
     ///
     /// Panics if an invalid command name is passed.
-    pub fn subcommand(name: &str) -> Self {
+    pub fn subcommand_name(name: &str) -> Self {
         let command = Cli::command()
             .find_subcommand(name)
             .expect("MkdevMan::subcommand called with non-existent subcommand")
             .to_owned();
 
-        let file_name = PathBuf::from(format!("mk-{}.1", command.get_name()));
+        let file_name = format!("mk-{}", command.get_name());
+        let command = command.display_name(&file_name);
+        let file_name = PathBuf::from(file_name).with_extension("1");
 
         Self {
             page: command.into(),
@@ -81,13 +89,33 @@ impl MkdevMan {
     pub fn all() -> impl Iterator<Item = Self> {
         let sc_iter = std::iter::once(Cli::command()).flat_map(|cmd| {
             cmd.get_subcommands()
-                .map(|sc| MkdevMan::subcommand(sc.get_name()))
+                .map(|sc| MkdevMan::subcommand_name(sc.get_name()))
                 .collect::<Vec<_>>()
         });
 
         [MkdevMan::command(), MkdevMan::config()]
             .into_iter()
             .chain(sc_iter)
+    }
+
+    /// Display the man page to the user.
+    pub fn open(&self) -> Result<(), Error> {
+        let bytes = self.to_bytes();
+
+        let mut file = tempfile::NamedTempFile::new().map_err(|_| Error::FsDenied {
+            which: "/tmp".into(),
+            context: Context::Tempfile,
+        })?;
+
+        file.write_all(&bytes).expect("idek");
+
+        std::process::Command::new("man")
+            .arg("-l")
+            .arg(file.path())
+            .status()
+            .expect("Could not run man!");
+
+        Ok(())
     }
 
     /// Write the man page as bytes.
