@@ -17,16 +17,12 @@
 //! Hooks that run immediately after command line parsing and immediately before any store
 //! operations.
 mod cfg;
-mod i18n;
 
 use crate::cli::Cli;
 use crate::error::Error;
 
 /// Calls every mkdev hook sequentially.
 pub fn hooks(args: &Cli) -> Result<(), Error> {
-    // locale selection
-    i18n::hook();
-
     // mkdev configuration overrides
     cfg::hook(args);
 

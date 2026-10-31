@@ -27,6 +27,9 @@ fn main() {
     // line.
     CompleteEnv::with_factory(Cli::command).complete();
 
+    // Initialise internationalisation.
+    mkdev::init_i18n();
+
     // Parse the command line, run hooks, and then dispatch main logic.
     let args = Cli::parse();
     let status = hooks(&args)
