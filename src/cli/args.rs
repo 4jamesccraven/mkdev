@@ -26,7 +26,10 @@ use crate::recipe::RecipeStore;
 use std::path::PathBuf;
 
 use clap::builder::FalseyValueParser;
-use clap::{CommandFactory, Parser, Subcommand, crate_authors, crate_description, crate_version};
+use clap::{
+    CommandFactory, Parser, Subcommand, ValueEnum, crate_authors, crate_description, crate_version,
+};
+use strum::EnumDiscriminants;
 
 /// Command Line Interface for Mkdev
 #[derive(Parser, Debug)]
@@ -128,7 +131,11 @@ impl Cli {
 /// ## About `about`
 /// Each about string must be the same length so that the alias boxes are aligned. This makes it
 /// easier for the user to quickly parse what each subcommand is for.
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, EnumDiscriminants)]
+#[strum_discriminants(derive(ValueEnum))]
+#[strum_discriminants(vis(pub))]
+#[strum_discriminants(name(SubcommandType))]
+#[strum_discriminants(doc = "The name of a subcommand")]
 pub enum Commands {
     /// Evocation is the process of instantiating a recipe. Recipe contents are replicated in the
     /// current directory (by default), and substitutions are applied.
@@ -136,7 +143,7 @@ pub enum Commands {
         about = "Build recipes  ",
         visible_aliases = ["e", "build"],
         // Easter eggs
-        aliases = [ "conjure", "invoke", "summon"])
+        aliases = ["conjure", "invoke", "summon"])
     ]
     Evoke(Evoke),
     /// Imprinting is the process of defining a recipe. `mkdev` traverses the current directory to
