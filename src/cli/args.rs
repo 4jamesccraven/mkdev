@@ -90,14 +90,6 @@ impl Cli {
         use crate::commands::StoreCommand;
 
         match self.command {
-            None if self.print_license => {
-                println!("{}", include_str!("../../LICENSE"));
-                Ok(())
-            }
-            None if self.print_license_identifier => {
-                println!("{}", env!("LICENSE_IDENT"));
-                Ok(())
-            }
             Some(command) => match command {
                 Commands::Evoke(args) => args.execute(store),
                 Commands::Imprint(args) => args.execute(store),
@@ -111,6 +103,14 @@ impl Cli {
                 ..Default::default()
             }
             .execute(store),
+            None if self.print_license => {
+                println!("{}", include_str!("../../LICENSE"));
+                Ok(())
+            }
+            None if self.print_license_identifier => {
+                println!("{}", env!("LICENSE_IDENT"));
+                Ok(())
+            }
             None => {
                 // Print help and exit if no action is provided
                 Cli::command().print_help().unwrap();
