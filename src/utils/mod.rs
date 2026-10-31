@@ -36,6 +36,10 @@ macro_rules! set_if_changed {
     };
 }
 
+// docs only
+#[expect(unused)]
+use crate::recipe::{RecipeId, RecipeStore};
+
 /// Given a [`RecipeId`] and a [`RecipeStore`], determine if said recipe is externally managed
 /// (i.e., is a symlink).
 #[macro_export]
@@ -55,5 +59,38 @@ macro_rules! warn_if_external {
 macro_rules! ctx {
     ($msg:literal) => {
         concat!("[", file!(), ":", line!(), "] ", $msg)
+    };
+}
+
+// docs only
+#[expect(unused)]
+use documented::DocumentedFields;
+
+/// Render the help doc for a Structs field with html entities decoded.
+///
+/// The first argument, `$ty` must implement [`DocumentedFields`].
+#[macro_export]
+macro_rules! render_doc {
+    ($ty:ty, $field:literal) => {
+        $crate::render_doc!($ty, $field, |docs| docs)
+    };
+
+    ($ty:ty, $field:literal, $transform:expr) => {{
+        let docs = <$ty as ::documented::DocumentedFields>::get_field_docs($field)
+            .expect(concat!("missing field documents for", $field));
+
+        ::html_escape::decode_html_entities(&$transform(docs)).into_owned()
+    }};
+}
+
+/// Like [`render_doc`], except only the first line of the comment is rendered.
+#[macro_export]
+macro_rules! render_doc_short {
+    ($ty:ty, $field:literal) => {
+        $crate::render_doc!($ty, $field, |docs: &str| docs
+            .lines()
+            .next()
+            .unwrap()
+            .to_owned())
     };
 }

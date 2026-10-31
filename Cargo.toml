@@ -31,6 +31,8 @@ clap_mangen = "0.2.26"
 colored = "3.0.0"
 confique = { version = "0.4.0", features = ["toml"] }
 dirs = "5.0.1"
+documented = "0.10.0"
+html-escape = "0.3.0"
 ignore = "0.4.23"
 inquire = { version = "0.9.4" }
 linguist = "0.1.17"

@@ -18,7 +18,7 @@
 //!
 //! Interfaces with hyperpolyglot to store the name and colour of a programming language.
 
-// Docs-only
+// docs only
 #[expect(unused)]
 use super::Recipe;
 

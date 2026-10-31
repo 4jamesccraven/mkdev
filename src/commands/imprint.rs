@@ -25,26 +25,36 @@ use crate::error::{Context, Error};
 use crate::recipe::capture::{CaptureOpts, capture_contents_with};
 use crate::recipe::{Recipe, RecipeStore};
 use crate::ui::{self, confirm_recipe_overwrite};
-use crate::warning;
 use crate::{fs, recipe};
+use crate::{render_doc, render_doc_short, warning};
 
 use std::path::PathBuf;
 
 use clap::{ArgAction, Parser};
+use documented::DocumentedFields;
 use rust_i18n::t;
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Default, DocumentedFields)]
 pub struct Imprint {
-    /// Use <RECIPE> as the recipe ID.
+    /// Use &lt;RECIPE&gt; as the recipe ID.
     ///
     /// Everything to the left of the last "::" will be considered a namespace.
     ///
     /// Any valid UTF-8 characters are allowed (including emojis).
-    #[arg(default_value = "", required_unless_present = "interactive")]
+    #[arg(
+        default_value = "",
+        required_unless_present = "interactive",
+        help = render_doc_short!(Imprint, "recipe"),
+        long_help = render_doc!(Imprint, "recipe"),
+    )]
     pub recipe: String,
 
-    /// Use <DESCRIPTION> as the recipe's description.
-    #[arg(short, long)]
+    /// Use &lt;DESCRIPTION&gt; as the recipe's description.
+    #[arg(
+        short, long,
+        help = render_doc_short!(Imprint, "description"),
+        long_help = render_doc!(Imprint, "description"),
+    )]
     pub description: Option<String>,
 
     /// Imprint the recipe in interactive mode.
@@ -74,8 +84,14 @@ pub struct Imprint {
     )]
     pub force_destructive: bool,
 
-    /// Write the recipe as a Nix expression & save it to <FILE>
-    #[arg(short = 'n', long, value_name = "FILE")]
+    /// Write the recipe as a Nix expression & save it to &lt;FILE&gt;
+    #[arg(
+        short = 'n',
+        long,
+        value_name = "FILE",
+        help = render_doc_short!(Imprint, "to_nix"),
+        long_help = render_doc!(Imprint, "to_nix"),
+    )]
     pub to_nix: Option<PathBuf>,
 }
 
