@@ -23,13 +23,16 @@ use crate::config::Config;
 use crate::error::Error;
 use crate::man::MkdevMan;
 use crate::recipe::RecipeStore;
+use crate::warning;
 
+use std::convert::identity;
 use std::path::PathBuf;
 
 use clap::builder::FalseyValueParser;
 use clap::{
     CommandFactory, Parser, Subcommand, ValueEnum, crate_authors, crate_description, crate_version,
 };
+use rust_i18n::t;
 use strum::{EnumDiscriminants, VariantArray};
 
 /// Command Line Interface for Mkdev
@@ -94,10 +97,34 @@ impl Cli {
     pub fn execute(self, store: RecipeStore) -> Result<(), Error> {
         use crate::commands::StoreCommand;
 
+        let command_present = self.command.is_some();
+        let skips_commands = [
+            self.man_page,
+            self.gen_config,
+            self.print_config,
+            self.print_license,
+            self.print_license_identifier,
+        ];
+
+        if command_present && skips_commands.into_iter().any(identity) {
+            warning!("{}", t!("warnings.subcommand_suppressed"));
+        }
+
         match self.command {
-            None if self.man_page => MkdevMan::write_all("./mkdev-man"),
-            None if self.print_config => Config::get()?.print(),
-            None if self.gen_config => Config::default().print(),
+            // Flags that suppress commands (hooks)
+            _ if self.man_page => MkdevMan::write_all("./mkdev-man"),
+            _ if self.print_config => Config::get()?.print(),
+            _ if self.gen_config => Config::default().print(),
+            _ if self.print_license => {
+                println!("{}", include_str!("../../LICENSE"));
+                Ok(())
+            }
+            _ if self.print_license_identifier => {
+                // Parsed from Cargo.toml at compile-time.
+                println!("{}", env!("LICENSE_IDENT"));
+                Ok(())
+            }
+            // Normal business logic
             Some(command) => match command {
                 Commands::Evoke(args) => args.execute(store),
                 Commands::Imprint(args) => args.execute(store),
@@ -112,15 +139,7 @@ impl Cli {
                 ..Default::default()
             }
             .execute(store),
-            None if self.print_license => {
-                println!("{}", include_str!("../../LICENSE"));
-                Ok(())
-            }
-            None if self.print_license_identifier => {
-                // Parsed from Cargo.toml at compile-time.
-                println!("{}", env!("LICENSE_IDENT"));
-                Ok(())
-            }
+            // Fallback if no arguments are received whatsoever.
             None => {
                 // Print help and exit if no action is provided
                 Cli::command().print_help().unwrap();
