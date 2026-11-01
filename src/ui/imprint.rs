@@ -17,7 +17,7 @@
 //! An interactive workflow for the [`Imprint`] command.
 use super::prompts::{get_recipe_description, get_recipe_name, select_contents};
 
-// Docs-only
+// docs only
 #[expect(unused)]
 use crate::commands::Imprint;
 

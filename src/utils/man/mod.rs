@@ -17,7 +17,7 @@
 //! Man page generation.
 mod man5;
 
-use crate::cli::Cli;
+use crate::cli::{Cli, SubcommandType};
 use crate::error::{Context, Error};
 use crate::fs;
 
@@ -47,16 +47,24 @@ impl MkdevMan {
         }
     }
 
+    /// Generate the man page for one of mkdev's subcommands, using the [`SubcommandType`] enum.
+    pub fn subcommand_discriminant(value: SubcommandType) -> Self {
+        let value_str = value.to_string().to_lowercase();
+        Self::subcommand_name(&value_str)
+    }
+
     /// Generate the man page for one of mkdev's subcommands.
     ///
     /// Panics if an invalid command name is passed.
-    pub fn subcommand(name: &str) -> Self {
+    pub fn subcommand_name(name: &str) -> Self {
         let command = Cli::command()
             .find_subcommand(name)
             .expect("MkdevMan::subcommand called with non-existent subcommand")
             .to_owned();
 
-        let file_name = PathBuf::from(format!("mk-{}.1", command.get_name()));
+        let file_name = format!("mk-{}", command.get_name());
+        let command = command.display_name(&file_name);
+        let file_name = PathBuf::from(file_name).with_extension("1");
 
         Self {
             page: command.into(),
@@ -72,6 +80,51 @@ impl MkdevMan {
         }
     }
 
+    // Generate an iterator over all possible subcommands
+    //
+    // The full list consists of:
+    // - The top-level command `mk`
+    // - The config file
+    // - Every subcommand
+    pub fn all() -> impl Iterator<Item = Self> {
+        let sc_iter = std::iter::once(Cli::command()).flat_map(|cmd| {
+            cmd.get_subcommands()
+                .map(|sc| MkdevMan::subcommand_name(sc.get_name()))
+                .collect::<Vec<_>>()
+        });
+
+        [MkdevMan::command(), MkdevMan::config()]
+            .into_iter()
+            .chain(sc_iter)
+    }
+
+    /// Display the man page to the user.
+    ///
+    /// Panics if man is not installed, or if a broken pipe or similar OS-level issue occurs.
+    pub fn open(&self) -> Result<(), Error> {
+        use std::process::{Command, Stdio};
+
+        let bytes = self.to_bytes();
+
+        let mut child = Command::new("man")
+            .arg("-l")
+            .arg("-")
+            .stdin(Stdio::piped())
+            .spawn()
+            .expect("could not run man");
+
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(&bytes)
+            .expect("could not pass stdin to man");
+
+        child.wait().expect("could not wait for man");
+
+        Ok(())
+    }
+
     /// Write the man page as bytes.
     #[must_use]
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -81,6 +134,15 @@ impl MkdevMan {
         _ = self.write_to(&mut buf);
 
         buf
+    }
+
+    /// Writes all man pages to the provided directory.
+    pub fn write_all(dir: impl AsRef<Path>) -> Result<(), Error> {
+        // Ensure the path exists.
+        let path = dir.as_ref();
+        fs::create_dir_all(path, Context::Man)?;
+
+        Self::all().try_for_each(|manpage| manpage.write_in(path))
     }
 
     /// Write the man page to its default file in the provided directory.

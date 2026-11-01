@@ -30,7 +30,7 @@
 //! ```
 //! See [`Hash` and `Eq`](std::hash::Hash#hash-and-eq).
 
-// Docs-only
+// docs only
 #[expect(unused)]
 use super::Recipe;
 

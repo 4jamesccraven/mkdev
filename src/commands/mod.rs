@@ -22,12 +22,14 @@ mod alter;
 mod delete;
 mod evoke;
 mod imprint;
+mod info;
 mod list;
 
 pub use alter::*;
 pub use delete::*;
 pub use evoke::*;
 pub use imprint::*;
+pub use info::*;
 pub use list::*;
 
 use crate::{error::Error, recipe::RecipeStore};

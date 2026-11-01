@@ -17,7 +17,7 @@
 //! Generic prompts to power interactive workflows.
 use super::locale::*;
 
-// Docs-only
+// docs only
 #[expect(unused)]
 use crate::recipe::Recipe;
 

@@ -32,15 +32,22 @@ use rust_i18n::t;
 
 #[derive(Parser, Debug)]
 pub struct List {
-    /// Specific recipe
+    /// Optional specific recipe.
+    ///
+    /// When specified, the specific recipe's contents are displayed.
     #[arg(add = ArgValueCompleter::new(recipe_completer))]
     pub recipe: Option<String>,
 
-    /// Style of output
-    #[arg(short, long)]
-    pub r#type: Option<OutputFormat>,
+    /// The output style/format.
+    // Retain -t for backwards compatibility.
+    #[arg(short, long, short_alias = 't', alias = "type")]
+    pub output: Option<OutputFormat>,
 
-    /// Hide description (note: only only applies default style)
+    /// Hide the description.
+    ///
+    /// This value can also be specified in the config.
+    ///
+    /// Only applies to the default output style.
     #[arg(long)]
     pub no_description: bool,
 }
@@ -53,7 +60,7 @@ impl StoreCommand for List {
 
 /// List a recipe/recipes in accordance to the provide command line arguments.
 pub fn list_command(args: List, store: RecipeStore) -> Result<(), Error> {
-    let output_type = args.r#type.unwrap_or_default();
+    let output_type = args.output.unwrap_or_default();
 
     match args.recipe {
         Some(ref id) => {

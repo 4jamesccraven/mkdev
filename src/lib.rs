@@ -1,6 +1,20 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 pub mod cli;
 pub mod commands;
-pub mod hooks;
 pub mod presentation;
 pub mod recipe;
 pub mod ui;
@@ -9,3 +23,30 @@ pub mod utils;
 pub use utils::*;
 
 rust_i18n::i18n!("locales", fallback = "en");
+
+/// Initialises the locale setting from the user's environment.
+pub fn init_i18n() {
+    use rust_i18n::{available_locales, set_locale};
+    use std::collections::HashSet;
+    use sys_locale::get_locales as preferred_locales;
+
+    let supported: HashSet<&str> = HashSet::from_iter(available_locales!());
+
+    let preferred = preferred_locales()
+        .map(|pref| normalise_locale(pref.as_str()))
+        .find(|pref| {
+            let base = pref.split(['-', '_']).next().unwrap_or(pref);
+            supported.contains(pref.as_str()) || supported.contains(base)
+        });
+
+    if let Some(ref locale) = preferred {
+        set_locale(locale);
+    }
+}
+
+fn normalise_locale(locale: &str) -> String {
+    locale
+        .split_once(['-', '_'])
+        .map(|(lang, region)| format!("{}-{}", lang.to_lowercase(), region.to_uppercase()))
+        .unwrap_or_else(|| locale.to_lowercase())
+}
