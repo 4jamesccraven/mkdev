@@ -47,6 +47,10 @@ pub fn info_command(args: Info, _: RecipeStore) -> Result<(), Error> {
         match item {
             InfoItem::Command(c) => MkdevMan::subcommand_discriminant(c).open(),
             InfoItem::Config => MkdevMan::config().open(),
+            InfoItem::Aliases => {
+                print!("{}", crate::presentation::format_aliases());
+                Ok(())
+            }
         }
     } else {
         // Fallback to avoid confusion with `mk help` alias.
@@ -54,6 +58,10 @@ pub fn info_command(args: Info, _: RecipeStore) -> Result<(), Error> {
         Ok(())
     }
 }
+
+// ------------------------------------------------------------
+// Info Items
+// ------------------------------------------------------------
 
 /// The possible information queries for the the `mk info` command.
 #[derive(Debug, Clone)]
@@ -63,6 +71,8 @@ pub enum InfoItem {
     Command(SubcommandType),
     /// The config file.
     Config,
+    /// Lists aliases.
+    Aliases,
 }
 
 impl ValueEnum for InfoItem {
@@ -74,7 +84,7 @@ impl ValueEnum for InfoItem {
                 .iter()
                 .cloned()
                 .map(Self::Command)
-                .chain([Self::Config])
+                .chain([Self::Config, Self::Aliases])
                 .collect()
         })
     }
@@ -94,6 +104,9 @@ impl ValueEnum for InfoItem {
                 command.to_possible_value().map(|pv| pv.help(help))
             }
             Self::Config => Some(PossibleValue::new("config").help("Man page for config file")),
+            Self::Aliases => {
+                Some(PossibleValue::new("aliases").help("Lists all aliased CLI values."))
+            }
         }
     }
 }

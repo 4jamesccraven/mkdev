@@ -16,11 +16,13 @@
 
 //! Utilities for displaying recipes on the command line.
 mod content_tree;
+mod format_aliases;
 mod format_config;
 mod output_format;
 mod recipe_list;
 
 pub use content_tree::recipe_treefmt;
+pub use format_aliases::format_aliases;
 pub use format_config::FormatConfig;
 pub use output_format::OutputFormat;
 pub use recipe_list::format_recipe_list;
