@@ -64,7 +64,7 @@ tempfile = "crear directorio o archivo temporal"
 
 [errors]
 ambiguous = "búsqueda ambigua"
-deserialise = "error de deserialización: no se pudo deserializar datos desde %{which} (%{context})"
+deserialise = "error de deserialización: no se pudo deserializar datos (%{context})"
 destruction = "%{name} ya existe; proporciona -f para sobrescribirlo"
 evoke = "no se pudo construir `%{recipe}` en '%{target}'"
 exclude = "improntar: se proporcionó un valor inválido al argumento `--exclude`"

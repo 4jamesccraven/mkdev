@@ -69,7 +69,7 @@ tempfile = "creating temporary directory or file"
 
 [errors] # What went wrong?
 ambiguous = "ambiguous query"
-deserialise = "deserialization error: could not deserialize data from %{which} (while %{context})"
+deserialise = "deserialization error: could not deserialize data (while %{context})"
 destruction = "%{name} already exists; use -f to overwrite"
 evoke = "could not build `%{recipe}` in '%{target}'"
 exclude = "imprint: invalid value for flag `--exclude`"

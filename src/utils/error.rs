@@ -60,11 +60,7 @@ pub enum Error {
     Serialisation { cause: String, context: Context },
 
     /// The value failed to deserialise.
-    Deserialisation {
-        which: PathBuf,
-        cause: String,
-        context: Context,
-    },
+    Deserialisation { cause: String, context: Context },
 }
 
 impl std::error::Error for Error {}
@@ -118,15 +114,11 @@ impl std::fmt::Display for Error {
             Error::Serialisation { cause, context } => {
                 write!(f, "{}\n{cause}", t!("errors.serialise", context => context))
             }
-            Error::Deserialisation {
-                which,
-                cause,
-                context,
-            } => {
+            Error::Deserialisation { cause, context } => {
                 write!(
                     f,
                     "{}\n{cause}",
-                    t!("errors.deserialise", which => which.to_string_lossy(), context => context)
+                    t!("errors.deserialise", context => context)
                 )
             }
         }
