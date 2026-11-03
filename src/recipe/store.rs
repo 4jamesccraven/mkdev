@@ -25,7 +25,7 @@
 //! use mkdev::recipe::RecipeStore;
 //!
 //! // Standard initialisation.
-//! let store = RecipeStore::from_default_indices().unwrap();
+//! let store = RecipeStore::gather().unwrap();
 //!
 //! // Get all recipes.
 //! let all_recipes: Vec<_> = store.pick_all().recipes().collect();
