@@ -19,8 +19,8 @@
 //! # Recipe IDs
 //! mkdev recipes are always part of exactly one space: either the global, nameless one, or a custom
 //! one specified by the user, e.g.:
-//! - `[global namespace]::foo`
-//! - `python::foo`
+//! - `::foo` (global)
+//! - `python::foo` (custom)
 //!
 //! The namespace in an id is everything, including colon characters, preceding the **last** double
 //! colon. Below is a typical example of a valid ID.
@@ -191,13 +191,27 @@ impl Recipe {
     }
 }
 
+fn canonicalise_with_tree(contents: &[RecipeItem]) -> Vec<RecipeItem> {
+    super::tree::RecipeItemTree::from_iter(contents).into_items()
+}
+
 // RecipeId
 
 /// A destructured unique identifier for a recipe.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RecipeId {
+    /// A custom grouping for a recipe.
+    /// Example:
+    /// `foo::bar` -> namespace is `Some(foo)`
+    ///      `bar` -> namespace is `None`
     pub namespace: Option<String>,
+
+    /// The primary "name" of the recipe.
     pub shortname: String,
+
+    /// The ID explicitly marked itself as global.
+    /// Example: `::bar` <=> Recipe `bar` in namespace `global`
+    pub explicit_global: bool,
 }
 
 impl RecipeId {
@@ -218,6 +232,7 @@ impl Display for RecipeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.namespace {
             Some(ns) => write!(f, "{}::{}", ns, self.shortname),
+            None if self.explicit_global => write!(f, "::{}", self.shortname),
             None => write!(f, "{}", self.shortname),
         }
     }
@@ -225,11 +240,15 @@ impl Display for RecipeId {
 
 impl<T: AsRef<str>> From<T> for RecipeId {
     fn from(id: T) -> Self {
-        let (namespace, shortname) = destructure_id_str(id.as_ref());
+        let id = destructure_id_str(id.as_ref());
+        let namespace = id.0.map(str::to_owned);
+        let shortname = id.1.to_owned();
+        let explicit_global = id.2;
 
         Self {
-            namespace: namespace.map(str::to_owned),
-            shortname: shortname.to_owned(),
+            namespace,
+            shortname,
+            explicit_global,
         }
     }
 }
@@ -243,13 +262,16 @@ impl From<&Recipe> for RecipeId {
 // Helper Functions
 
 /// Destructures a recipe id string.
-fn destructure_id_str(id: &str) -> (Option<&str>, &str) {
+///
+/// This function performs the parsing without allocating new memory, for an owned representation,
+/// use [`RecipeId::from`].
+fn destructure_id_str(id: &str) -> (Option<&str>, &str, bool) {
     match id.rsplit_once("::") {
-        Some((namespace, shortname)) => (Some(namespace), shortname),
-        None => (None, id),
+        // Explicit global namespace
+        Some(("", shortname)) => (None, shortname, true),
+        // Explicit non-global namespace
+        Some((namespace, shortname)) => (Some(namespace), shortname, false),
+        // Implicit namespace
+        _ => (None, id, false),
     }
-}
-
-fn canonicalise_with_tree(contents: &[RecipeItem]) -> Vec<RecipeItem> {
-    super::tree::RecipeItemTree::from_iter(contents).into_items()
 }

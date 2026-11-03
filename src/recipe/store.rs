@@ -209,7 +209,7 @@ impl RecipeStore {
         }
 
         // If the exact match failed with both parts specified, that recipe does not exist.
-        if recipe_id.namespace.is_some() {
+        if recipe_id.namespace.is_some() || recipe_id.explicit_global {
             return Err(Error::Invalid {
                 subject: Subject::Recipe,
                 examples: Some(vec![recipe_id.to_string()]),
@@ -220,6 +220,7 @@ impl RecipeStore {
         let remainder_as_namespace = RecipeId {
             namespace: Some(recipe_id.shortname.clone()),
             shortname: "default".into(),
+            explicit_global: false,
         };
         if let Some((key, _)) = self.manifest.get_key_value(&remainder_as_namespace) {
             return Ok(key);
