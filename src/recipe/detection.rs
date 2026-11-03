@@ -28,6 +28,7 @@ use linguist::detect_language;
 /// Languages are sorted descending by number of files with that detection. That is, the languages
 /// that appear the most come first.
 pub fn languages_for(contents: &[RecipeItem]) -> Vec<Language> {
+    // Map each language present to the number of files it appears in
     let language_counts =
         contents
             .iter()
@@ -39,15 +40,15 @@ pub fn languages_for(contents: &[RecipeItem]) -> Vec<Language> {
                 map
             });
 
+    // Separate out the language metadata
     let mut languages: Vec<_> = language_counts
         .values()
         .map(|(lang, _)| lang)
         .cloned()
         .collect();
 
+    // Sort by file count, descending.
     languages.sort_by_key(|l| std::cmp::Reverse(language_counts[&l.name].1));
-    languages.dedup();
-
     languages
 }
 
@@ -56,15 +57,17 @@ pub fn languages_for(contents: &[RecipeItem]) -> Vec<Language> {
 /// A value is only returned if the item is a file, and if that file can be uniquely identified as
 /// one language.
 pub fn language_for(item: &RecipeItem) -> Option<Language> {
+    // Ignore directories
     let RecipeItem::File(file) = item else {
         return None;
     };
 
+    // Attempt to detect the language(s) based on filename and contents.
     let filename = &file.name;
     let contents = Some(file.content.as_str());
-
     let detections = detect_language(filename, contents).ok()?;
 
+    // Return a [`Language`] if there is precisely one successful detection.
     if let Some(lang) = detections.first()
         && detections.len() == 1
     {

@@ -22,12 +22,8 @@ use clap::{CommandFactory, Parser};
 use clap_complete::CompleteEnv;
 
 fn main() {
-    // Produce completion scripts using clap_complete.
-    // note: this cannot be included in hooks because it must happen before parsing the command
-    // line.
+    // Init completion and i18n (internationalisation).
     CompleteEnv::with_factory(Cli::command).complete();
-
-    // Initialise internationalisation.
     mkdev::init_i18n();
 
     // Parse arguments, and override the config location if necessary.

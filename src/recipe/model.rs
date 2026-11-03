@@ -17,13 +17,13 @@
 //! Definitions for the metadata and declarative data of a standard Recipe.
 //!
 //! # Recipe IDs
-//! mkdev recipes are always part of exactly one space: either the global, nameless one, or a custom
-//! one specified by the user, e.g.:
+//! mkdev recipes are always part of exactly one namespace: either the global, nameless one, or a
+//! custom one specified by the user, e.g.:
 //! - `::foo` (global)
 //! - `python::foo` (custom)
 //!
-//! The namespace in an id is everything, including colon characters, preceding the **last** double
-//! colon. Below is a typical example of a valid ID.
+//! The namespace in an ID is everything preceding the **last** double colon, including colon
+//! characters:
 //! ```text
 //! foo_namespace::bar_recipe
 //! ^            ^ ^
@@ -33,7 +33,7 @@
 //! +----------------- namespace
 //! ```
 //!
-//! If the delimiter appears multiple times, only the last one is respected:
+//! As mentioned above, if the delimiter appears multiple times, only the last one is respected:
 //! ```text
 //! let the id equal "foo::bar::baz::qux":
 //!
@@ -63,11 +63,15 @@ pub struct Recipe {
     /// Determines both the name of the file the recipe is stored in as well as how mkdev will
     /// display information about it.
     pub name: String,
+
     /// A description of the recipe (Optional)
     #[serde(default = "String::new")]
     pub description: String,
+
     /// The programming languages (or file formats) found in the recipe's contents.
+    #[serde(default = "Vec::new")]
     pub languages: Vec<Language>,
+
     /// The contents the recipe holds.
     pub contents: Vec<RecipeItem>,
 }
@@ -198,19 +202,40 @@ fn canonicalise_with_tree(contents: &[RecipeItem]) -> Vec<RecipeItem> {
 // RecipeId
 
 /// A destructured unique identifier for a recipe.
+///
+/// RecipeIDs are read/parsed from the right.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RecipeId {
     /// A custom grouping for a recipe.
     /// Example:
-    /// `foo::bar` -> namespace is `Some(foo)`
-    ///      `bar` -> namespace is `None`
+    /// ```text
+    ///        `foo::bar` -> namespace is `Some(foo)`
+    /// `::foo::bar::baz` -> namespace is `Some(::foo::bar)`
+    ///           `::bar` -> namespace is `None`
+    ///             `bar` -> namespace is `None`
+    /// ```
     pub namespace: Option<String>,
 
     /// The primary "name" of the recipe.
+    ///
+    /// This comes after the namespace, if there is one.
+    /// Example
+    /// ```text
+    ///        `foo::bar` -> shortname is `bar`
+    /// `::foo::bar::baz` -> shortname is `baz`
+    ///           `::bar` -> shortname is `bar`
+    ///             `bar` -> shortname is `bar`
+    /// ```
     pub shortname: String,
 
     /// The ID explicitly marked itself as global.
-    /// Example: `::bar` <=> Recipe `bar` in namespace `global`
+    /// Example:
+    /// ```text
+    ///        `foo::bar` -> explicit_global is `false`
+    /// `::foo::bar::baz` -> explicit_global is `false`
+    ///           `::bar` -> explicit_global is `true`
+    ///             `bar` -> explicit_global is `false`
+    /// ```
     pub explicit_global: bool,
 }
 
