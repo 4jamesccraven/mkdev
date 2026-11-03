@@ -37,7 +37,7 @@ fn main() {
     }
 
     // Run main logic on the store.
-    let status = RecipeStore::from_default_indices() //.
+    let status = RecipeStore::gather() //.
         .and_then(|recipe_store| args.execute(recipe_store));
 
     // Inform user of error, then exit with fail code

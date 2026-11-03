@@ -38,7 +38,6 @@ use super::{Recipe, RecipeId};
 use crate::config::Config;
 use crate::error::{Context, Error, Subject};
 use crate::fs;
-use crate::recipe::version::deserialise_recipe;
 use crate::warning;
 
 use std::collections::HashMap;
@@ -70,23 +69,17 @@ impl RecipeStore {
     /// Creates a [`RecipeStore`] from the standard store paths.
     ///
     /// At present, the only directory indexed is the user-configured default recipe directory. This
-    /// directory, if unspecified by the user, typically resolves to `$XDG_DATA_HOME/mkdev`.
+    /// directory, if unspecified by the user, resolves to `$XDG_DATA_HOME/mkdev`.
     ///
     /// For detailed information on the default location, see: [`dirs::data_dir`]
     //
     // TODO: add more index locations, namely `/usr/share/mkdev`
-    pub fn from_default_indices() -> Result<Self, Error> {
-        let (store, errs) = Self::from_indices(&[Self::default_index()?])?;
+    pub fn gather() -> Result<Self, Error> {
+        let (store, errs) = Self::gather_dirs(&[Self::default_index()?])?;
 
         // Log warnings about paths that couldn't be indexed.
-        errs.into_iter().for_each(|p| {
-            warning!(
-                "{}",
-                Error::FsDenied {
-                    which: p,
-                    context: Context::Gather
-                }
-            );
+        errs.into_iter().for_each(|err| {
+            warning!("{err}");
         });
 
         Ok(store)
@@ -100,7 +93,7 @@ impl RecipeStore {
     ///
     /// Returns `Ok((store, invalid_recipe_paths))` if the directories can be indexed. Otherwise
     /// returns an [`Error`]. Panics if no indices are passed.
-    pub fn from_indices<P>(dirs: &[P]) -> Result<(Self, Vec<PathBuf>), Error>
+    pub fn gather_dirs<P>(dirs: &[P]) -> Result<(Self, Vec<Error>), Error>
     where
         P: AsRef<Path>,
     {
@@ -119,7 +112,7 @@ impl RecipeStore {
                 continue;
             }
 
-            let (v, i) = Self::index_dir(p_ref)?;
+            let (v, i) = Self::gather_dir(p_ref)?;
 
             valid.extend(v);
             invalid.extend(i);
@@ -138,38 +131,38 @@ impl RecipeStore {
     /// For each entry, if it is valid it is added to a partial manifest, and if it's not, the
     /// invalid path is stored in a list with all the others. The function itself only errs if the
     /// directory cannot be read.
-    fn index_dir<P>(dir: P) -> Result<(HashMap<RecipeId, ManifestEntry>, Vec<PathBuf>), Error>
+    fn gather_dir<P>(dir: P) -> Result<(HashMap<RecipeId, ManifestEntry>, Vec<Error>), Error>
     where
         P: AsRef<Path>,
     {
         let mut valid = HashMap::new();
         let mut invalid = Vec::new();
 
-        let entries = fs::read_dir(&dir, Context::Gather)?;
-        for maybe_entry in entries {
-            // Generally speaking the only way the entry can "fail" or be invalid is because the
-            // directory itself can't be read or becomes unavailable.
-            let entry = maybe_entry
-                .map_err(|_| Error::FsDenied {
-                    which: dir.as_ref().to_owned(),
-                    context: Context::Gather,
-                })?
-                .path();
+        // Generally speaking the only way the entry can be invalid is because the directory itself
+        // can't be read or becomes unavailable, so we just map it to a generic fs denied error.
+        let entries = fs::read_dir(&dir, Context::Gather)?.map(|e| {
+            e.map_err(|_| Error::FsDenied {
+                which: dir.as_ref().to_owned(),
+                context: Context::Gather,
+            })
+        });
 
-            if !entry.is_file() {
+        for entry in entries {
+            let entry = entry?.path();
+
+            // If the path doesn't correspond to a file, or the file isn't a format we support (as
+            // inferred by its extension), or if it has no extension, we skip it.
+            let Some(ext) = get_recipe_ext(&entry) else {
                 continue;
-            }
+            };
 
-            // Make an assumption on how to read the recipe based on the extension.
-            let ext = entry.extension().and_then(|s| s.to_str());
-            // TODO: remove after adding lua support
-            #[expect(clippy::single_match)]
+            #[expect(clippy::single_match, reason = "Future formats to be added")]
             match ext {
-                Some("toml") => {
-                    let file_contents = fs::read_to_string(&entry, Context::Gather)?;
+                "toml" => {
+                    let payload = fs::read_to_string(&entry, Context::Gather)?;
 
-                    match deserialise_recipe(&file_contents) {
-                        Some(r) => {
+                    match Recipe::from_toml(&payload) {
+                        Ok(r) => {
                             _ = valid.insert(
                                 r.as_id(),
                                 ManifestEntry {
@@ -178,7 +171,7 @@ impl RecipeStore {
                                 },
                             )
                         }
-                        None => invalid.push(entry),
+                        Err(e) => invalid.push(e),
                     }
                 }
                 _ => {}
@@ -252,7 +245,7 @@ impl RecipeStore {
                 query: recipe_id.to_string(),
                 possibilities: potential_matches
                     .into_iter()
-                    .map(|k| self.manifest.get(k).unwrap().recipe.name.clone())
+                    .map(|k| self.manifest[k].recipe.name.clone())
                     .collect(),
             }),
         }
@@ -284,8 +277,7 @@ impl RecipeStore {
     {
         Ok(recipe_ids
             .into_iter()
-            .map(|id| id.into())
-            .map(|id| self.pick_raw(&id))
+            .map(|id| self.pick_raw(&id.into()))
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .map(|id| &self.manifest[id])
@@ -298,15 +290,13 @@ impl RecipeStore {
     }
 
     /// Query the store for all manifest entries in the namespace.
-    pub fn pick_namespace(&self, namespace_id: &str) -> PickResults<'_> {
+    pub fn pick_namespace(&self, namespace: &str) -> PickResults<'_> {
         self.manifest
             .iter()
-            .filter(|(k, _)| {
-                k.namespace
-                    .as_ref()
-                    .is_some_and(|ns| ns == &namespace_id.to_owned())
+            .filter_map(|(k, v)| {
+                let ns = k.namespace.as_ref()?;
+                (ns == namespace).then_some(v)
             })
-            .map(|(_, v)| v)
             .collect()
     }
 
@@ -330,7 +320,7 @@ impl RecipeStore {
     /// calling this method.
     pub fn is_external(&self, recipe_id: &RecipeId) -> Option<bool> {
         let key = self.pick_raw(recipe_id).ok()?;
-        let store_path = &self.manifest.get(key).unwrap().store_path;
+        let store_path = &self.manifest[key].store_path;
 
         std::fs::symlink_metadata(store_path)
             .ok()
@@ -363,7 +353,7 @@ impl RecipeStore {
         // Ensure that the intended directory exists. Unless it's the default index, which is
         // verified once at init time.
         if dir.as_ref() != self.default_dir {
-            fs::create_dir_all(dir.as_ref(), Context::Gather)?;
+            fs::create_dir_all(dir.as_ref(), Context::Imprint)?;
         }
 
         // Calculate the store path.
@@ -401,12 +391,7 @@ impl RecipeStore {
         let query = self.pick_raw(&key)?.clone();
 
         // Convert that ID into a store_path to remove.
-        let entry_path = self
-            .manifest
-            .get(&query)
-            .expect("manifest guaranteed to contain this id.")
-            .store_path
-            .clone();
+        let entry_path = self.manifest[&query].store_path.clone();
 
         // Delete the corresponding store path.
         fs::remove_file(&entry_path, Context::Delete)?;
@@ -434,12 +419,7 @@ impl RecipeStore {
         let new_recipe = new_recipe.into_canonical();
 
         // Get the store paths associated with the current and updated values.
-        let current_store_path = self
-            .manifest
-            .get(&key)
-            .expect("manifest guaranteed to contain original id by this point")
-            .store_path
-            .clone();
+        let current_store_path = self.manifest[&key].store_path.clone();
 
         let updated_store_path = current_store_path
             .parent()
@@ -450,10 +430,8 @@ impl RecipeStore {
         let cleanup = current_store_path != updated_store_path;
 
         // Save the recipe to disk and update the manifest.
-        // This will always run because we gave it a default parent above.
-        if let Some(dir) = updated_store_path.parent() {
-            self.save_in(dir, new_recipe)?;
-        }
+        let dir = updated_store_path.parent().expect("default provided above");
+        self.save_in(dir, new_recipe)?;
 
         // If there was a different starting file, we remove it.
         if cleanup {
@@ -538,4 +516,17 @@ impl<'a> Iterator for PickResults<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.entries.next()
     }
+}
+
+/// Returns a supported recipe extension from the path if one can be found. Returns [`None`]
+/// otherwise.
+fn get_recipe_ext(path: &Path) -> Option<&str> {
+    if !path.is_file() {
+        return None;
+    }
+
+    path.extension()
+        .and_then(|s| s.to_str())
+        // NOTE: this uses matches because I'm adding more formats soon!
+        .filter(|ext| matches!(*ext, "toml"))
 }

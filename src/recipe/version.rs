@@ -17,6 +17,8 @@
 //! Backwards compatibility layer for older recipe versions.
 use super::{Language, Recipe, RecipeItem, content::File};
 
+use crate::error::{Context, Error};
+
 use serde::{Deserialize, Serialize};
 
 /// Untagged helper struct that can deserialise all known recipe formats.
@@ -32,10 +34,13 @@ enum RecipeVersions {
 /// Deserialises a known version of the recipe format, and converts it to the most recent version.
 ///
 /// Returns None if the recipe data doesn't match any known format.
-pub fn deserialise_recipe(value: &str) -> Option<Recipe> {
+pub fn deserialise_declarative_recipe(value: &str) -> Result<Recipe, Error> {
     toml::from_str::<RecipeVersions>(value)
-        .ok()
         .map(Recipe::from)
+        .map_err(|e| Error::Deserialisation {
+            cause: e.to_string(),
+            context: Context::Gather,
+        })
 }
 
 impl From<RecipeVersions> for Recipe {

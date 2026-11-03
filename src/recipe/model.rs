@@ -44,8 +44,10 @@
 //! |             +---- the only delimiter that is honoured
 //! +------------------ namespace: "foo::bar::baz"
 //! ```
+use super::version::deserialise_declarative_recipe;
 use super::{Language, RecipeItem};
 
+use crate::error::Error;
 use crate::recipe::detection::languages_for;
 
 use std::fmt::Display;
@@ -71,6 +73,13 @@ pub struct Recipe {
 }
 
 impl Recipe {
+    // ------------------------------------------------------------
+    // Conversion
+    // ------------------------------------------------------------
+    pub fn from_toml(toml: &str) -> Result<Self, Error> {
+        deserialise_declarative_recipe(toml)
+    }
+
     // ------------------------------------------------------------
     // Identity
     // ------------------------------------------------------------

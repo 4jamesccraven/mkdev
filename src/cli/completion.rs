@@ -29,7 +29,7 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
     let mut completions = vec![];
 
     if let Some(current) = current.to_str()
-        && let Ok(store) = RecipeStore::from_default_indices()
+        && let Ok(store) = RecipeStore::gather()
     {
         store
             .pick_all()

@@ -138,7 +138,6 @@ impl Config {
 
             let cfg: Config =
                 toml::from_str(&cfg_contents).map_err(|e| Error::Deserialisation {
-                    which: config_file,
                     cause: e.to_string(),
                     context: Context::Config,
                 })?;
