@@ -497,8 +497,8 @@ impl<'a> PickResults<'a> {
     }
 
     /// Creates an iterator over the IDs resulting from the pick, converted to Strings.
-    pub fn id_strings(self) -> impl Iterator<Item = String> {
-        self.ids().map(|r| r.to_string())
+    pub fn id_strings(self) -> impl Iterator<Item = &'a String> {
+        self.recipes().map(|r| &r.name)
     }
 }
 

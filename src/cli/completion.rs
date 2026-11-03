@@ -35,7 +35,7 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
             .pick_all()
             .id_strings()
             .filter(|c| c.starts_with(current))
-            .for_each(|c: String| {
+            .for_each(|c| {
                 completions.push(CompletionCandidate::new(c));
             });
     }

@@ -70,10 +70,11 @@ pub(super) fn get_recipe_description() -> InquireResult<String> {
     Text::new(&t!("menus.imprint.get_desc")).prompt()
 }
 
-/// Have the user select one or more [`Recipe`]s by their ID.
-///
-/// The IDs are accepted and returned as [`String`] for simplicity
-pub fn select_recipes(recipes: Vec<String>) -> InquireResult<Vec<String>> {
+/// Have the user select one or more [`Recipe`]s.
+pub fn select_recipes<D>(recipes: Vec<D>) -> InquireResult<Vec<D>>
+where
+    D: Display,
+{
     let vim = Config::get().unwrap().vim;
 
     MultiSelect::new(&t!("menus.evoke.pick"), recipes)

@@ -89,11 +89,11 @@ pub fn evoke_command(args: Evoke, store: RecipeStore) -> Result<(), Error> {
     };
 
     // Get user selection via the command line, or from an interactive menu.
-    let query = if !args.interactive {
-        &args.recipes
+    let query: Vec<&String> = if !args.interactive {
+        args.recipes.iter().collect()
     } else {
         let choices = store.pick_all().id_strings().collect();
-        &ui::select_recipes(choices)?
+        ui::select_recipes(choices)?
     };
 
     // Validate the user selection and configure instantiation.
