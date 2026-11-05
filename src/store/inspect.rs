@@ -48,9 +48,9 @@ impl RecipeStore {
         K: Into<RecipeId>,
     {
         let id = self.pick_raw(&recipe_id.into())?;
-        let store_path = self.manifest[&id].store_path.as_path();
+        let store_path = self.manifest[id].store_path.as_path();
 
-        Ok(fs::read_to_string(store_path, Context::Gather)?)
+        fs::read_to_string(store_path, Context::Gather)
     }
 
     /// Reads the source file for the recipe as bytes.
@@ -61,8 +61,8 @@ impl RecipeStore {
         K: Into<RecipeId>,
     {
         let id = self.pick_raw(&recipe_id.into())?;
-        let store_path = self.manifest[&id].store_path.as_path();
+        let store_path = self.manifest[id].store_path.as_path();
 
-        Ok(fs::read(store_path, Context::Gather)?)
+        fs::read(store_path, Context::Gather)
     }
 }
