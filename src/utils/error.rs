@@ -15,12 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! The error type for mkdev.
+use std::io;
 use std::path::PathBuf;
 
 use rust_i18n::t;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Error {
+    // ------------------------------------------------------------
+    //  Recipe Resolution
+    // ------------------------------------------------------------
     /// Recipe(s) were not specified.
     NoneSpecified { subject: Subject },
 
@@ -36,6 +40,9 @@ pub enum Error {
         possibilities: Vec<String>,
     },
 
+    // ------------------------------------------------------------
+    //  CLI Mode
+    // ------------------------------------------------------------
     /// The action would be destructive.
     DestructiveAction { name: String },
 
@@ -44,29 +51,54 @@ pub enum Error {
     /// Note: this is effectively an ignore error, which is itself effectively an IO error.
     Exclude { cause: String },
 
-    /// The filesystem operation lacked the necessary privileges to complete.
-    FsDenied { which: PathBuf, context: Context },
-
-    /// The file's contents were not UTF-8 encoded.
-    NotUTF8 { which: PathBuf },
-
+    // ------------------------------------------------------------
+    //  Interactive Mode
+    // ------------------------------------------------------------
     /// The input device was not a TTY (during interactive mode).
     NotTTY,
 
     /// The user canceled an interactive process.
     InteractiveCancelled,
 
+    // ------------------------------------------------------------
+    //  (De)serialisation
+    // ------------------------------------------------------------
     /// The value failed to serialise.
     Serialisation { cause: String, context: Context },
 
     /// The value failed to deserialise.
     Deserialisation { cause: String, context: Context },
+
+    // ------------------------------------------------------------
+    //  Child Processes
+    // ------------------------------------------------------------
+    /// Could not spawn the child process.
+    SpawnFailure { what: String, why: io::Error },
+
+    /// Could not write to child process.
+    PipeFailure { why: io::Error },
+
+    /// Could not collect child exit status.
+    WaitFailure { why: io::Error },
+
+    /// Child exited with a non-zero status.
+    UnsuccessfulChild { code: Option<i32> },
+
+    // ------------------------------------------------------------
+    //  Filesystem
+    // ------------------------------------------------------------
+    /// The filesystem operation lacked the necessary privileges to complete.
+    FsDenied { which: PathBuf, context: Context },
+
+    /// The file's contents were not UTF-8 encoded.
+    NotUTF8 { which: PathBuf },
 }
 
 impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            // Recipe Resolution
             Error::NoneSpecified { subject } => {
                 write!(f, "{}", t!("errors.none_specified", subject => subject))
             }
@@ -93,24 +125,17 @@ impl std::fmt::Display for Error {
                 let ps = possibilities.join(", ");
                 write!(f, "{} '{query}' ({ps})", t!("errors.ambiguous"))
             }
-            Error::Exclude { cause } => {
-                write!(f, "{}: {cause}", t!("errors.exclude"))
-            }
-            Error::FsDenied { which, context } => write!(
-                f,
-                "{}",
-                t!("errors.fs_denied", which => which.to_string_lossy(), context => context),
-            ),
-            Error::NotUTF8 { which } => write!(
-                f,
-                "{}",
-                t!("errors.not_utf8", file => which.to_string_lossy())
-            ),
-            Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
-            Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
+            // CLI Mode
             Error::DestructiveAction { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
+            Error::Exclude { cause } => {
+                write!(f, "{}: {cause}", t!("errors.exclude"))
+            }
+            // Interactive Mode
+            Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
+            Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
+            // Serde
             Error::Serialisation { cause, context } => {
                 write!(f, "{}\n{cause}", t!("errors.serialise", context => context))
             }
@@ -121,6 +146,27 @@ impl std::fmt::Display for Error {
                     t!("errors.deserialise", context => context)
                 )
             }
+            // Children
+            Error::SpawnFailure { what, why } => {
+                write!(f, "{}:\n{}", t!("errors.spawn_failure", what => what), why)
+            }
+            Error::PipeFailure { why } => write!(f, "{}:\n{}", t!("errors.pipe_failure"), why),
+            Error::WaitFailure { why } => write!(f, "{}:\n{}", t!("errors.wait_failure"), why),
+            Error::UnsuccessfulChild { code } => match code {
+                Some(code) => write!(f, "{}: {}", t!("errors.child_failed_with"), code),
+                None => write!(f, "{}", t!("errors.child_failed_unknown")),
+            },
+            // FS
+            Error::FsDenied { which, context } => write!(
+                f,
+                "{}",
+                t!("errors.fs_denied", which => which.to_string_lossy(), context => context),
+            ),
+            Error::NotUTF8 { which } => write!(
+                f,
+                "{}",
+                t!("errors.not_utf8", file => which.to_string_lossy())
+            ),
         }
     }
 }
