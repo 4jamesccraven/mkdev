@@ -217,7 +217,7 @@ pub enum Commands {
     #[command(
         about = "Help & reference",
         long_about = "Display man pages and other documentation. The man program is required for \
-            this functionality.",
+            all man pages.",
         visible_aliases = ["help"],
     )]
     Info(Info),

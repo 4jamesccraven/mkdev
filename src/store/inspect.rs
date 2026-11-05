@@ -33,11 +33,10 @@ impl RecipeStore {
         use std::io::{Write, stdout};
         let file_contents = self.recipe_data_bytes(recipe_id)?;
 
-        // If we can't even print what's the point?
-        // We don't particularly about broken pipe errors, either.
-        _ = stdout().lock().write_all(&file_contents);
-
-        Ok(())
+        stdout()
+            .lock()
+            .write_all(&file_contents)
+            .map_err(|e| Error::PipeFailure { why: e })
     }
 
     /// Reads the source file for the recipe as a [`String`].
