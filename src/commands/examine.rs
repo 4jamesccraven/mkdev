@@ -32,8 +32,12 @@ pub struct Examine {
     /// The recipe(s) whose contents should be displayed.
     pub recipes: Vec<String>,
 
+    /// Show the path to the recipe instead of its contents.
+    #[arg(short, long)]
+    pub paths: bool,
+
     /// Optional commmand that receives the recipe contents from STDIN.
-    #[arg(last = true)]
+    #[arg(last = true, conflicts_with = "paths")]
     pub pipe_into: Vec<String>,
 }
 
@@ -44,7 +48,23 @@ impl StoreCommand for Examine {
 }
 
 pub fn exmaine_command(args: Examine, store: RecipeStore) -> Result<(), Error> {
-    let mut ids = store.pick_many(&args.recipes)?.ids();
+    let pick_results = store.pick_many(&args.recipes)?;
+
+    // Show the paths only and exit if `--paths` is passed.
+    // If there are no recipes specified, all are used for
+    if args.paths {
+        let pick_results = if args.recipes.is_empty() {
+            store.pick_all()
+        } else {
+            pick_results
+        };
+
+        pick_results
+            .paths()
+            .for_each(|p| println!("{}", p.display()));
+
+        return Ok(());
+    }
 
     if let Some((prog, pipe_args)) = args.pipe_into.split_first() {
         // Spawn child and pipe into it...
@@ -59,7 +79,7 @@ pub fn exmaine_command(args: Examine, store: RecipeStore) -> Result<(), Error> {
 
         let mut rx_write = rx.stdin.take().expect("stdin provided above.");
 
-        let write_status = ids.try_for_each(|id| {
+        let write_status = pick_results.ids().try_for_each(|id| {
             let data = store.recipe_data_bytes(id)?;
             rx_write
                 .write_all(&data)
@@ -79,6 +99,6 @@ pub fn exmaine_command(args: Examine, store: RecipeStore) -> Result<(), Error> {
         Ok(())
     } else {
         // ... or send it to stdout directly.
-        ids.try_for_each(|id| store.recipe_cat(id))
+        pick_results.ids().try_for_each(|id| store.recipe_cat(id))
     }
 }
