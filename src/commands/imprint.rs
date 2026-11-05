@@ -109,9 +109,10 @@ pub fn imprint_command(args: Imprint, mut store: RecipeStore) -> Result<(), Erro
     } else {
         // Capture the current directory with filters (unless the user disables them) and with any
         // additional exclusion globs the user provides.
+        let overrides = args.exclude.iter().map(|e| format!("!{e}")).collect();
         let contents = capture_contents_with(CaptureOpts {
             filtered: !args.no_filter,
-            overrides: args.exclude,
+            overrides,
             ..Default::default()
         })?;
 
