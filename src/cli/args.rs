@@ -198,7 +198,9 @@ pub enum Commands {
 
     #[command(
         about = "View raw recipes",
-        long_about = "TODO",
+        long_about = "Display raw recipe files in the store. This is useful for inspecting recipes \
+            do not conform to the latest recipe version or may otherwise appear differently when \
+            viewed with `mk list`.",
         visible_aliases = ["cat"],
         aliases = ["inspect"],
     )]
