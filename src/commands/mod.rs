@@ -21,6 +21,7 @@
 mod alter;
 mod delete;
 mod evoke;
+mod examine;
 mod imprint;
 mod info;
 mod list;
@@ -28,6 +29,7 @@ mod list;
 pub use alter::*;
 pub use delete::*;
 pub use evoke::*;
+pub use examine::*;
 pub use imprint::*;
 pub use info::*;
 pub use list::*;

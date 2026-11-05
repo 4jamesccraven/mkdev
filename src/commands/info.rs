@@ -99,6 +99,7 @@ impl ValueEnum for InfoItem {
                     SubcommandType::List => "Man page for 'mk list'",
                     SubcommandType::Alter => "Man page for 'mk alter'",
                     SubcommandType::Info => "Man page for 'mk info'",
+                    SubcommandType::Examine => "Man page for 'mk examine'",
                 };
 
                 command.to_possible_value().map(|pv| pv.help(help))
