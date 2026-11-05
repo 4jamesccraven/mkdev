@@ -65,4 +65,33 @@ impl RecipeStore {
 
         fs::read(store_path, Context::Gather)
     }
+
+    /// Returns the size of the recipe file in bytes.
+    ///
+    /// If the recipe cannot be found or its metadata cannot be retrieved, [`None`] is returned.
+    /// This method should not be used with unverified IDs.
+    pub fn get_file_len(&self, recipe_id: &RecipeId) -> Option<u64> {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let store_path = &self.manifest[key].store_path;
+
+        std::fs::metadata(store_path).ok().map(|m| m.len())
+    }
+
+    /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)
+    /// by determining whether or not the store path is a symlink.
+    ///
+    /// Assuming the path exists, `true` is returned for a store path that is a symlink, otherwise
+    /// `false` is returned. If the symlink metadata cannot be determined, this function's return
+    /// value is inconclusive and `None` is returned.
+    ///
+    /// None is also returned for recipes not part of the store. Do not use unverified IDs when
+    /// calling this method.
+    pub fn is_external(&self, recipe_id: &RecipeId) -> Option<bool> {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let store_path = &self.manifest[key].store_path;
+
+        std::fs::symlink_metadata(store_path)
+            .ok()
+            .map(|s| s.is_symlink())
+    }
 }
