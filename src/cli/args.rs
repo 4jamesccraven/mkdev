@@ -130,6 +130,7 @@ impl Cli {
                 Commands::Imprint(args) => args.execute(store),
                 Commands::Delete(args) => args.execute(store),
                 Commands::List(args) => args.execute(store),
+                Commands::Examine(args) => args.execute(store),
                 Commands::Alter(args) => args.execute(store),
                 Commands::Info(args) => args.execute(store),
             },
@@ -194,6 +195,14 @@ pub enum Commands {
         visible_aliases = ["ls", "show"])
     ]
     List(List),
+
+    #[command(
+        about = "View raw recipes",
+        long_about = "TODO",
+        visible_aliases = ["cat"],
+        aliases = ["inspect"],
+    )]
+    Examine(Examine),
 
     #[command(
         about = "Edit recipes    ",
