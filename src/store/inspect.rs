@@ -22,7 +22,7 @@ use super::RecipeStore;
 
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::RecipeId;
+use crate::recipe::{RecipeId, RecipeItem};
 
 impl RecipeStore {
     /// Print the recipe's contents as they appear on disk to stdout.
@@ -69,11 +69,28 @@ impl RecipeStore {
     ///
     /// If the recipe cannot be found or its metadata cannot be retrieved, [`None`] is returned.
     /// This method should not be used with unverified IDs.
-    pub fn get_file_len(&self, recipe_id: &RecipeId) -> Option<u64> {
+    pub fn file_len(&self, recipe_id: &RecipeId) -> Option<u64> {
         let key = self.pick_raw(recipe_id).ok()?;
         let store_path = &self.manifest[key].store_path;
 
         std::fs::metadata(store_path).ok().map(|m| m.len())
+    }
+
+    /// Returns the number of files and directories (in that order) in the given recipe.
+    ///
+    /// Returns [`None`] if the recipe is not in the store.
+    pub fn content_breakdown(&self, recipe_id: &RecipeId) -> Option<(usize, usize)> {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let contents = &self.manifest[key].recipe.contents;
+
+        let counts = contents
+            .iter()
+            .fold((0, 0), |(file_count, dir_count), item| match item {
+                RecipeItem::File(_) => (file_count + 1, dir_count),
+                RecipeItem::Directory(_) => (file_count, dir_count + 1),
+            });
+
+        Some(counts)
     }
 
     /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)
