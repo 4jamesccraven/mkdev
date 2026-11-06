@@ -150,4 +150,13 @@ impl RecipeStore {
         let key = recipe_id.into();
         self.pick_raw(&key).is_ok()
     }
+
+    /// Query the store to see if a namespace exists.
+    ///
+    /// Returns `true` if at least one recipe in the store has the specified namespace.
+    pub fn namespace_exists(&self, namespace: &str) -> bool {
+        self.manifest
+            .values()
+            .any(|m| m.recipe.namespace() == Some(namespace))
+    }
 }
