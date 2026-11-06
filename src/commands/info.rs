@@ -17,7 +17,7 @@
 //! Implementation of `mk info`.
 //!
 //! Displays man pages and other information.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::cli::SubcommandType;
 use crate::error::Error;
@@ -36,7 +36,7 @@ pub struct Info {
     pub item: Option<InfoItem>,
 }
 
-impl StoreCommand for Info {
+impl MkdevCommand for Info {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         info_command(self, store)
     }
@@ -98,8 +98,9 @@ impl ValueEnum for InfoItem {
                     SubcommandType::Delete => "Man page for 'mk delete'",
                     SubcommandType::List => "Man page for 'mk list'",
                     SubcommandType::Alter => "Man page for 'mk alter'",
-                    SubcommandType::Info => "Man page for 'mk info'",
+                    SubcommandType::Store => "Man page for 'mk store'",
                     SubcommandType::Examine => "Man page for 'mk examine'",
+                    SubcommandType::Info => "Man page for 'mk info'",
                 };
 
                 command.to_possible_value().map(|pv| pv.help(help))

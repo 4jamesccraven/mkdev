@@ -25,6 +25,7 @@ mod examine;
 mod imprint;
 mod info;
 mod list;
+mod store;
 
 pub use alter::*;
 pub use delete::*;
@@ -33,12 +34,13 @@ pub use examine::*;
 pub use imprint::*;
 pub use info::*;
 pub use list::*;
+pub use store::*;
 
 use crate::{error::Error, recipe::RecipeStore};
 
 /// A trait that represents a command to be run against a [`RecipeStore`].
 ///
 /// This enforces the type signature of the command, ensuring uniformity.
-pub trait StoreCommand {
+pub trait MkdevCommand {
     fn execute(self, store: RecipeStore) -> Result<(), Error>;
 }

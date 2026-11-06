@@ -19,7 +19,7 @@
 //! Imprinting creates a recipe from the current directory by recursively capturing its files and
 //! subdirectories. The resulting paths and file contents are collected into a [`Recipe`] and
 //! saved to the recipe directory.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::error::{Context, Error};
 use crate::recipe::capture::{CaptureOpts, capture_contents_with};
@@ -95,7 +95,7 @@ pub struct Imprint {
     pub to_nix: Option<PathBuf>,
 }
 
-impl StoreCommand for Imprint {
+impl MkdevCommand for Imprint {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         imprint_command(self, store)
     }

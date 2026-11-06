@@ -95,7 +95,7 @@ pub struct Cli {
 impl Cli {
     /// Execute the parsed subcommand.
     pub fn execute(self, store: RecipeStore) -> Result<(), Error> {
-        use crate::commands::StoreCommand;
+        use crate::commands::MkdevCommand;
 
         let command_present = self.command.is_some();
         let skips_commands = [
@@ -130,8 +130,9 @@ impl Cli {
                 Commands::Imprint(args) => args.execute(store),
                 Commands::Delete(args) => args.execute(store),
                 Commands::List(args) => args.execute(store),
-                Commands::Examine(args) => args.execute(store),
                 Commands::Alter(args) => args.execute(store),
+                Commands::Examine(args) => args.execute(store),
+                Commands::Store(args) => args.execute(store),
                 Commands::Info(args) => args.execute(store),
             },
             // Handle interactive imprint alias
@@ -197,6 +198,14 @@ pub enum Commands {
     List(List),
 
     #[command(
+        about = "Edit recipes    ",
+        long_about = "Launches an interactive editor for the provided recipe. File contents are \
+            edited in the user's default $EDITOR.",
+        visible_aliases = ["edit"])
+    ]
+    Alter(Alter),
+
+    #[command(
         about = "View raw recipes",
         long_about = "Display raw recipe files in the store. This is useful for inspecting recipes \
             do not conform to the latest recipe version or may otherwise appear differently when \
@@ -207,12 +216,10 @@ pub enum Commands {
     Examine(Examine),
 
     #[command(
-        about = "Edit recipes    ",
-        long_about = "Launches an interactive editor for the provided recipe. File contents are \
-            edited in the user's default $EDITOR.",
-        visible_aliases = ["edit"])
-    ]
-    Alter(Alter),
+        about = "Store Management",
+        long_about = "Low level interface for querying and working with the mkdev store."
+    )]
+    Store(Store),
 
     #[command(
         about = "Help & reference",
