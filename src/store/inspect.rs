@@ -22,7 +22,7 @@ use super::RecipeStore;
 
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::{RecipeId, RecipeItem};
+use crate::recipe::{Language, RecipeId, RecipeItem};
 
 impl RecipeStore {
     /// Print the recipe's contents as they appear on disk to stdout.
@@ -91,6 +91,16 @@ impl RecipeStore {
             });
 
         Some(counts)
+    }
+
+    /// Returns a reference to the language metadata for the given recipe.
+    ///
+    /// Returns [`None`] if the recipe is not in the store.
+    pub fn recipe_langs(&self, recipe_id: &RecipeId) -> Option<&[Language]> {
+        let key = self.pick_raw(recipe_id).ok()?;
+        let langs = self.manifest[key].recipe.languages.as_slice();
+
+        Some(langs)
     }
 
     /// Attempts to determine if the recipe is externally managed (e.g., by home-manager or stow)

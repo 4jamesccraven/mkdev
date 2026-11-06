@@ -9,11 +9,18 @@ yes_simple = "yes"
 no_simple  = "no"
 # The word for quitting a process
 quit = "Quit"
-# The words for files and directories
+# Filesystem words
 file = "File"
+files = "Files"
 directory = "Directory"
+directories = "Directories"
+path = "Path"
+paths = "Paths"
+size = "Size" # file size
 # The word proceed (lemma form)
 proceed = "Proceed"
+# The word external
+external = "External"
 
 [recipes]
 delete_msg = "Deleted recipe at %{path}."

@@ -17,7 +17,7 @@
 //! Implentation of `mk examine`.
 //!
 //! For examining the exact contents of a recipe on disk.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::error::Error;
 use crate::recipe::RecipeStore;
@@ -41,7 +41,7 @@ pub struct Examine {
     pub pipe_into: Vec<String>,
 }
 
-impl StoreCommand for Examine {
+impl MkdevCommand for Examine {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         exmaine_command(self, store)
     }
