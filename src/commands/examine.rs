@@ -25,7 +25,7 @@ use crate::recipe::RecipeStore;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use clap::Parser;
+use clap::{Parser, ValueHint};
 
 #[derive(Parser, Debug)]
 pub struct Examine {
@@ -37,7 +37,7 @@ pub struct Examine {
     pub paths: bool,
 
     /// Optional commmand that receives the recipe contents from STDIN.
-    #[arg(last = true, conflicts_with = "paths")]
+    #[arg(last = true, value_hint = ValueHint::CommandWithArguments, conflicts_with = "paths")]
     pub pipe_into: Vec<String>,
 }
 

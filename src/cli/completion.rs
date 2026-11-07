@@ -42,3 +42,21 @@ pub fn recipe_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
 
     completions
 }
+
+/// An argument completer for the CLI that returns matching store indices.
+pub fn index_completer(current: &std::ffi::OsStr) -> Vec<CompletionCandidate> {
+    let mut completions = vec![];
+
+    if let Some(current) = current.to_str()
+        && let Ok(store) = RecipeStore::gather()
+    {
+        store
+            .pick_indices()
+            .filter(|p| p.starts_with(current))
+            .for_each(|p| {
+                completions.push(CompletionCandidate::new(p));
+            });
+    }
+
+    completions
+}
