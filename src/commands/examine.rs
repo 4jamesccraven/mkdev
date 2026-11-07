@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Implentation of `mk examine`.
+//! Implementation of `mk examine`.
 //!
 //! For examining the exact contents of a recipe on disk.
 use super::MkdevCommand;
@@ -36,18 +36,18 @@ pub struct Examine {
     #[arg(short, long)]
     pub paths: bool,
 
-    /// Optional commmand that receives the recipe contents from STDIN.
+    /// Optional command that receives the recipe contents from STDIN.
     #[arg(last = true, value_hint = ValueHint::CommandWithArguments, conflicts_with = "paths")]
     pub pipe_into: Vec<String>,
 }
 
 impl MkdevCommand for Examine {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
-        exmaine_command(self, store)
+        examine_command(self, store)
     }
 }
 
-pub fn exmaine_command(args: Examine, store: RecipeStore) -> Result<(), Error> {
+pub fn examine_command(args: Examine, store: RecipeStore) -> Result<(), Error> {
     let pick_results = store.pick_many(&args.recipes)?;
 
     // Show the paths only and exit if `--paths` is passed.
