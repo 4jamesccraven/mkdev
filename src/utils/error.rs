@@ -174,6 +174,7 @@ impl std::fmt::Display for Error {
 /// A context for more generic error types.
 #[derive(Clone, Copy, Debug)]
 pub enum Context {
+    Backup,
     Config,
     Delete,
     Evoke,
@@ -189,6 +190,7 @@ impl std::fmt::Display for Context {
             f,
             "{}",
             match self {
+                Context::Backup => t!("contexts.backup"),
                 Context::Config => t!("contexts.config"),
                 Context::Delete => t!("contexts.delete"),
                 Context::Evoke => t!("contexts.evocation"),
@@ -206,6 +208,7 @@ impl std::fmt::Display for Context {
 pub enum Subject {
     Recipe,
     Recipes,
+    Index,
 }
 
 impl Subject {
@@ -229,6 +232,7 @@ impl std::fmt::Display for Subject {
             match self {
                 Self::Recipe => t!("subject.recipe"),
                 Self::Recipes => t!("subject.recipes"),
+                Self::Index => t!("subject.index"),
             }
         )
     }

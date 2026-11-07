@@ -23,7 +23,7 @@ use std::fmt::Display;
 
 use rust_i18n::t;
 
-#[derive(Parser, Clone, Debug)]
+#[derive(Parser, Debug)]
 pub struct Scry {
     /// The recipe to display.
     pub recipe: String,

@@ -38,6 +38,8 @@ pub struct ManifestEntry {
 pub struct RecipeStore {
     /// The underlying mapping of recipe IDs and their location on disk.
     pub(super) manifest: HashMap<RecipeId, ManifestEntry>,
+    /// The list of directories from which recipes are sourced.
+    pub(super) indices: Vec<PathBuf>,
     /// The index in which new recipes should be stored.
     pub(super) default_dir: PathBuf,
 }
@@ -99,8 +101,11 @@ impl RecipeStore {
             invalid.extend(i);
         }
 
+        let indices = dirs.iter().map(|p| p.as_ref().to_path_buf()).collect();
+
         let store = Self {
             manifest: valid,
+            indices,
             default_dir,
         };
 

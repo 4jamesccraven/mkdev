@@ -18,6 +18,8 @@
 use super::model::{ManifestEntry, RecipeStore};
 use super::pick_results::PickResults;
 
+use std::path::PathBuf;
+
 use crate::error::{Error, Subject};
 use crate::recipe::RecipeId;
 
@@ -158,5 +160,10 @@ impl RecipeStore {
         self.manifest
             .values()
             .any(|m| m.recipe.namespace() == Some(namespace))
+    }
+
+    /// Returns an iterator over the store's recipe indidces.
+    pub fn pick_indices(&self) -> impl Iterator<Item = &PathBuf> {
+        self.indices.iter()
     }
 }

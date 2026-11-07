@@ -66,6 +66,7 @@ cancel = "Cancel"
 
 # === Error Handling ===
 [contexts] # What was happening when the error happened?
+backup = "creating store backup"
 config = "loading config"
 delete = "deleting recipe"
 evocation = "evoking recipe"
@@ -111,3 +112,4 @@ toml_all = "the above is not a list of valid recipe files---do not attempt to de
 [subject] # See errors.invalid
 recipe = "recipe"
 recipes = "recipes"
+index = "index"
