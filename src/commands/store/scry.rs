@@ -41,7 +41,10 @@ pub fn scry_command(args: Scry, store: RecipeStore) -> Result<(), Error> {
     let entry = store.pick_one(id.clone()).unwrap();
 
     // Size in bytes of recipe file
-    let size = format!("{:<10}", DisplayQuestion(store.file_len(id)));
+    let size = format!(
+        "{:<10}",
+        DisplayQuestion(store.file_len(id).map(indicatif::HumanBytes))
+    );
     // Number of file and directory `RecipeItem`s in recipe
     let (files, dirs) = store.content_breakdown(id).unwrap();
     // List of languages in metadata
