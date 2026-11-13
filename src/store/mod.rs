@@ -33,6 +33,7 @@
 //! // Get one.
 //! let my_recipe_foo = store.pick_one("foo").unwrap().recipe.clone();
 //! ```
+mod backup;
 mod inspect;
 mod model;
 mod mutate;
