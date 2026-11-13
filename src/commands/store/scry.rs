@@ -37,8 +37,7 @@ impl MkdevCommand for Scry {
 
 pub fn scry_command(args: Scry, store: RecipeStore) -> Result<(), Error> {
     let id = store.pick_id(args.recipe)?;
-    // TODO: put getter on store that avoids this clone
-    let entry = store.pick_one(id.clone()).unwrap();
+    let entry = &store[id];
 
     // Size in bytes of recipe file
     let size = format!(

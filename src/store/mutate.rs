@@ -32,10 +32,6 @@ impl RecipeStore {
     ///
     /// This not only adds it to the memory in-store, but saves it on disk as well.
     pub fn save(&mut self, recipe: Recipe) -> Result<PathBuf, Error> {
-        // This seems to be unavoidable without unsafe. It sucks because it's a waste,
-        // but I think it's worth it to have the ability to specify the directory without
-        // duplicating logic. A single clone is worth potential errors and inconsistencies later.
-        // TODO: see if this clone can be avoided.
         let dir = self.default_dir.clone();
         self.save_in(dir, recipe)
     }
