@@ -21,7 +21,7 @@ use crate::{error::Error, store::RecipeStore};
 
 use clap::{Parser, Subcommand};
 
-pub mod backup;
+pub mod export;
 pub mod scry;
 
 #[derive(Parser, Debug)]
@@ -44,11 +44,9 @@ pub enum StoreSubcommand {
     #[command(
         about = "Backup the store   ",
         long_about = "Make backups of the store or a specific store index.",
-        visible_aliases = ["bak"],
-        // easter eggs
-        aliases = ["ward", "phylactery"]
+        visible_aliases = ["ex"],
     )]
-    Backup(backup::Backup),
+    Export(export::Export),
 }
 
 impl MkdevCommand for Store {
@@ -60,6 +58,6 @@ impl MkdevCommand for Store {
 pub fn store_command(args: Store, store: RecipeStore) -> Result<(), Error> {
     match args.command {
         StoreSubcommand::Scry(args) => args.execute(store),
-        StoreSubcommand::Backup(args) => args.execute(store),
+        StoreSubcommand::Export(args) => args.execute(store),
     }
 }

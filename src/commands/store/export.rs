@@ -18,6 +18,7 @@
 use super::*;
 
 use crate::cli::completion::index_completer;
+use crate::cli::style::mkdev_pb_style;
 use crate::error::{Context, Subject};
 use crate::fs;
 
@@ -29,7 +30,7 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 
 #[derive(Parser, Debug)]
-pub struct Backup {
+pub struct Export {
     /// Specific index to back up (optional).
     #[arg(add = ArgValueCompleter::new(index_completer))]
     pub index: Option<PathBuf>,
@@ -43,13 +44,13 @@ pub struct Backup {
     pub output: PathBuf,
 }
 
-impl MkdevCommand for Backup {
+impl MkdevCommand for Export {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
-        backup_command(self, store)
+        export_command(self, store)
     }
 }
 
-pub fn backup_command(args: Backup, store: RecipeStore) -> Result<(), Error> {
+pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
     // Insure valid index if one is specified.
     if let Some(ref idx) = args.index
         && !store.pick_indices().any(|i| i == idx)
@@ -67,12 +68,17 @@ pub fn backup_command(args: Backup, store: RecipeStore) -> Result<(), Error> {
     };
 
     // Build the tarball for the backup
-    let bar = indicatif::ProgressBar::new(backup_indices.len() as u64);
+    let bar = indicatif::ProgressBar::no_length().with_style(mkdev_pb_style());
     let tar_bytes = if args.progress {
-        store.tar_indices_with_progress(&backup_indices, |_| bar.inc(1))
+        store.tar_indices_with_progress(&backup_indices, |len, store_path| {
+            bar.set_length(len as u64);
+            bar.set_message(format!("{}", store_path.display()));
+            bar.inc(1);
+        })
     } else {
         store.tar_indices(&backup_indices)
     }?;
+    bar.abandon();
 
     // Compress the tarball
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());

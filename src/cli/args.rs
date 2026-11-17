@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Top-level parser for all of mkdev's commands.
-use super::style::mkdev_style;
+use super::style::mkdev_cli_style;
 
 #[expect(unused)]
 use crate::commands::{self, *};
@@ -51,7 +51,7 @@ use strum::{EnumDiscriminants, VariantArray};
     author = crate_authors!(),
     about = crate_description!(),
     // CLI Config
-    styles = mkdev_style(),
+    styles = mkdev_cli_style(),
     max_term_width = 90,
     disable_help_subcommand = true,
 )]
