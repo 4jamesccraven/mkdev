@@ -70,6 +70,12 @@ pub enum Error {
     Deserialisation { cause: String, context: Context },
 
     // ------------------------------------------------------------
+    //  Compression
+    // ------------------------------------------------------------
+    /// Could not compress something.
+    CompressionFailure(std::io::Error),
+
+    // ------------------------------------------------------------
     //  Child Processes
     // ------------------------------------------------------------
     /// Could not spawn the child process.
@@ -145,6 +151,10 @@ impl std::fmt::Display for Error {
                     "{}\n{cause}",
                     t!("errors.deserialise", context => context)
                 )
+            }
+            // Compression
+            Error::CompressionFailure(cause) => {
+                write!(f, "{}", t!("errors.compression_failure", cause => cause))
             }
             // Children
             Error::SpawnFailure { what, why } => {
