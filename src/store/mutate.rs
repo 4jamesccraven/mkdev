@@ -138,4 +138,38 @@ impl RecipeStore {
 
         Ok(())
     }
+
+    /// Inserts a new index just before the default (i.e., second-most precedence when loading).
+    ///
+    /// This does not automatically load data from previously un-indexed directories. To load them,
+    /// use [`RecipeStore::synchronise`] et al.
+    pub fn push_index<P>(&mut self, index: P)
+    where
+        P: AsRef<Path>,
+    {
+        let penultimate = self.indices.len().saturating_sub(1);
+        let new_index = index.as_ref().to_path_buf();
+        self.indices.insert(penultimate, new_index);
+    }
+
+    /// Fully synchronise the store by reconstructing it from scratch.
+    ///
+    /// This function intentionally discards paths that have invalid recipe data.
+    pub fn synchronise(&mut self) -> Result<(), Error> {
+        self.synchronise_with_handler(|_| ())
+    }
+
+    /// Fully synchronise the store by reconstructing it from scratch.
+    ///
+    /// There may be some errors if this function returns [`Ok`], particularly if an indexed path
+    /// does not contain valid recipe data. For each such failure, the error is propagated to the
+    /// provided handler for call-site-specific error handling.
+    pub fn synchronise_with_handler(&mut self, err_handler: impl Fn(Error)) -> Result<(), Error> {
+        let (new_self, errs) = Self::gather_dirs(&self.indices)?;
+
+        *self = new_self;
+        errs.into_iter().for_each(err_handler);
+
+        Ok(())
+    }
 }

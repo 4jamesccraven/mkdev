@@ -51,7 +51,7 @@ impl MkdevCommand for Import {
     }
 }
 
-pub fn import_command(args: Import, store: RecipeStore) -> Result<(), Error> {
+pub fn import_command(args: Import, mut store: RecipeStore) -> Result<(), Error> {
     let gz_bytes = fs::read(&args.input, Context::Backup)?;
     let mut decoder = GzDecoder::new(gz_bytes.as_slice());
     let mut tar_bytes = Vec::new();
