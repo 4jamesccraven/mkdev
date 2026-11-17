@@ -184,29 +184,38 @@ impl std::fmt::Display for Error {
 /// A context for more generic error types.
 #[derive(Clone, Copy, Debug)]
 pub enum Context {
+    /// while importing or exporting a backup
     Backup,
+    /// While loading the config
     Config,
+    /// While deleting a recipe
     Delete,
+    /// While instantiating a recipe
     Evoke,
+    /// While loading a recipe or something related to it
     Gather,
+    /// While creating a new recipe
     Imprint,
+    /// While generating a man page
     Man,
+    /// While working with a temporary file
     Tempfile,
 }
 
 impl std::fmt::Display for Context {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                Context::Backup => t!("contexts.backup"),
-                Context::Config => t!("contexts.config"),
-                Context::Delete => t!("contexts.delete"),
-                Context::Evoke => t!("contexts.evocation"),
-                Context::Gather => t!("context.gather"),
-                Context::Imprint => t!("contexts.imprint"),
-                Context::Man => t!("contexts.man"),
+                Context::Backup   => t!("contexts.backup"),
+                Context::Config   => t!("contexts.config"),
+                Context::Delete   => t!("contexts.delete"),
+                Context::Evoke    => t!("contexts.evoke"),
+                Context::Gather   => t!("contexts.gather"),
+                Context::Imprint  => t!("contexts.imprint"),
+                Context::Man      => t!("contexts.man"),
                 Context::Tempfile => t!("contexts.tempfile"),
             }
         )
@@ -225,11 +234,10 @@ impl Subject {
     /// Gets the correct plurality from a count.
     ///
     /// Panics if 0 is passed.
-    pub fn from_count(count: usize) -> Self {
+    pub fn from_recipe_count(count: usize) -> Self {
         match count {
             1 => Self::Recipe,
-            2.. => Self::Recipes,
-            0 => crate::borked!(count),
+            0 | 2.. => Self::Recipes,
         }
     }
 }
