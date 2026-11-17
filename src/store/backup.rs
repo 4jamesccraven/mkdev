@@ -46,8 +46,10 @@
 use super::RecipeStore;
 
 use crate::error::{Context, Error};
+use crate::fs;
 
 use std::collections::{HashMap, HashSet};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const MANIFEST_FILE: &str = "mk::manifest.json";
@@ -143,6 +145,101 @@ impl RecipeStore {
 
         Ok(tar_bytes)
     }
+
+    // ---------------------------------------------------
+    //  Backup Restoration (Import)
+    // ---------------------------------------------------
+    pub fn install_tar(&self, tar_bytes: &[u8]) -> Result<(), Error> {
+        self.install_tar_with_progress(tar_bytes, |_, _| ())
+    }
+
+    pub fn install_tar_with_progress(
+        &self,
+        tar_bytes: &[u8],
+        on_progress: impl Fn(usize, &Path),
+    ) -> Result<(), Error> {
+        let mut archive = tar::Archive::new(tar_bytes);
+        let entries = archive
+            .entries()
+            .expect("infallible on newly constructed Archive object");
+
+        let mut pseudo_paths = Vec::new();
+        let mut contents = Vec::new();
+        let mut manifest: Option<HashMap<u32, PathBuf>> = None;
+
+        for entry in entries {
+            let mut entry = entry.expect("read on Vec<u8> is infallible.");
+            let pseudo_path = entry
+                .path()
+                .map_err(|e| Error::Deserialisation {
+                    cause: format!("invalid path in archive: {e}"),
+                    context: Context::Backup,
+                })?
+                .to_path_buf();
+
+            let mut content_bytes = Vec::new();
+            entry
+                .read_to_end(&mut content_bytes)
+                .expect("read on Vec<u8> is infallible.");
+
+            if pseudo_path == Path::new(MANIFEST_FILE) {
+                manifest = Some(serde_json::from_slice(&content_bytes).map_err(|e| {
+                    Error::Deserialisation {
+                        cause: e.to_string(),
+                        context: Context::Backup,
+                    }
+                })?);
+                continue;
+            }
+
+            pseudo_paths.push(pseudo_path);
+            contents.push(content_bytes);
+        }
+
+        let Some(manifest) = manifest else {
+            return Err(Error::Deserialisation {
+                cause: "no 'mk::manifest.json' in backup".into(),
+                context: Context::Backup,
+            });
+        };
+
+        let real_paths = StoreBackup {
+            manifest,
+            paths: pseudo_paths,
+        }
+        .to_real_paths();
+
+        let targets: Vec<_> = real_paths.into_iter().zip(contents).collect();
+        self.install_backup_with_progress(&targets, on_progress)
+    }
+
+    pub fn install_backup_with_progress(
+        &self,
+        targets: &[(PathBuf, Vec<u8>)],
+        on_progress: impl Fn(usize, &Path),
+    ) -> Result<(), Error> {
+        let target_len = targets.len();
+        targets.iter().try_for_each(|(target, content)| {
+            // Get the target index.
+            let index = target.parent().ok_or_else(|| Error::Deserialisation {
+                // TODO: i18n
+                cause: format!("attempted to write orphaned recipe: {}", target.display()),
+                context: Context::Backup,
+            })?;
+
+            // Ensure the index exists.
+            fs::create_dir_all(index, Context::Backup)?;
+
+            // Write the recipe.
+            // TODO!!: This desyncs the store.
+            // This can't be handled with `self.save_in`, either, as that could potentially change
+            // data from the backup.
+            fs::write(target, content, Context::Backup)?;
+
+            on_progress(target_len, target);
+            Ok(())
+        })
+    }
 }
 
 /// A tar friendly representation of one or more store indices.
@@ -200,7 +297,6 @@ impl StoreBackup {
     }
 
     /// Unpack the backup into a list of real paths.
-    #[expect(unused, reason = "importing backups not yet supported")]
     pub fn to_real_paths(&self) -> Vec<PathBuf> {
         self.paths
             .iter()
