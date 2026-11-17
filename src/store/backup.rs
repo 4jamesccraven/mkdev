@@ -53,14 +53,18 @@ use std::path::{Path, PathBuf};
 const MANIFEST_FILE: &str = "mk::manifest.json";
 
 impl RecipeStore {
+    // ------------------------------------------------------------
+    //  Backup Creation (export)
+    // ------------------------------------------------------------
+
     pub fn tar_indices(&self, indices: &[impl AsRef<Path>]) -> Result<Vec<u8>, Error> {
-        self.tar_indices_with_progress(indices, |_| ())
+        self.tar_indices_with_progress(indices, |_, _| ())
     }
 
     pub fn tar_indices_with_progress(
         &self,
         indices: &[impl AsRef<Path>],
-        on_progress: impl Fn(&Path),
+        on_progress: impl Fn(usize, &Path),
     ) -> Result<Vec<u8>, Error> {
         let existing: HashSet<_> = self.pick_indices().cloned().collect();
         let (selected, non_existent): (Vec<_>, Vec<_>) = indices
@@ -75,13 +79,12 @@ impl RecipeStore {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            // TODO: i18n
-            let msg = format!(
-                "attempted to serialise non-existent store indices: {}",
-                false_indices
-            );
             return Err(Error::Serialisation {
-                cause: msg,
+                // TODO: i18n
+                cause: format!(
+                    "attempted to serialise non-existent store indices: {}",
+                    false_indices
+                ),
                 context: Context::Backup,
             });
         }
@@ -103,7 +106,7 @@ impl RecipeStore {
     fn tar_backup_with_progress(
         &self,
         backup: StoreBackup,
-        on_progress: impl Fn(&Path),
+        on_progress: impl Fn(usize, &Path),
     ) -> Result<Vec<u8>, Error> {
         let mut archive = tar::Builder::new(Vec::new());
 
@@ -117,6 +120,7 @@ impl RecipeStore {
             .append_data(&mut header, MANIFEST_FILE, backup_manifest.as_bytes())
             .expect("Write on `Vec<u8>` is infallible");
 
+        let backup_len = backup.paths.len();
         for entry in backup.paths.iter() {
             let real_path = backup
                 .real_path(entry)
@@ -130,7 +134,7 @@ impl RecipeStore {
                     context: Context::Backup,
                 })?;
 
-            on_progress(entry);
+            on_progress(backup_len, entry);
         }
 
         let tar_bytes = archive
@@ -151,6 +155,9 @@ struct StoreBackup {
 }
 
 impl StoreBackup {
+    /// Builds the backup's structure based on real paths on the fs.
+    ///
+    /// This should not be used with paths that aren't absolute.
     pub fn from_paths(paths: &[&Path]) -> Self {
         let mut dir_manifest: HashMap<PathBuf, u32> = HashMap::new();
         let mut out_paths = Vec::new();
@@ -184,6 +191,7 @@ impl StoreBackup {
         }
     }
 
+    /// Serialise the manifest to json.
     pub fn to_manifest_json(&self) -> Result<String, Error> {
         serde_json::to_string(&self.manifest).map_err(|e| Error::Serialisation {
             cause: e.to_string(),
