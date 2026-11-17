@@ -18,12 +18,11 @@
 use super::*;
 
 use crate::cli::style::mkdev_pb_style;
+use crate::gz;
 use crate::{error::Context, fs};
 
-use std::io::Read;
 use std::path::PathBuf;
 
-use flate2::read::GzDecoder;
 use indicatif::ProgressFinish;
 
 #[derive(Parser, Debug)]
@@ -53,15 +52,7 @@ impl MkdevCommand for Import {
 
 pub fn import_command(args: Import, mut store: RecipeStore) -> Result<(), Error> {
     let gz_bytes = fs::read(&args.input, Context::Backup)?;
-    let mut decoder = GzDecoder::new(gz_bytes.as_slice());
-    let mut tar_bytes = Vec::new();
-
-    _ = decoder
-        .read_to_end(&mut tar_bytes)
-        .map_err(|e| Error::Deserialisation {
-            cause: e.to_string(),
-            context: Context::Backup,
-        })?;
+    let tar_bytes = gz::decode_bytes(&gz_bytes)?;
 
     if args.progress {
         let bar = indicatif::ProgressBar::no_length()

@@ -89,6 +89,8 @@ interrupted = "operation was interrupted"
 # (De)serialisation
 deserialise = "deserialization error: could not deserialize data (while %{context})"
 serialise = "serialization error: could not serialize data (while %{context})"
+# Compression
+compression_failure = "compression error: %{cause}"
 # Child Processes
 spawn_failure = "could not spawn child process '%{what}'"
 pipe_failure = "could not write to child process"

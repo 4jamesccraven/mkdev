@@ -21,13 +21,11 @@ use crate::cli::completion::index_completer;
 use crate::cli::style::mkdev_pb_style;
 use crate::error::{Context, Subject};
 use crate::fs;
+use crate::gz;
 
-use std::io::Write;
 use std::path::PathBuf;
 
 use clap_complete::ArgValueCompleter;
-use flate2::Compression;
-use flate2::write::GzEncoder;
 use indicatif::{HumanBytes, ProgressFinish};
 
 #[derive(Parser, Debug)]
@@ -86,14 +84,7 @@ pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
     }?;
 
     // Compress the tarball
-    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-    encoder
-        .write_all(&tar_bytes)
-        .map_err(|e| Error::Serialisation {
-            cause: e.to_string(),
-            context: Context::Backup,
-        })?;
-    let compressed = encoder.finish().expect("Write on `Vec<u8>` is infallible");
+    let compressed = gz::encode_bytes(&tar_bytes)?;
 
     // Add `tar.gz` as an extension if the user didn't specify one
     let output = match args.output.extension() {
