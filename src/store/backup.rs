@@ -149,12 +149,12 @@ impl RecipeStore {
     // ---------------------------------------------------
     //  Backup Restoration (Import)
     // ---------------------------------------------------
-    pub fn install_tar(&self, tar_bytes: &[u8]) -> Result<(), Error> {
+    pub fn install_tar(&mut self, tar_bytes: &[u8]) -> Result<(), Error> {
         self.install_tar_with_progress(tar_bytes, |_, _| ())
     }
 
     pub fn install_tar_with_progress(
-        &self,
+        &mut self,
         tar_bytes: &[u8],
         on_progress: impl Fn(usize, &Path),
     ) -> Result<(), Error> {
@@ -214,12 +214,14 @@ impl RecipeStore {
     }
 
     pub fn install_backup_with_progress(
-        &self,
+        &mut self,
         targets: &[(PathBuf, Vec<u8>)],
         on_progress: impl Fn(usize, &Path),
     ) -> Result<(), Error> {
+        let existing_indices: HashSet<_> = self.indices.iter().cloned().collect();
+
         let target_len = targets.len();
-        targets.iter().try_for_each(|(target, content)| {
+        for (target, content) in targets {
             // Get the target index.
             let index = target.parent().ok_or_else(|| Error::Deserialisation {
                 // TODO: i18n
@@ -227,18 +229,20 @@ impl RecipeStore {
                 context: Context::Backup,
             })?;
 
+            if !existing_indices.contains(index) {
+                self.push_index(index);
+            }
+
             // Ensure the index exists.
             fs::create_dir_all(index, Context::Backup)?;
 
             // Write the recipe.
-            // TODO!!: This desyncs the store.
-            // This can't be handled with `self.save_in`, either, as that could potentially change
-            // data from the backup.
             fs::write(target, content, Context::Backup)?;
 
             on_progress(target_len, target);
-            Ok(())
-        })
+        }
+
+        self.synchronise()
     }
 }
 
