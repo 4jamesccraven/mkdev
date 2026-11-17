@@ -36,7 +36,7 @@ pub struct Export {
     #[arg(add = ArgValueCompleter::new(index_completer))]
     pub index: Option<PathBuf>,
 
-    /// Whether to show a progress bar (useful for large backups).
+    /// Display a progress bar (useful for large backups).
     #[arg(short, long)]
     pub progress: bool,
 
