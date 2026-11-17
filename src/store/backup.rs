@@ -129,10 +129,10 @@ impl RecipeStore {
                 .expect("this can only happen with a corrupt backup");
 
             archive
-                .append_path_with_name(real_path, entry)
+                .append_path_with_name(&real_path, entry)
                 .inspect_err(|e| eprintln!("{e}"))
                 .map_err(|_| Error::FsDenied {
-                    which: entry.to_path_buf(),
+                    which: real_path,
                     context: Context::Backup,
                 })?;
 
