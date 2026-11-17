@@ -18,7 +18,7 @@
 //!
 //! Evoking a recipe instantiates its contents in the target directory, resolving custom
 //! substitutions along the way.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::cli::completion::recipe_completer;
 use crate::config::Config;
@@ -75,7 +75,7 @@ pub struct Evoke {
     pub force_destructive: bool,
 }
 
-impl StoreCommand for Evoke {
+impl MkdevCommand for Evoke {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         evoke_command(self, store)
     }

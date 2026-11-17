@@ -18,6 +18,7 @@
 pub mod config;
 pub mod error;
 pub mod fs;
+pub mod gz;
 pub mod man;
 pub mod replacer;
 

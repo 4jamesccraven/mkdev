@@ -15,12 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! The error type for mkdev.
+use std::io;
 use std::path::PathBuf;
 
 use rust_i18n::t;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Error {
+    // ------------------------------------------------------------
+    //  Recipe Resolution
+    // ------------------------------------------------------------
     /// Recipe(s) were not specified.
     NoneSpecified { subject: Subject },
 
@@ -36,6 +40,9 @@ pub enum Error {
         possibilities: Vec<String>,
     },
 
+    // ------------------------------------------------------------
+    //  CLI Mode
+    // ------------------------------------------------------------
     /// The action would be destructive.
     DestructiveAction { name: String },
 
@@ -44,29 +51,60 @@ pub enum Error {
     /// Note: this is effectively an ignore error, which is itself effectively an IO error.
     Exclude { cause: String },
 
-    /// The filesystem operation lacked the necessary privileges to complete.
-    FsDenied { which: PathBuf, context: Context },
-
-    /// The file's contents were not UTF-8 encoded.
-    NotUTF8 { which: PathBuf },
-
+    // ------------------------------------------------------------
+    //  Interactive Mode
+    // ------------------------------------------------------------
     /// The input device was not a TTY (during interactive mode).
     NotTTY,
 
     /// The user canceled an interactive process.
     InteractiveCancelled,
 
+    // ------------------------------------------------------------
+    //  (De)serialisation
+    // ------------------------------------------------------------
     /// The value failed to serialise.
     Serialisation { cause: String, context: Context },
 
     /// The value failed to deserialise.
     Deserialisation { cause: String, context: Context },
+
+    // ------------------------------------------------------------
+    //  Compression
+    // ------------------------------------------------------------
+    /// Could not compress something.
+    CompressionFailure(std::io::Error),
+
+    // ------------------------------------------------------------
+    //  Child Processes
+    // ------------------------------------------------------------
+    /// Could not spawn the child process.
+    SpawnFailure { what: String, why: io::Error },
+
+    /// Could not write to child process.
+    PipeFailure { why: io::Error },
+
+    /// Could not collect child exit status.
+    WaitFailure { why: io::Error },
+
+    /// Child exited with a non-zero status.
+    UnsuccessfulChild { code: Option<i32> },
+
+    // ------------------------------------------------------------
+    //  Filesystem
+    // ------------------------------------------------------------
+    /// The filesystem operation lacked the necessary privileges to complete.
+    FsDenied { which: PathBuf, context: Context },
+
+    /// The file's contents were not UTF-8 encoded.
+    NotUTF8 { which: PathBuf },
 }
 
 impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            // Recipe Resolution
             Error::NoneSpecified { subject } => {
                 write!(f, "{}", t!("errors.none_specified", subject => subject))
             }
@@ -93,24 +131,17 @@ impl std::fmt::Display for Error {
                 let ps = possibilities.join(", ");
                 write!(f, "{} '{query}' ({ps})", t!("errors.ambiguous"))
             }
-            Error::Exclude { cause } => {
-                write!(f, "{}: {cause}", t!("errors.exclude"))
-            }
-            Error::FsDenied { which, context } => write!(
-                f,
-                "{}",
-                t!("errors.fs_denied", which => which.to_string_lossy(), context => context),
-            ),
-            Error::NotUTF8 { which } => write!(
-                f,
-                "{}",
-                t!("errors.not_utf8", file => which.to_string_lossy())
-            ),
-            Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
-            Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
+            // CLI Mode
             Error::DestructiveAction { name } => {
                 write!(f, "{}", t!("errors.destruction", name => name))
             }
+            Error::Exclude { cause } => {
+                write!(f, "{}: {cause}", t!("errors.exclude"))
+            }
+            // Interactive Mode
+            Error::NotTTY => write!(f, "{}", t!("errors.not_tty")),
+            Error::InteractiveCancelled => write!(f, "{}", t!("errors.interrupted")),
+            // Serde
             Error::Serialisation { cause, context } => {
                 write!(f, "{}\n{cause}", t!("errors.serialise", context => context))
             }
@@ -121,6 +152,31 @@ impl std::fmt::Display for Error {
                     t!("errors.deserialise", context => context)
                 )
             }
+            // Compression
+            Error::CompressionFailure(cause) => {
+                write!(f, "{}", t!("errors.compression_failure", cause => cause))
+            }
+            // Children
+            Error::SpawnFailure { what, why } => {
+                write!(f, "{}:\n{}", t!("errors.spawn_failure", what => what), why)
+            }
+            Error::PipeFailure { why } => write!(f, "{}:\n{}", t!("errors.pipe_failure"), why),
+            Error::WaitFailure { why } => write!(f, "{}:\n{}", t!("errors.wait_failure"), why),
+            Error::UnsuccessfulChild { code } => match code {
+                Some(code) => write!(f, "{}: {}", t!("errors.child_failed_with"), code),
+                None => write!(f, "{}", t!("errors.child_failed_unknown")),
+            },
+            // FS
+            Error::FsDenied { which, context } => write!(
+                f,
+                "{}",
+                t!("errors.fs_denied", which => which.to_string_lossy(), context => context),
+            ),
+            Error::NotUTF8 { which } => write!(
+                f,
+                "{}",
+                t!("errors.not_utf8", file => which.to_string_lossy())
+            ),
         }
     }
 }
@@ -128,27 +184,38 @@ impl std::fmt::Display for Error {
 /// A context for more generic error types.
 #[derive(Clone, Copy, Debug)]
 pub enum Context {
+    /// while importing or exporting a backup
+    Backup,
+    /// While loading the config
     Config,
+    /// While deleting a recipe
     Delete,
+    /// While instantiating a recipe
     Evoke,
+    /// While loading a recipe or something related to it
     Gather,
+    /// While creating a new recipe
     Imprint,
+    /// While generating a man page
     Man,
+    /// While working with a temporary file
     Tempfile,
 }
 
 impl std::fmt::Display for Context {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                Context::Config => t!("contexts.config"),
-                Context::Delete => t!("contexts.delete"),
-                Context::Evoke => t!("contexts.evocation"),
-                Context::Gather => t!("context.gather"),
-                Context::Imprint => t!("contexts.imprint"),
-                Context::Man => t!("contexts.man"),
+                Context::Backup   => t!("contexts.backup"),
+                Context::Config   => t!("contexts.config"),
+                Context::Delete   => t!("contexts.delete"),
+                Context::Evoke    => t!("contexts.evoke"),
+                Context::Gather   => t!("contexts.gather"),
+                Context::Imprint  => t!("contexts.imprint"),
+                Context::Man      => t!("contexts.man"),
                 Context::Tempfile => t!("contexts.tempfile"),
             }
         )
@@ -160,17 +227,17 @@ impl std::fmt::Display for Context {
 pub enum Subject {
     Recipe,
     Recipes,
+    Index,
 }
 
 impl Subject {
     /// Gets the correct plurality from a count.
     ///
     /// Panics if 0 is passed.
-    pub fn from_count(count: usize) -> Self {
+    pub fn from_recipe_count(count: usize) -> Self {
         match count {
             1 => Self::Recipe,
-            2.. => Self::Recipes,
-            0 => crate::borked!(count),
+            0 | 2.. => Self::Recipes,
         }
     }
 }
@@ -183,6 +250,7 @@ impl std::fmt::Display for Subject {
             match self {
                 Self::Recipe => t!("subject.recipe"),
                 Self::Recipes => t!("subject.recipes"),
+                Self::Index => t!("subject.index"),
             }
         )
     }

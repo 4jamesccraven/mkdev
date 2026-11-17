@@ -1,0 +1,104 @@
+// mkdev - Save your boilerplate instead of writing it
+// Copyright (C) 2026  James C. Craven <4jamesccraven@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//! Implementation of `mk store export`.
+use super::*;
+
+use crate::cli::completion::index_completer;
+use crate::cli::style::mkdev_pb_style;
+use crate::error::{Context, Subject};
+use crate::fs;
+use crate::gz;
+
+use std::path::PathBuf;
+
+use clap_complete::ArgValueCompleter;
+use indicatif::{HumanBytes, ProgressFinish};
+
+#[derive(Parser, Debug)]
+pub struct Export {
+    /// Specific index to back up (optional).
+    #[arg(add = ArgValueCompleter::new(index_completer))]
+    pub index: Option<PathBuf>,
+
+    /// Display a progress bar (useful for large backups).
+    #[arg(short, long)]
+    pub progress: bool,
+
+    /// Where to store the backup.
+    ///
+    /// If the value provided doesn't have an extension, '.tar.gz' is assumed.
+    #[arg(short, long, value_name = "FILE")]
+    pub output: PathBuf,
+}
+
+impl MkdevCommand for Export {
+    fn execute(self, store: RecipeStore) -> Result<(), Error> {
+        export_command(self, store)
+    }
+}
+
+pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
+    // Insure valid index if one is specified.
+    if let Some(ref idx) = args.index
+        && !store.pick_indices().any(|i| i == idx)
+    {
+        return Err(Error::Invalid {
+            subject: Subject::Index,
+            examples: Some(vec![format!("{}", idx.display())]),
+        });
+    }
+
+    // Collect paths to backup.
+    let backup_indices: Vec<_> = match args.index {
+        Some(idx) => vec![idx],
+        None => store.pick_indices().cloned().collect(),
+    };
+
+    // Build the tarball for the backup
+    let tar_bytes = if args.progress {
+        let bar = indicatif::ProgressBar::no_length()
+            .with_style(mkdev_pb_style())
+            .with_finish(ProgressFinish::Abandon);
+
+        store.tar_indices_with_progress(&backup_indices, |len, store_path| {
+            bar.set_length(len as u64);
+            bar.set_message(format!("{}", store_path.display()));
+            bar.inc(1);
+        })
+    } else {
+        store.tar_indices(&backup_indices)
+    }?;
+
+    // Compress the tarball
+    let compressed = gz::encode_bytes(&tar_bytes)?;
+
+    // Add `tar.gz` as an extension if the user didn't specify one
+    let output = match args.output.extension() {
+        Some(_) => &args.output,
+        None => &args.output.with_extension("tar.gz"),
+    };
+    // Display backup and size
+    println!(
+        "{}: {}",
+        output.display(),
+        HumanBytes(compressed.len() as u64)
+    );
+
+    fs::write(output, compressed, Context::Backup)?;
+
+    Ok(())
+}
