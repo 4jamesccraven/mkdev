@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Implementation of `mk store backup`.
+//! Implementation of `mk store export`.
 use super::*;
 
 use crate::cli::completion::index_completer;
@@ -28,6 +28,7 @@ use std::path::PathBuf;
 use clap_complete::ArgValueCompleter;
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use indicatif::{HumanBytes, ProgressFinish};
 
 #[derive(Parser, Debug)]
 pub struct Export {
@@ -40,6 +41,8 @@ pub struct Export {
     pub progress: bool,
 
     /// Where to store the backup.
+    ///
+    /// If the value provided doesn't have an extension, '.tar.gz' is assumed.
     #[arg(short, long, value_name = "FILE")]
     pub output: PathBuf,
 }
@@ -68,8 +71,11 @@ pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
     };
 
     // Build the tarball for the backup
-    let bar = indicatif::ProgressBar::no_length().with_style(mkdev_pb_style());
     let tar_bytes = if args.progress {
+        let bar = indicatif::ProgressBar::no_length()
+            .with_style(mkdev_pb_style())
+            .with_finish(ProgressFinish::Abandon);
+
         store.tar_indices_with_progress(&backup_indices, |len, store_path| {
             bar.set_length(len as u64);
             bar.set_message(format!("{}", store_path.display()));
@@ -78,7 +84,6 @@ pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
     } else {
         store.tar_indices(&backup_indices)
     }?;
-    bar.abandon();
 
     // Compress the tarball
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
@@ -90,8 +95,19 @@ pub fn export_command(args: Export, store: RecipeStore) -> Result<(), Error> {
         })?;
     let compressed = encoder.finish().expect("Write on `Vec<u8>` is infallible");
 
-    // Write to the specified output.
-    fs::write(&args.output, compressed, Context::Backup)?;
+    // Add `tar.gz` as an extension if the user didn't specify one
+    let output = match args.output.extension() {
+        Some(_) => &args.output,
+        None => &args.output.with_extension("tar.gz"),
+    };
+    // Display backup and size
+    println!(
+        "{}: {}",
+        output.display(),
+        HumanBytes(compressed.len() as u64)
+    );
+
+    fs::write(output, compressed, Context::Backup)?;
 
     Ok(())
 }
