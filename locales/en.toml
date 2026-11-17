@@ -69,9 +69,9 @@ cancel = "Cancel"
 backup = "creating store backup"
 config = "loading config"
 delete = "deleting recipe"
-evocation = "evoking recipe"
+evoke = "evoking recipe"
 gather = "gathering recipes"
-imprinting = "imprinting recipe"
+imprint = "imprinting recipe"
 man = "generating man pages"
 tempfile = "creating temporary directory or file"
 
@@ -100,7 +100,7 @@ child_failed_unknown = "child failed with unknown exit status"
 # Filesystem
 fs_denied = "permission denied: could not access %{which} (while %{context})"
 not_utf8 = "%{file} is not valid UTF-8"
-# Other
+# Other (not part of the Error enum)
 no_cwd = "the current directory does not exist"
 evoke = "could not build `%{recipe}` in '%{target}'"
 
