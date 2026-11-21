@@ -52,14 +52,20 @@ pub enum StoreSubcommand {
 
     #[command(
         about = "Backup the store       ",
-        long_about = "Make backups of the store or a specific store index.",
+        long_about = "Make backups of the store or a specific store index. \n\
+            \n\
+            WARNING: This functionality is EXPERIMENTAL. Malformed or malicious backups may \
+            cause crashes or unexpected behaviour. Use with caution.",
         visible_aliases = ["ex"],
     )]
     Export(export::Export),
 
     #[command(
         about = "Load store backups     ",
-        long_about = "Restore previously created backups of the store.",
+        long_about = "Restore previously created backups of the store. \n\
+            \n\
+            WARNING: This functionality is EXPERIMENTAL. Malformed or malicious backups may \
+            cause crashes or unexpected behaviour. Use with caution.",
         visible_aliases = ["im"],
     )]
     Import(import::Import),
