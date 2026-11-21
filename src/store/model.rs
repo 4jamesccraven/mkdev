@@ -18,7 +18,7 @@
 use crate::config::Config;
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::{Recipe, RecipeId};
+use crate::recipe::{Recipe, RecipeId, RecipeKind};
 use crate::warning;
 
 use std::collections::HashMap;
@@ -31,6 +31,8 @@ pub struct ManifestEntry {
     pub store_path: PathBuf,
     /// The recipe itself.
     pub recipe: Recipe,
+    /// The backing format of the recipe on disk.
+    pub kind: RecipeKind,
 }
 
 /// Mkdev's recipe repository.
@@ -148,12 +150,13 @@ impl RecipeStore {
                     let payload = fs::read_to_string(&entry, Context::Gather)?;
 
                     match Recipe::from_toml(&payload) {
-                        Ok(r) => {
+                        Ok((r, kind)) => {
                             _ = valid.insert(
                                 r.as_id(),
                                 ManifestEntry {
                                     store_path: entry,
                                     recipe: r,
+                                    kind,
                                 },
                             )
                         }
@@ -189,7 +192,7 @@ impl RecipeStore {
     /// Gives a recipe a base file name to be placed in the store.
     ///
     /// TOML is assumed, to change it use [`PathBuf::set_extension`] or similar.
-    pub(super) fn store_name(recipe: &Recipe) -> PathBuf {
+    pub fn store_name(recipe: &Recipe) -> PathBuf {
         PathBuf::from(&recipe.name).with_extension("toml")
     }
 }

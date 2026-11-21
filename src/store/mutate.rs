@@ -19,13 +19,13 @@ use super::model::{ManifestEntry, RecipeStore};
 
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::{Recipe, RecipeId};
+use crate::recipe::{Recipe, RecipeId, RecipeKind};
 
 use std::path::{Path, PathBuf};
 
 impl RecipeStore {
     // ------------------------------------------------------------
-    // Store Modification
+    //  Store Modification
     // ------------------------------------------------------------
 
     /// Add a recipe to the store, using the default save location.
@@ -65,10 +65,49 @@ impl RecipeStore {
             ManifestEntry {
                 store_path: store_path.clone(),
                 recipe,
+                kind: RecipeKind::default(),
             },
         );
 
         Ok(store_path)
+    }
+
+    /// Renames the file associated with the given recipe.
+    ///
+    /// `new_name` should be a **basename**, like the one supplied by [`RecipeStore::store_name`].
+    ///
+    /// This operation is atomic---if the path is changed, so does the entry in the store, if not it
+    /// does not change.
+    pub fn rename_file<K, P>(&mut self, recipe_id: K, new_name: P) -> Result<(), Error>
+    where
+        K: Into<RecipeId>,
+        P: AsRef<Path>,
+    {
+        let key = self.pick_raw(&recipe_id.into())?.clone();
+        let store_path = &self.manifest[&key].store_path;
+        let to = store_path
+            .parent()
+            .expect("store paths are absolute")
+            .join(new_name.as_ref());
+
+        std::fs::rename(store_path, &to).map_err(|e| {
+            // This can only happen if what's passed in is not a basename.
+            //
+            // see <https://doc.rust-lang.org/std/fs/fn.rename.html#errors>
+            if e.kind() == std::io::ErrorKind::CrossesDevices {
+                crate::borked!(e)
+            }
+
+            // This can happen if the original store path does not exist or if the user lacks
+            // permissions. The former is indicative of some kind of larger corruption.
+            Error::FsDenied {
+                which: store_path.to_path_buf(),
+                context: Context::Imprint,
+            }
+        })?;
+
+        self.manifest.get_mut(&key).unwrap().store_path = to;
+        Ok(())
     }
 
     /// Delete the recipe from the store.
@@ -138,6 +177,10 @@ impl RecipeStore {
 
         Ok(())
     }
+
+    // ------------------------------------------------------------
+    //  Configuration and Synchronisation
+    // ------------------------------------------------------------
 
     /// Inserts a new index just before the default (i.e., second-most precedence when loading).
     ///

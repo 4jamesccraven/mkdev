@@ -25,9 +25,10 @@ pub mod instantiate;
 pub mod language;
 mod model;
 pub mod tree;
-mod version;
+pub mod version;
 
 pub use crate::store::RecipeStore;
 pub use content::RecipeItem;
 pub use language::Language;
 pub use model::{Recipe, RecipeId};
+pub use version::RecipeKind;

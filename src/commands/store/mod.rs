@@ -17,10 +17,12 @@
 //! Implementation of `mk store`.
 use super::MkdevCommand;
 
-use crate::{error::Error, store::RecipeStore};
+use crate::error::Error;
+use crate::store::RecipeStore;
 
 use clap::{Parser, Subcommand};
 
+pub mod check;
 pub mod export;
 pub mod import;
 pub mod scry;
@@ -36,21 +38,27 @@ pub struct Store {
 #[derive(Subcommand, Debug)]
 pub enum StoreSubcommand {
     #[command(
-        about = "Recipe file details",
+        about = "Store integrity checks ",
+        long_about = "Check the integrity of the store and apply fixes."
+    )]
+    Check(check::Check),
+
+    #[command(
+        about = "Recipe file details    ",
         long_about = "List filesystem details and basic metadata about a recipe.",
         visible_aliases = ["stat"],
     )]
     Scry(scry::Scry),
 
     #[command(
-        about = "Backup the store   ",
+        about = "Backup the store       ",
         long_about = "Make backups of the store or a specific store index.",
         visible_aliases = ["ex"],
     )]
     Export(export::Export),
 
     #[command(
-        about = "Load store backups ",
+        about = "Load store backups     ",
         long_about = "Restore previously created backups of the store.",
         visible_aliases = ["im"],
     )]
@@ -65,6 +73,7 @@ impl MkdevCommand for Store {
 
 pub fn store_command(args: Store, store: RecipeStore) -> Result<(), Error> {
     match args.command {
+        StoreSubcommand::Check(args) => args.execute(store),
         StoreSubcommand::Scry(args) => args.execute(store),
         StoreSubcommand::Export(args) => args.execute(store),
         StoreSubcommand::Import(args) => args.execute(store),

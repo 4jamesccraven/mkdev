@@ -26,6 +26,7 @@ use std::path::Path;
 /// Iterator over references to store manifest entries.
 ///
 /// Implements convenience methods for common transformations of [`ManifestEntry`].
+#[derive(Clone)]
 pub struct PickResults<'a> {
     entries: std::vec::IntoIter<&'a ManifestEntry>,
 }

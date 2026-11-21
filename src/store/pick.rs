@@ -134,6 +134,15 @@ impl RecipeStore {
         self.manifest.values().collect()
     }
 
+    /// Returns an iterator over the store's recipe indidces.
+    pub fn pick_indices(&self) -> impl Iterator<Item = &PathBuf> {
+        self.indices.iter()
+    }
+
+    pub fn pick_values(&self) -> impl Iterator<Item = (&RecipeId, &ManifestEntry)> {
+        self.manifest.iter()
+    }
+
     /// Query the store for all manifest entries in the namespace.
     pub fn pick_namespace(&self, namespace: &str) -> PickResults<'_> {
         self.manifest
@@ -161,11 +170,6 @@ impl RecipeStore {
         self.manifest
             .values()
             .any(|m| m.recipe.namespace() == Some(namespace))
-    }
-
-    /// Returns an iterator over the store's recipe indidces.
-    pub fn pick_indices(&self) -> impl Iterator<Item = &PathBuf> {
-        self.indices.iter()
     }
 }
 

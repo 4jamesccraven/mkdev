@@ -22,9 +22,13 @@ use super::RecipeStore;
 
 use crate::error::{Context, Error};
 use crate::fs;
-use crate::recipe::{Language, RecipeId, RecipeItem};
+use crate::recipe::{Language, RecipeId, RecipeItem, RecipeKind, version};
 
 impl RecipeStore {
+    // ------------------------------------------------------------
+    //  Raw Data Accessors
+    // ------------------------------------------------------------
+
     /// Print the recipe's contents as they appear on disk to stdout.
     pub fn recipe_cat<K>(&self, recipe_id: K) -> Result<(), Error>
     where
@@ -64,6 +68,10 @@ impl RecipeStore {
 
         fs::read(store_path, Context::Gather)
     }
+
+    // ------------------------------------------------------------
+    //  Metadata Accessors
+    // ------------------------------------------------------------
 
     /// Returns the size of the recipe file in bytes.
     ///
@@ -119,5 +127,41 @@ impl RecipeStore {
         std::fs::symlink_metadata(store_path)
             .ok()
             .map(|s| s.is_symlink())
+    }
+
+    // ------------------------------------------------------------
+    //  Checks
+    // ------------------------------------------------------------
+    /// Tests whether a recipe's filename matches the one that would be automatically assigned
+    /// by the store.
+    ///
+    /// An [`Err`] is returned if the recipe doesn't exist in the store.
+    pub fn filename_matches_id(&self, recipe_id: &RecipeId) -> Result<bool, Error> {
+        let key = self.pick_raw(recipe_id)?;
+        let store_path = &self.manifest[key].store_path;
+        let recipe = &self.manifest[key].recipe;
+
+        let basename = store_path.file_name();
+        let expected_basename = Self::store_name(recipe);
+
+        // This is only None if the file on disk is literally called `..`
+        Ok(matches!(basename, Some(b) if b == expected_basename))
+    }
+
+    /// Determines if the recipe has the most modern format available to it by reading its metadata.
+    ///
+    /// An [`Err`] is returned if the recipe doesn't exist in the store.
+    pub fn recipe_is_modern(&self, recipe_id: &RecipeId) -> Result<bool, Error> {
+        let key = self.pick_raw(recipe_id)?;
+        let version = &self.manifest[key].kind;
+
+        let is_modern = match version {
+            RecipeKind::DeclarativeSerde { version: v } if *v == version::RECIPE_VERSION_MAX => {
+                true
+            }
+            RecipeKind::DeclarativeSerde { version: _ } => false,
+        };
+
+        Ok(is_modern)
     }
 }
