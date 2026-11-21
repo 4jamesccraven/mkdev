@@ -59,10 +59,22 @@ impl RecipeStore {
     //  Backup Creation (export)
     // ------------------------------------------------------------
 
+    /// Creates backup archive data from a list of indices.
+    ///
+    /// Returns the bytes of a tar archive.
+    ///
+    /// Returns an [`Err`] if the indices are not inside the store, or if the paths cannot be read.
     pub fn tar_indices(&self, indices: &[impl AsRef<Path>]) -> Result<Vec<u8>, Error> {
         self.tar_indices_with_progress(indices, |_, _| ())
     }
 
+    /// Creates backup archive data from a list of indices. The provided callback runs as each
+    /// recipe is added to the archive, reporting the number of paths being backed up (i.e., the
+    /// total) and the path that was just backed up.
+    ///
+    /// Returns the bytes of a tar archive.
+    ///
+    /// Returns an [`Err`] if the indices are not inside the store, or if the paths cannot be read.
     pub fn tar_indices_with_progress(
         &self,
         indices: &[impl AsRef<Path>],
@@ -105,6 +117,13 @@ impl RecipeStore {
         self.tar_backup_with_progress(backup, on_progress)
     }
 
+    /// Creates backup archive data from a [`StoreBackup`]. The provided callback runs as each
+    /// recipe is added to the archive, reporting the number of paths being backed up (i.e., the
+    /// total) and the path that was just backed up.
+    ///
+    /// Returns the bytes of a tar archive.
+    ///
+    /// Returns an [`Err`] if one of the files in the backup cannot be read.
     fn tar_backup_with_progress(
         &self,
         backup: StoreBackup,
@@ -149,10 +168,17 @@ impl RecipeStore {
     // ---------------------------------------------------
     //  Backup Restoration (Import)
     // ---------------------------------------------------
+    /// Installs a backup into the store from tar data.
+    ///
+    /// Returns [`Err`] if the archive is corrupt or the data can't be written to disk.
     pub fn install_tar(&mut self, tar_bytes: &[u8]) -> Result<(), Error> {
         self.install_tar_with_progress(tar_bytes, |_, _| ())
     }
 
+    /// Installs a backup into the store from tar data, calling the provided callback with the total
+    /// number of entries to be unpacked and the most recently unpacked path.
+    ///
+    /// Returns [`Err`] if the archive is corrupt or the data can't be written to disk.
     pub fn install_tar_with_progress(
         &mut self,
         tar_bytes: &[u8],
@@ -207,12 +233,21 @@ impl RecipeStore {
             manifest,
             paths: pseudo_paths,
         }
-        .to_real_paths();
+        .to_real_paths()
+        .ok_or_else(|| Error::Deserialisation {
+            cause: "one or more invalid paths in backup".into(),
+            context: Context::Backup,
+        })?;
 
         let targets: Vec<_> = real_paths.into_iter().zip(contents).collect();
         self.install_backup_with_progress(&targets, on_progress)
     }
 
+    /// Installs each recipe and its data, calling the provided callback with the total
+    /// number of entries to be unpacked and the most recently unpacked path.
+    ///
+    /// Returns an [`Err`] if a path is not absolute, or if the user doesn't have permission to
+    /// write the provided files.
     pub fn install_backup_with_progress(
         &mut self,
         targets: &[(PathBuf, Vec<u8>)],
@@ -301,11 +336,8 @@ impl StoreBackup {
     }
 
     /// Unpack the backup into a list of real paths.
-    pub fn to_real_paths(&self) -> Vec<PathBuf> {
-        self.paths
-            .iter()
-            .filter_map(|p| self.real_path(p))
-            .collect()
+    pub fn to_real_paths(&self) -> Option<Vec<PathBuf>> {
+        self.paths.iter().map(|p| self.real_path(p)).collect()
     }
 
     /// Resolve a backup entry to its original filesystem.

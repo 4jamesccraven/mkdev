@@ -31,10 +31,6 @@ pub struct Import {
     #[arg(short, long)]
     pub input: PathBuf,
 
-    /// Validate the backup without restoring its contents.
-    #[arg(short, long)]
-    pub validate: bool,
-
     /// Display a progress bar (useful for large backups).
     #[arg(short, long)]
     pub progress: bool,
