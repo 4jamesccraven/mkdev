@@ -217,7 +217,8 @@ pub enum Commands {
 
     #[command(
         about = "Store Management",
-        long_about = "Low level interface for querying and working with the mkdev store."
+        long_about = "Low level interface for querying and working with the mkdev store.",
+        visible_aliases = ["st"]
     )]
     Store(Store),
 
