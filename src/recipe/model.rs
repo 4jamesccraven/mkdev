@@ -49,6 +49,7 @@ use super::{Language, RecipeItem};
 
 use crate::error::Error;
 use crate::recipe::detection::languages_for;
+use crate::recipe::version::RecipeKind;
 
 use std::fmt::Display;
 use std::path::Path;
@@ -80,7 +81,7 @@ impl Recipe {
     // ------------------------------------------------------------
     // Conversion
     // ------------------------------------------------------------
-    pub fn from_toml(toml: &str) -> Result<Self, Error> {
+    pub fn from_toml(toml: &str) -> Result<(Self, RecipeKind), Error> {
         deserialise_declarative_recipe(toml)
     }
 
@@ -255,11 +256,13 @@ impl RecipeId {
 
 impl Display for RecipeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.namespace {
-            Some(ns) => write!(f, "{}::{}", ns, self.shortname),
-            None if self.explicit_global => write!(f, "::{}", self.shortname),
-            None => write!(f, "{}", self.shortname),
-        }
+        let id = match &self.namespace {
+            Some(ns) => format!("{}::{}", ns, self.shortname),
+            None if self.explicit_global => format!("::{}", self.shortname),
+            None => self.shortname.to_string(),
+        };
+
+        f.pad(&id)
     }
 }
 
@@ -281,6 +284,12 @@ impl<T: AsRef<str>> From<T> for RecipeId {
 impl From<&Recipe> for RecipeId {
     fn from(recipe: &Recipe) -> Self {
         Self::from(recipe.name.as_str())
+    }
+}
+
+impl From<&RecipeId> for RecipeId {
+    fn from(id: &RecipeId) -> Self {
+        id.clone()
     }
 }
 

@@ -17,7 +17,7 @@
 //! Interface for `mk`, the CLI to mkdev.
 mod args;
 pub mod completion;
-mod style;
+pub mod style;
 
 pub use args::*;
 pub use style::MKDEV_ACCENT;

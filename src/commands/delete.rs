@@ -17,7 +17,7 @@
 //! Implementation of `mk delete`.
 //!
 //! Used to delete recipes.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::cli::completion::recipe_completer;
 use crate::error::Error;
@@ -39,7 +39,7 @@ pub struct Delete {
     pub namespace: bool,
 }
 
-impl StoreCommand for Delete {
+impl MkdevCommand for Delete {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         delete_command(self, store)
     }

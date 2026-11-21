@@ -9,11 +9,18 @@ yes_simple = "yes"
 no_simple  = "no"
 # The word for quitting a process
 quit = "Quit"
-# The words for files and directories
+# Filesystem words
 file = "File"
+files = "Files"
 directory = "Directory"
+directories = "Directories"
+path = "Path"
+paths = "Paths"
+size = "Size" # file size
 # The word proceed (lemma form)
 proceed = "Proceed"
+# The word external
+external = "External"
 
 [recipes]
 delete_msg = "Deleted recipe at %{path}."
@@ -59,36 +66,52 @@ cancel = "Cancel"
 
 # === Error Handling ===
 [contexts] # What was happening when the error happened?
+backup = "creating store backup"
 config = "loading config"
 delete = "deleting recipe"
-evocation = "evoking recipe"
+evoke = "evoking recipe"
 gather = "gathering recipes"
-imprinting = "imprinting recipe"
+imprint = "imprinting recipe"
 man = "generating man pages"
 tempfile = "creating temporary directory or file"
 
 [errors] # What went wrong?
-ambiguous = "ambiguous query"
-deserialise = "deserialization error: could not deserialize data (while %{context})"
-destruction = "%{name} already exists; use -f to overwrite"
-evoke = "could not build `%{recipe}` in '%{target}'"
-exclude = "imprint: invalid value for flag `--exclude`"
-fs_denied = "permission denied: could not access %{which} (while %{context})"
-interrupted = "operation was interrupted"
+# Recipe Resolution
 invalid = "invalid %{subject}"
-no_cwd = "the current directory does not exist"
+ambiguous = "ambiguous query"
 none_specified = "no %{subject} specified"
+# CLI Mode
+destruction = "%{name} already exists; use -f to overwrite"
+exclude = "imprint: invalid value for flag `--exclude`"
+# Interactive Mode
 not_tty = "the input device is not a TTY"
-not_utf8 = "%{file} is not valid UTF-8"
+interrupted = "operation was interrupted"
+# (De)serialisation
+deserialise = "deserialization error: could not deserialize data (while %{context})"
 serialise = "serialization error: could not serialize data (while %{context})"
+# Compression
+compression_failure = "compression error: %{cause}"
+# Child Processes
+spawn_failure = "could not spawn child process '%{what}'"
+pipe_failure = "could not write to child process"
+wait_faulire = "could not wait on child process"
+child_failed_with = "child failed with non-zero exit status"
+child_failed_unknown = "child failed with unknown exit status"
+# Filesystem
+fs_denied = "permission denied: could not access %{which} (while %{context})"
+not_utf8 = "%{file} is not valid UTF-8"
+# Other (not part of the Error enum)
+no_cwd = "the current directory does not exist"
+evoke = "could not build `%{recipe}` in '%{target}'"
 
 [warnings]
 child_failed = "could not run command '%{child}'"
 invalid_recipe = "%{path} is not a valid recipe"
 storage_full = "storage full: could not write %{what}"
 subcommand_suppressed = "subcommand suppressed by one or more flags"
-toml_all = "the above is not a list of valid recipe files—do not attempt to deserialize it"
+toml_all = "the above is not a list of valid recipe files---do not attempt to deserialize it"
 
 [subject] # See errors.invalid
 recipe = "recipe"
 recipes = "recipes"
+index = "index"

@@ -17,6 +17,7 @@ pub mod cli;
 pub mod commands;
 pub mod presentation;
 pub mod recipe;
+pub mod store;
 pub mod ui;
 pub mod utils;
 

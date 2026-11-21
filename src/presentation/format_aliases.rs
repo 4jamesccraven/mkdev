@@ -19,21 +19,34 @@ use crate::cli::Cli;
 
 use std::fmt::Write;
 
-use clap::CommandFactory;
+use clap::{Command, CommandFactory};
 use colored::Colorize;
 
 pub fn format_aliases() -> String {
-    let command = Cli::command();
+    format_aliases_for(&Cli::command(), "  ")
+}
+
+pub fn format_aliases_for(command: &Command, prefix: &str) -> String {
     let mut out = String::new();
 
     for subcommand in command.get_subcommands() {
         // Write the subcommand as a header.
-        _ = writeln!(&mut out, "{}:", subcommand.get_name().green());
+        _ = writeln!(
+            &mut out,
+            "{}{}:",
+            prefix.strip_prefix("  ").unwrap_or(prefix),
+            subcommand.get_name().green()
+        );
 
         // Render aliases for the subcommand itself
         let aliases = subcommand.get_all_aliases().collect::<Vec<_>>().join(", ");
         if !aliases.is_empty() {
-            _ = writeln!(&mut out, "  {}: {aliases}", "aliases".yellow());
+            _ = writeln!(&mut out, "{prefix}{}: {aliases}", "aliases".yellow());
+        }
+
+        // Render its own subcommands
+        if subcommand.has_subcommands() {
+            out.push_str(&format_aliases_for(subcommand, &format!("  {prefix}")));
         }
 
         // Attempt to render aliases for its args.
@@ -51,7 +64,7 @@ pub fn format_aliases() -> String {
                 }
                 .yellow();
 
-                _ = write!(&mut out, "    {header}: ");
+                _ = write!(&mut out, "{}{header}: ", prefix.repeat(2));
             }
 
             if let Some(shorts) = short_aliases {

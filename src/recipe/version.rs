@@ -19,9 +19,57 @@ use super::{Language, Recipe, RecipeItem, content::File};
 
 use crate::error::{Context, Error};
 
+#[expect(unused, reason = "docs only")]
+use crate::store::RecipeStore;
+
 use serde::{Deserialize, Serialize};
 
-/// Untagged helper struct that can deserialise all known recipe formats.
+/// The maximum version of the original recipe format.
+pub const RECIPE_VERSION_MAX: u8 = 2;
+
+/// Represents the backing format of a recipe, accessible via [`RecipeStore`] entries.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub enum RecipeKind {
+    /// A declarative recipe that is created by deserialising something with serde.
+    DeclarativeSerde {
+        /// The version the recipe was deserialised from.
+        ///
+        /// Versions:
+        /// 1. Original, recursive storage of contents.
+        /// 2. Modern, flat storage of contents.
+        version: u8,
+    },
+}
+
+impl std::fmt::Display for RecipeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DeclarativeSerde { version: v } => write!(f, "Declarative (serde v{v})"),
+        }
+    }
+}
+
+impl Default for RecipeKind {
+    fn default() -> Self {
+        Self::DeclarativeSerde {
+            version: RECIPE_VERSION_MAX,
+        }
+    }
+}
+
+/// Deserialises a known version of the recipe format, and converts it to the most recent version.
+///
+/// Returns [`Err`] if the recipe data doesn't match any known format.
+pub fn deserialise_declarative_recipe(value: &str) -> Result<(Recipe, RecipeKind), Error> {
+    toml::from_str::<RecipeVersions>(value)
+        .map(RecipeVersions::into_modern)
+        .map_err(|e| Error::Deserialisation {
+            cause: e.to_string(),
+            context: Context::Gather,
+        })
+}
+/// Untagged helper enum to transparently deserialise [`RecipeKind::SerdeDeclarative`] versions.
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum RecipeVersions {
@@ -29,18 +77,23 @@ enum RecipeVersions {
     V1(RecipeV1),
 }
 
-// --- General ---
+impl RecipeVersions {
+    /// Converts `self` into the most modern format, preserving versioning info.
+    pub fn into_modern(self) -> (Recipe, RecipeKind) {
+        let kind = RecipeKind::DeclarativeSerde {
+            version: self.as_version_no(),
+        };
 
-/// Deserialises a known version of the recipe format, and converts it to the most recent version.
-///
-/// Returns None if the recipe data doesn't match any known format.
-pub fn deserialise_declarative_recipe(value: &str) -> Result<Recipe, Error> {
-    toml::from_str::<RecipeVersions>(value)
-        .map(Recipe::from)
-        .map_err(|e| Error::Deserialisation {
-            cause: e.to_string(),
-            context: Context::Gather,
-        })
+        (self.into(), kind)
+    }
+
+    /// Coerces `self` to a version number.
+    pub fn as_version_no(&self) -> u8 {
+        match self {
+            Self::V2(_) => 2,
+            Self::V1(_) => 1,
+        }
+    }
 }
 
 impl From<RecipeVersions> for Recipe {
@@ -71,7 +124,9 @@ impl From<RecipeVersions> for Recipe {
     }
 }
 
-// --- Version 1 ---
+// ------------------------------------------------------------
+//  V1 Format
+// ------------------------------------------------------------
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RecipeV1 {

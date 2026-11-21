@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Top-level parser for all of mkdev's commands.
-use super::style::mkdev_style;
+use super::style::mkdev_cli_style;
 
 #[expect(unused)]
 use crate::commands::{self, *};
@@ -51,7 +51,7 @@ use strum::{EnumDiscriminants, VariantArray};
     author = crate_authors!(),
     about = crate_description!(),
     // CLI Config
-    styles = mkdev_style(),
+    styles = mkdev_cli_style(),
     max_term_width = 90,
     disable_help_subcommand = true,
 )]
@@ -95,7 +95,7 @@ pub struct Cli {
 impl Cli {
     /// Execute the parsed subcommand.
     pub fn execute(self, store: RecipeStore) -> Result<(), Error> {
-        use crate::commands::StoreCommand;
+        use crate::commands::MkdevCommand;
 
         let command_present = self.command.is_some();
         let skips_commands = [
@@ -131,6 +131,8 @@ impl Cli {
                 Commands::Delete(args) => args.execute(store),
                 Commands::List(args) => args.execute(store),
                 Commands::Alter(args) => args.execute(store),
+                Commands::Examine(args) => args.execute(store),
+                Commands::Store(args) => args.execute(store),
                 Commands::Info(args) => args.execute(store),
             },
             // Handle interactive imprint alias
@@ -204,9 +206,26 @@ pub enum Commands {
     Alter(Alter),
 
     #[command(
+        about = "View raw recipes",
+        long_about = "Display raw recipe files in the store. This is useful for inspecting recipes \
+            do not conform to the latest recipe version or may otherwise appear differently when \
+            viewed with `mk list`.",
+        visible_aliases = ["cat"],
+        aliases = ["inspect"],
+    )]
+    Examine(Examine),
+
+    #[command(
+        about = "Store Management",
+        long_about = "Low level interface for querying and working with the mkdev store.",
+        visible_aliases = ["st"]
+    )]
+    Store(Store),
+
+    #[command(
         about = "Help & reference",
         long_about = "Display man pages and other documentation. The man program is required for \
-            this functionality.",
+            all man pages.",
         visible_aliases = ["help"],
     )]
     Info(Info),

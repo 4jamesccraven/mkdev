@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Implementation of `mk alter`.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::config::Config;
 use crate::error::Error;
@@ -32,7 +32,7 @@ pub struct Alter {
     pub recipe: String,
 }
 
-impl StoreCommand for Alter {
+impl MkdevCommand for Alter {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         alter_command(self, store)
     }

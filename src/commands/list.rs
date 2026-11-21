@@ -18,7 +18,7 @@
 //!
 //! Lists the recipes available in the recipe store, displaying their names and other information
 //! in the selected output format.
-use super::StoreCommand;
+use super::MkdevCommand;
 
 use crate::cli::completion::recipe_completer;
 use crate::config::Config;
@@ -52,7 +52,7 @@ pub struct List {
     pub no_description: bool,
 }
 
-impl StoreCommand for List {
+impl MkdevCommand for List {
     fn execute(self, store: RecipeStore) -> Result<(), Error> {
         list_command(self, store)
     }

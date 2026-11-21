@@ -24,11 +24,11 @@ mod detection;
 pub mod instantiate;
 pub mod language;
 mod model;
-mod store;
 pub mod tree;
-mod version;
+pub mod version;
 
+pub use crate::store::RecipeStore;
 pub use content::RecipeItem;
 pub use language::Language;
 pub use model::{Recipe, RecipeId};
-pub use store::RecipeStore;
+pub use version::RecipeKind;

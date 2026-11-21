@@ -72,7 +72,7 @@ where
 
 /// See [`std::fs::create_dir_all`].
 ///
-/// Handles permission errors. Panics if the path is ill-formed (e.g., contains file components).
+/// Handles permission errors. Panics if the path is malformed (e.g., contains file components).
 pub fn create_dir_all<P>(path: P, ctx: Context) -> Result<(), Error>
 where
     P: AsRef<Path> + Into<PathBuf>,
@@ -83,20 +83,38 @@ where
     })
 }
 
+/// See [`std::fs::read`].
+///
+/// Handles permission errors. The caller must ensure parents exist to prevent a panic.
+pub fn read<P>(path: P, ctx: Context) -> Result<Vec<u8>, Error>
+where
+    P: AsRef<Path>,
+{
+    fs::read(&path).map_err(|e| match e.kind() {
+        ErrorKind::PermissionDenied => Error::FsDenied {
+            which: path.as_ref().to_path_buf(),
+            context: ctx,
+        },
+        _ => crate::borked!(e),
+    })
+}
+
 /// See [`std::fs::read_to_string`].
 ///
 /// Handles permission errors and UTF-8 errors only. The caller must ensure parents exist to
 /// prevent a panic.
 pub fn read_to_string<P>(path: P, ctx: Context) -> Result<String, Error>
 where
-    P: AsRef<Path> + Into<PathBuf>,
+    P: AsRef<Path>,
 {
     fs::read_to_string(&path).map_err(|e| match e.kind() {
         ErrorKind::PermissionDenied => Error::FsDenied {
-            which: path.into(),
+            which: path.as_ref().to_path_buf(),
             context: ctx,
         },
-        ErrorKind::InvalidData => Error::NotUTF8 { which: path.into() },
+        ErrorKind::InvalidData => Error::NotUTF8 {
+            which: path.as_ref().to_path_buf(),
+        },
         _ => crate::borked!(e),
     })
 }
