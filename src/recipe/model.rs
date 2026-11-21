@@ -246,7 +246,7 @@ impl RecipeId {
         (self.namespace, self.shortname)
     }
 
-    /// Destrucutre the ID into its constituent parts, converting the [`Option`] namespace to an
+    /// Destructure the ID into its constituent parts, converting the [`Option`] namespace to an
     /// empty [`String`] on [`None`].
     pub fn into_strings(self) -> (String, String) {
         let (maybe_ns, shortname) = self.into_parts();

@@ -286,7 +286,7 @@ impl RecipeStore {
 struct StoreBackup {
     /// Maps index placeholders to their absolute path.
     pub manifest: HashMap<u32, PathBuf>,
-    /// Psuedo-absolute paths to recipes.
+    /// Pseudo-absolute paths to recipes.
     pub paths: Vec<PathBuf>,
 }
 
